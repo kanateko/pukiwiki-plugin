@@ -1,18 +1,18 @@
 <?php
 /*
 * License: GPLv3
-* Version:1.21
+* Version:1.23
 * Release:2018/10/09
 * Auther: kanateko
 * Manual: https://jpngamerswiki.com/?82f1460fdb
 * Description: Youtubeをページに埋め込むプラグイン。多機能。
 * -- Update --
+* 2020/02/12 (ver 1.23)
+*   CSSの設定無しでレスポンシブになるよう変更。
+*   これにより高さ指定のオプションを廃止。
 * 2020/02/11 (ver 1.21)
-* - インライン型の廃止。
-* - objectモードの廃止。
-* - ループ機能追加。
-* - ユーザー指定機能追加。
-* - キーワード指定機能追加。
+*   インライン型の廃止。objectモードの廃止。ループ機能追加。
+*   ユーザー指定機能追加。キーワード指定機能追加。
 */
 
 function plugin_youtube_convert() {
@@ -28,7 +28,7 @@ function plugin_youtube_convert() {
 	// スタイル
 	$style = array(
 		'width'  =>	560, // 幅
-		'height' =>	315, // 高さ
+		//'height' =>	315, // 高さ (レスポンシブのため使用しない)
 	);
 	// オプション
 	$option = array(
@@ -72,16 +72,14 @@ function plugin_youtube_convert() {
 	foreach ($args as $arg) {
 		$arg = htmlspecialchars($arg);
 
-		if (preg_match('/^(\d+)x(\d+)$/', $arg, $match)) {
-			// 幅x高さ
+		if (preg_match('/^(\d+)p*x(\d+)*$/', $arg, $match)) {
+			// px指定 or 幅x高さ (旧版との互換性のため)
 			$style['width'] = $match[1];
-			$style['height'] = $match[2];
 		} else if (preg_match('/(.+)=(\d+)/', $arg, $match)) {
 			// その他のオプション
 			switch ($match[1]) {
-				// 幅と高さ
+				// 幅
 				case 'width':
-				case 'height':
 					$style[$match[1]] = $match[2];
 					break;
 				// 0か1のみのオプション
