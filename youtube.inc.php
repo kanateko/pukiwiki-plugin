@@ -102,12 +102,13 @@ function plugin_youtube_convert() {
 		}
 	}
 
+	// 開始時間と終了時間をチェック
+	if ($option['end'] > 0 && $option['start'] > $option['end']) return $error_msg['time'];
+
 	// パラメータの作成
 	foreach ($option as $key => $val) {
 		// 不要なパラメータを排除
 		if(!$isList && $key == 'index' || $lisList && $key == 'loop' || $val === 0) continue;
-		// 開始時間と終了時間をチェック
-		if ($option['end'] > 0 && $option['start'] > $option['end']) return $error_msg['time'];
 		// ループ用設定
 		if ($key == 'loop') {
 			$key = 'version3&loop';
