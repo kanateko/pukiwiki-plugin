@@ -35,7 +35,7 @@ function plugin_youtube_convert() {
 		'loop'     => 0, // ループ再生: off
 		'autoplay' => 0, // 自動再生: off
 		'start'    => 0, // 開始時間: off
-		'end'	     => 0, // 終了時間: off
+		'end'      => 0, // 終了時間: off
 		'index'    => 0, // リストの開始位置: 0
 	);
 	// リストのタイプ
