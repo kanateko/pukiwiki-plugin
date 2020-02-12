@@ -4,7 +4,7 @@
 * Version:1.21
 * Release:2018/10/09
 * Auther: kanateko
-* Manual: https://jpngamerswiki.com/?ff7d0a095a
+* Manual: https://jpngamerswiki.com/?82f1460fdb
 * Description: Youtubeをページに埋め込むプラグイン。多機能。
 * -- Update --
 * 2020/02/11 (ver 1.21)
