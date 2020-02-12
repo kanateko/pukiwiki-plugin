@@ -25,8 +25,8 @@ function plugin_slideshow_convert()
 	global $vars;
 	$args = func_get_args();
 	$option = array(
-		'speed' => '3000', //自動再生時の再生スピード
-		'auto'	=> 'true', //自動再生のon/off
+		'speed' => '3000', // 自動再生時の再生スピード
+		'auto'  => 'true', // 自動再生のon/off
 	);
 	$url_base = get_base_uri() . '?plugin=ref&amp;page='; //画像のあるページのURL
 	$contents = ''; // スライダー部分

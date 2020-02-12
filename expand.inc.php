@@ -16,8 +16,8 @@ function plugin_expand_convert()
   if (func_num_args() < 1) return;
 
   $option = array (
-		'color'		=> 'inherit',		// 文字色
-    'size'		=> 'inherit',		// 文字サイズ
+		'color' => 'inherit', // 文字色
+    'size'  => 'inherit', // 文字サイズ
 	);
   $args = func_get_args();
   $details = array_pop($args);

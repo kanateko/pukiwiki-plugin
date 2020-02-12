@@ -18,31 +18,31 @@
 function plugin_youtube_convert() {
 	// エラーメッセージ
 	$error_msg = array(
-		'time'	=>	'#youtube Error: 再生の開始位置は終了位置よりも前に設定してください。',
-		'arg'		=>	'#youtube Error: オプションの設定が正しくありません。',
-		'id'		=>	'#youtube Error: 動画IDが設定されていません。',
+		'time' => '#youtube Error: 再生の開始位置は終了位置よりも前に設定してください。',
+		'arg'  => '#youtube Error: オプションの設定が正しくありません。',
+		'id'   => '#youtube Error: 動画IDが設定されていません。',
 	);
 
 	if (func_num_args() < 1) return $error_msg['id'];
 
 	// スタイル
 	$style = array(
-		'width'			=>	560,	// 幅
-		'height'		=>	315,	// 高さ
+		'width'  =>	560, // 幅
+		'height' =>	315, // 高さ
 	);
 	// オプション
 	$option = array(
-		'loop'			=>	0,		// ループ再生: off
-		'autoplay'	=>	0,		// 自動再生: off
-		'start'			=>	0,		// 開始時間: off
-		'end'				=>	0,		// 終了時間: off
-		'index'			=>	0,		// リストの開始位置: 0
+		'loop'     => 0, // ループ再生: off
+		'autoplay' => 0, // 自動再生: off
+		'start'    => 0, // 開始時間: off
+		'end'	     => 0, // 終了時間: off
+		'index'    => 0, // リストの開始位置: 0
 	);
 	// リストのタイプ
 	$list_type = array(
-		'list'			=>	'playList',			// 再生リスト
-		'user'			=>	'user_uploads',	// ユーザー
-		'search'		=>	'search',				// 検索結果
+		'list'   => 'playList',     // 再生リスト
+		'user'   => 'user_uploads', // ユーザー
+		'search' => 'search',       // 検索結果
 	);
 
 	$args = func_get_args();
