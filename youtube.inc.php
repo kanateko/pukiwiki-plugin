@@ -129,14 +129,16 @@ function plugin_youtube_convert() {
 	$url = $url_base . $video . $params;
 
 	// フレーム部分を作成
-	$frame = '<iframe width="' . $style['width'] . '" height="' . $style['height'] . '" src="' . $url . '"
+	$frame = '<iframe style="position:absolute;width:100%;height:100%;" src="' . $url . '"
 	frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
 	allowfullscreen></iframe>';
 
 	// 埋め込み部分の全体を作成
 	$body = <<<EOD
-<div class="youtube_embed">
-	$frame
+<div class="youtube_embed" style="max-width:100%;width:{$style['width']}px">
+	<div class="youtube_container" style="position:relative;height:0;padding-bottom:56.25%;">
+		$frame
+	</div>
 </div>
 EOD;
 
