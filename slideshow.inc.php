@@ -9,6 +9,8 @@
 * -- Update --
 * 2020/02/10 (ver 0.82)
 * - 公開用にheadに出力するタグを修正。
+* 2020/03/10 (ver 0.821)
+* - ループ処理部分にあったバグを修正。
 */
 
 function plugin_slideshow_init()
@@ -54,13 +56,12 @@ function plugin_slideshow_convert()
 			}
 			// URL作成
 			$url = $url_base . $page . '&amp;src=' . $file;
+			//画像を追加する
+			$contents .= <<<EOD
+	<div class="img_slide">
+		<a href = "$url"><img data-lazy="$url" /></a>
+	</div>
 		}
-		//画像を追加する
-		$contents .= <<<EOD
-<div class="img_slide">
-	<a href = "$url"><img data-lazy="$url" /></a>
-</div>
-
 EOD;
 		}
 
@@ -68,7 +69,7 @@ EOD;
 		$body = <<<EOD
 <div class='container'>
 	<div class='slick-box'>
-$contents
+		$contents
 	</div>
 </div>
 
