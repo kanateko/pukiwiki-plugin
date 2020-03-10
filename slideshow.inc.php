@@ -61,10 +61,9 @@ function plugin_slideshow_convert()
 	<div class="img_slide">
 		<a href = "$url"><img data-lazy="$url" /></a>
 	</div>
-		}
 EOD;
 		}
-
+	}
 		//スライドショー部分とslickの設定
 		$body = <<<EOD
 <div class='container'>
