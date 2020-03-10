@@ -4,7 +4,7 @@
 * Version: 1.1
 * Release: 2018/09/27
 * Auther: kanateko
-* Manual: https://jpngamerswiki.com
+* Manual: https://jpngamerswiki.com/?0f5ec903b8
 * Description: Twitter埋め込みプラグイン
 * -- Update --
 * 2020/03/10 (ver 1.1)
