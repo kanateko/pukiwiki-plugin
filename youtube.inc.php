@@ -106,7 +106,7 @@ function plugin_youtube_convert() {
 	// パラメータの作成
 	foreach ($option as $key => $val) {
 		// 不要なパラメータを排除
-		if(!$isList && $key == 'index' || $lisList && $key == 'loop' || $val === 0) continue;
+		if(!$isList && $key == 'index' || $isList && $key == 'loop' || $val === 0) continue;
 		// ループ用設定
 		if ($key == 'loop') {
 			$key = 'version3&loop';
