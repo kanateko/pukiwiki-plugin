@@ -21,7 +21,8 @@ function plugin_bar_convert() {
 	$option = array(
 		'label1'     => '',        // ラベル (左)
         'label2'     => '',        // ラベル (右)
-        'size'       => '12',      // ラベルの大きさ
+        'lsize'      => '12',      // ラベルの大きさ
+        'lcolor'     => 'inherit',  // ラベルの色
 		'color'      => '#cbd1c9', // バーの色
 		'bgcolor'    => '#8d8d8d', // 背景色
         'width'      => '300',     // バーの幅
@@ -50,7 +51,7 @@ function plugin_bar_convert() {
                 list($key, $val) = explode('=', $arg);
                 if (array_search($key, $keys) !== false) {
                     // オプションの指定が正しいか判断
-                    if ($key == 'size'|'width'|'height' && !is_numeric($val)|$val < 1) {
+                    if ($key == 'lsize'|'width'|'height' && !is_numeric($val)|$val < 1) {
                         return $err_msg['value'] . " (" . $arg . ")";
                     } else {
                         $option[$key] = $val;
@@ -89,7 +90,7 @@ function plugin_bar_convert() {
 
     // バーグラフ部分作成
     $body = <<<EOD
-<div class="bar" style="width:{$option['width']}px;font-size:{$option['size']}px">
+<div class="bar" style="width:{$option['width']}px;font-size:{$option['lsize']}px;color:{$option['lcolor']}">
     {$label}
     <div class="bar-graph" style="width:{$option['width']}px;height:{$option['height']}px;position:relative">
         <div class="bar-back" style="width:100%;height:100%;background:{$option['bgcolor']};position:absolute"></div>
