@@ -90,9 +90,9 @@ function plugin_bar_convert() {
 
     // バーグラフ部分作成
     $body = <<<EOD
-<div class="bar" style="width:{$option['width']}px;font-size:{$option['lsize']}px;color:{$option['lcolor']}">
+<div class="bar" style="max-width:100%;width:{$option['width']}px;font-size:{$option['lsize']}px;color:{$option['lcolor']}">
     {$label}
-    <div class="bar-graph" style="width:{$option['width']}px;height:{$option['height']}px;position:relative">
+    <div class="bar-graph" style="max-width:100%;width:{$option['width']}px;height:{$option['height']}px;position:relative">
         <div class="bar-back" style="width:100%;height:100%;background:{$option['bgcolor']};position:absolute"></div>
         <div class="bar-front" style="width:{$bar}%;height:100%;background:{$option['color']};position:absolute"></div>
     </div>
