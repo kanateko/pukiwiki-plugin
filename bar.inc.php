@@ -11,20 +11,20 @@
 function plugin_bar_convert() {
     // エラーメッセージ
 	$err_msg = array(
-		'noargs'    => '#bar | Usage: #bar(length[,label1=,label2=,size=,position=,color=,bgcolor=,width=,height=])',
-		'length'    => '#bar | Error: Length needs to be set between 0 to 100.',
+	'noargs'    => '#bar | Usage: #bar(length[,label1=,label2=,size=,position=,color=,bgcolor=,width=,height=])',
+	'length'    => '#bar | Error: Length needs to be set between 0 to 100.',
         'unknown'   => '#bar | Error: Unknown argument detected.',
         'value'     => '#bar | Error: Incorrect value detected.',
 	);
     
 	// オプション
 	$option = array(
-		'label1'     => '',        // ラベル (左)
+	'label1'     => '',        // ラベル (左)
         'label2'     => '',        // ラベル (右)
         'lsize'      => '12',      // ラベルの大きさ
-        'lcolor'     => 'inherit',  // ラベルの色
-		'color'      => '#cbd1c9', // バーの色
-		'bgcolor'    => '#8d8d8d', // 背景色
+        'lcolor'     => 'inherit', // ラベルの色
+	'color'      => '#cbd1c9', // バーの色
+	'bgcolor'    => '#8d8d8d', // 背景色
         'width'      => '300',     // バーの幅
         'height'     => '5',       // バーの高さ
 	);
