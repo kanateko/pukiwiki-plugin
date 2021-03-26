@@ -1,11 +1,13 @@
 <?php
-/*
- * License: GPLv3
- * Version: 0.1
- * Release: 2021/03/25
- * Auther: kanateko
- * Manual: https://jpngamerswiki.com/
- * Description: table内でリスト表示するためのプラグイン
+/**
+* table内でリスト表示するためのプラグイン
+*
+* @version 0.1.0
+* @author kanateko
+* @link https://jpngamerswiki.com/?54760078c9
+* @license http://www.gnu.org/licenses/gpl.ja.html GPL
+*
+* 2021-03-25 初版作成
 */
 
 function plugin_ul_convert() {

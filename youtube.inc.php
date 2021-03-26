@@ -1,18 +1,22 @@
 <?php
-/*
-* License: GPLv3
-* Version:1.23
-* Release:2018/10/09
-* Auther: kanateko
-* Manual: https://jpngamerswiki.com/?82f1460fdb
-* Description: Youtubeをページに埋め込むプラグイン。多機能。
-* -- Update --
-* 2020/02/12 (ver 1.23)
-*   CSSの設定無しでレスポンシブになるよう変更。
-*   これにより高さ指定のオプションを廃止。
-* 2020/02/11 (ver 1.21)
-*   インライン型の廃止。objectモードの廃止。ループ機能追加。
-*   ユーザー指定機能追加。キーワード指定機能追加。
+/**
+* Youtubeをページに埋め込むプラグイン
+*
+* @version 1.3.0
+* @author kanateko
+* @link https://jpngamerswiki.com/?82f1460fdb
+* @license http://www.gnu.org/licenses/gpl.ja.html GPL
+* 
+* 2020-02-12 (ver 1.3.0)
+*   レスポンシブ化
+*   ループ機能追加
+* 2020-02-11 (ver 1.2.0)
+*   インライン型の廃止
+*   objectモードの廃止
+*   ループ機能追加
+*   ユーザー指定機能追加
+*   キーワード指定機能追加
+* 2018-10-09 初版作成
 */
 
 function plugin_youtube_convert() {
@@ -52,7 +56,7 @@ function plugin_youtube_convert() {
 
 	//動画IDなどの取得
 	$id = array_shift($args);
-	$id = htmlspecialchars($id);
+	$id = htmlsc($id);
 	if (preg_match('/^(list|user|search)=(.+)/', $id, $match)) {
 		// リスト
 		$video = '?listType=' . $list_type[$match[1]] . '&list=' .$match[2];
@@ -70,7 +74,7 @@ function plugin_youtube_convert() {
 
 	// オプションの振り分け
 	foreach ($args as $arg) {
-		$arg = htmlspecialchars($arg);
+		$arg = htmlsc($arg);
 
 		if (preg_match('/^(\d+)p*x(\d+)*$/', $arg, $match)) {
 			// px指定 or 幅x高さ (旧版との互換性のため)

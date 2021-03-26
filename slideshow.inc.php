@@ -1,16 +1,15 @@
 <?php
-/*
-* License: GPLv3
-* Version:0.82
-* Release:2018/10/09
-* Auther: kanateko
-* Manual: https://jpngamerswiki.com/?ff7d0a095a
-* Description: slickを利用した画像スライドショープラグイン
-* -- Update --
-* 2020/02/10 (ver 0.82)
-* - 公開用にheadに出力するタグを修正。
-* 2020/03/10 (ver 0.821)
-* - ループ処理部分にあったバグを修正。
+/**
+* slickを利用した画像スライドショープラグイン
+*
+* @version 0.8.3
+* @author kanateko
+* @link https://jpngamerswiki.com/?ff7d0a095a
+* @license http://www.gnu.org/licenses/gpl.ja.html GPL
+* 
+* 2020-03-10 ループ処理のバグを修正 (ver 0.83)
+* 2020-02-10 コードの微調整 & 整理 (ver 0.82)
+* 2018-10-09 初版作成
 */
 
 function plugin_slideshow_init()
@@ -27,8 +26,8 @@ function plugin_slideshow_convert()
 	global $vars;
 	$args = func_get_args();
 	$option = array(
-		'speed' => '3000', // 自動再生時の再生スピード
-		'auto'  => 'true', // 自動再生のon/off
+		'speed' => '3000', //自動再生時の再生スピード
+		'auto'	=> 'true', //自動再生のon/off
 	);
 	$url_base = get_base_uri() . '?plugin=ref&amp;page='; //画像のあるページのURL
 	$contents = ''; // スライダー部分
@@ -37,7 +36,7 @@ function plugin_slideshow_convert()
 	if(func_num_args() < 1) return;
 
 	foreach ($args as $arg){
-		$arg = htmlspecialchars($arg);
+		$arg = htmlsc($arg);
 		// オプション振り分け
 		if (preg_match('/^(speed|auto)=/', $arg)) {
 			// slickの設定
@@ -56,11 +55,11 @@ function plugin_slideshow_convert()
 			}
 			// URL作成
 			$url = $url_base . $page . '&amp;src=' . $file;
-			//画像を追加する
+			// 画像を追加する
 			$contents .= <<<EOD
-	<div class="img_slide">
-		<a href = "$url"><img data-lazy="$url" /></a>
-	</div>
+<div class="img_slide">
+	<a href = "$url"><img data-lazy="$url" /></a>
+</div>
 EOD;
 		}
 	}
@@ -68,7 +67,7 @@ EOD;
 		$body = <<<EOD
 <div class='container'>
 	<div class='slick-box'>
-		$contents
+$contents
 	</div>
 </div>
 
