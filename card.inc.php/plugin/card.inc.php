@@ -25,6 +25,9 @@ define('THUMB_DIR', IMAGE_DIR . 'thumb/');
 // 短縮URLの使用/未使用
 define('USE_SHORT_URL', TRUE);
 
+// 画像圧縮ライブラリの読込
+require_once(PLUGIN_DIR . 'resize.php');
+
 function plugin_card_convert()
 {
     // メッセージ
@@ -90,11 +93,15 @@ function plugin_card_convert()
     }
 
     foreach($pagenames as $href => $pagename) {
-        // ページ名からURL、デスクリプション、更新日を取得する
+        // URLの作成
         $url = $uri . '?' . $href;
+        //デスクリプションの取得
         $description = plugin_card_make_description($pagename);
-        $date = date("Y-m-d", get_filetime($pagename));
-  
+        // 更新日の取得
+        $filetime = get_filetime($pagename);
+        $date = get_date('Y-m-d', $filetime);
+        $date_long = format_date($filetime);
+
         // サムネイルの取得 (ページでrefプラグインが使われている必要あり)
         $eyecatch = IMAGE_DIR . 'eyecatch.jpg';
         $source = get_source($pagename,true,true);
@@ -112,6 +119,7 @@ function plugin_card_convert()
         <div class="plugin-card-title">$pagename</div>
         <p class="plugin-card-description">$description</p>
         <div class="plugin-card-date"><i class="fas fa-history"></i> $date</div>
+        <div class="plugin-card-date long"><i class="fas fa-history"></i> $date_long</div>
         <a class ="plugin-card-link" href="$url"></a>
     </div>
 
@@ -193,23 +201,30 @@ function plugin_card_get_thumbnail ($uri, $pagename, $eyecatch, $match_thumb) {
  * @param string $eyecatch
  * @param array $match_thumb
  */
-function plugin_card_make_thumbnail ($pagename, $eyecatch, $match_thumb) {
+function plugin_card_make_thumbnail($pagename, $eyecatch, $match_thumb)
+{
     if (!file_exists(THUMB_DIR)) {
         // ディレクトリの確認と作成
         mkdir(THUMB_DIR, 0755);
         chmod(THUMB_DIR, 0755);
     }
-    $thumb_cache = THUMB_DIR . strtoupper(bin2hex($pagename));
-    if (file_exists($thumb_cache . '.jpg')) {
-        return $thumb_cache . '.jpg';
-    } else if (file_exists($thumb_cache . '.png')) {
-        rename($thumb_cache . '.png', $thumb_cache . '.jpg');
-        return $thumb_cache . '.jpg';
-    } else if (file_exists($thumb_cache . '.gif')) {
-        rename($thumb_cache . '.gif', $thumb_cache . '.jpg');
-        return $thumb_cache . '.jpg';
+    
+    $thumb_path = THUMB_DIR . strtoupper(bin2hex($pagename));
+    $thumb_cache = $thumb_path . '.jpg';
+
+    // 拡張子の違うキャッシュファイルを修正する
+    if (file_exists($thumb_path . '.png')) {
+        rename($thumb_path . '.png', $thumb_cache);
+    } elseif (file_exists($thumb_path . '.gif')) {
+        rename($thumb_path . '.gif', $thumb_cache);
+    }
+
+    //キャッシュがある場合、ページとキャッシュの更新日を確認する
+    if (file_exists($thumb_cache) && plugin_card_check_updates($pagename, $thumb_cache)) {
+        // キャッシュのほうが新しければキャッシュを返す
+        return $thumb_cache;
     } else {
-        // キャッシュがない場合
+        // キャッシュがないか古い場合は新たに取得する
         if (isset($match_thumb[1])) {
             // refプラグインが呼び出されている場合
             if (strpos($match_thumb[1], '/') === false) {
@@ -226,83 +241,32 @@ function plugin_card_make_thumbnail ($pagename, $eyecatch, $match_thumb) {
             $match_thumb[2] = '.jpg';
         }
         if (filesize($thumb_src) == 0) {
+            // refプラグインは呼び出されているがファイルはない場合
             $thumb_src = $eyecatch;
             $match_thumb[2] = '.jpg';
         }
+
         // サムネイルフォルダにコピーを作成
         $thumb_data = file_get_contents($thumb_src);
-        $thumb_src = $thumb_cache . $match_thumb[2];
-        file_put_contents($thumb_src, $thumb_data);   
-    }
-    // コピーをリサイズして保存
-    make_thumbnail($thumb_src, $thumb_src, 320, 180);
-    return $thumb_cache . $match_thumb[2];
-}
+        $thumb_src = $thumb_path . $match_thumb[2];
+        file_put_contents($thumb_src, $thumb_data);
 
-/**
- * 画像のサムネイルを保存する
- * @param string $srcPath
- * @param string $dstPath
- * @param int $maxWidth
- * @param int $maxHeight
- */
-function make_thumbnail($srcPath, $dstPath, $maxWidth, $maxHeight)
-{
-    list($originalWidth, $originalHeight) = getimagesize($srcPath);
-    list($canvasWidth, $canvasHeight) = get_contain_size($originalWidth, $originalHeight, $maxWidth, $maxHeight);
-    transform_image_size($srcPath, $dstPath, $canvasWidth, $canvasHeight);
-}
-
-/**
- * 画像のサイズを変形して保存する
- * @param string $srcPath
- * @param string $dstPath
- * @param int $width
- * @param int $height
- */
-function transform_image_size($srcPath, $dstPath, $width, $height)
-{
-    list($originalWidth, $originalHeight, $type) = getimagesize($srcPath);
-    switch ($type) {
-        case IMAGETYPE_JPEG:
-            $source = imagecreatefromjpeg($srcPath);
-            break;
-        case IMAGETYPE_PNG:
-            $source = imagecreatefrompng($srcPath);
-            break;
-        case IMAGETYPE_GIF:
-            $source = imagecreatefromgif($srcPath);
-            break;
-        default:
-            //throw new RuntimeException("サポートしていない画像形式です: $type");
-    }
-
-    $canvas = imagecreatetruecolor($width, $height);
-    imagecopyresampled($canvas, $source, 0, 0, 0, 0, $width, $height, $originalWidth, $originalHeight);
-    imagejpeg($canvas, $dstPath, 40);
-    imagedestroy($source);
-    imagedestroy($canvas);
-}
-
-/**
- * 内接サイズを計算する
- * @param int $width
- * @param int $height
- * @param int $containerWidth
- * @param int $containerHeight
- * @return array
- */
-function get_contain_size($width, $height, $containerWidth, $containerHeight)
-{
-    $ratio = $width / $height;
-    $containerRatio = $containerWidth / $containerHeight;
-    if ($ratio > $containerRatio) {
-        return [$containerWidth, intval($containerWidth / $ratio)];
-    } else {
-        return [intval($containerHeight * $ratio), $containerHeight];
+        // コピーをリサイズして保存
+        make_thumbnail($thumb_src, $thumb_src, 320, 180);
+        return $thumb_path . $match_thumb[2];
     }
 }
 
-
+/**
+ * サムネイルキャッシュの作成日とリンク先ページの更新日を比較する
+ * @param string $page
+ * @param string $cache
+ */
+function plugin_card_check_updates($page, $cache) {
+    $time_cache = filemtime($cache);
+    $time_page = filemtime(get_filename($page));
+    $is_new = ($time_cache > $time_page);
+    return $is_new;
+}
 
 ?>
