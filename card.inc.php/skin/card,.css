@@ -98,6 +98,11 @@
   z-index: 2;
 }
 
+.plugin-card .plugin-card-link:hover,
+.plugin-card-bigimg .plugin-card-link:hover {
+  background-color: transparent;
+}
+
 .plugin-card .plugin-card-box {
   height: 120px;
   margin: 5px;
