@@ -141,7 +141,7 @@ EOD;
 }
 
 /**
- * ページ内容からプラグインやPukiWiki構文をある程度除いた200文字を抜き出す
+ * ページ内容からプラグインやPukiWiki構文をある程度除いた100-200文字程度を抜き出す
  * @param string $pagename
  */
 function plugin_card_make_description ($pagename) {
@@ -166,7 +166,7 @@ function plugin_card_make_description ($pagename) {
     $source = preg_replace('/%%%(.*?)%%%/u', '$1', $source);
     $source = preg_replace('/%%(.*?)%%/u', '$1', $source);
     $source = preg_replace('/\/\/(.*?)$/u', '', $source);
-    $source = htmlsc(mb_substr(implode($source),0 ,200));
+    $source = htmlsc(mb_strcut(implode($source),0 ,200));
     if (empty(trim($source))) {
         $source = 'クリック or タップでこのページに移動します。';
     }
