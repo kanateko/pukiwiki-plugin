@@ -2,11 +2,13 @@
 /**
  * ブログカード風にページを並べるプラグイン
  *
- * @version 0.6.0
+ * @version 0.7.0
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
  * -- Update --
+ * 2021-04-01 短縮URLライブラリ未導入でも動くよう修正
+ *            エイリアスに対応
  * 2021-03-31 カラム数指定機能追加
  *            サムネイルキャッシュ機能追加
  * 2021-03-30 初版作成
@@ -20,15 +22,17 @@ define('WRAPPER_WIDTH', '770px');
 // サムネイル作成
 define('ALLOW_MAKE_THUMBNAILS', TRUE);
 define('THUMB_DIR', IMAGE_DIR . 'thumb/');
+// 短縮URLの使用/未使用
+define('USE_SHORT_URL', TRUE);
 
 function plugin_card_convert()
 {
     // メッセージ
     $msg = array (
-        'usage'    =>    '#card([2-6]){{ links }}',
+        'usage'    =>    '#card([2-6]){{ internal links }}',
         'unknown'  =>    '#card Error: Unknown argument. -> ',
-        'expired'  =>    '#card Error: The link is expired. -> ',
-        'range'    =>    '#card Error: The number of columns must be set between 2 to 6'
+        'noexists' =>    '#card Error: There is no such page. -> ',
+        'range'    =>    '#card Error: The number of columns must be set between 1 to 6'
     );
 
     // カラム数関連
@@ -54,7 +58,10 @@ function plugin_card_convert()
     if (!empty($args)) {
         $arg = htmlsc($args[0]);
         if(is_numeric($arg)) {
-            if ($arg > 1 && $arg < 7) {
+            if ($arg == 1) {
+                unset($arg);
+            } else if ($arg > 1 && $arg < 7) {
+                // ページ幅770pxでだいたいいい感じに収まるよう調整
                 $cols['width'] = (750 / $arg - (10 - ($arg - 1)));
                 if ($arg > 2) {
                     // 3列以上の場合はサムネイルを最大化 & デスクリプション非表示判定
@@ -67,17 +74,27 @@ function plugin_card_convert()
             return $msg['unknown'] . $arg;
         }
     }    
-
     // ページ名の取得
-    preg_match_all('/<a.*?>(.+?)<\/a>/', $list, $matches);
-    foreach($matches[1] as $pagename) {
+    $pagenames = array();
+    preg_match_all('/<a.*?href="\.\/\?([^\.]+?)".*?>(.+?)<\/a>/', $list, $matches);
+    
+    foreach ($matches[1] as $href) {
+        if (USE_SHORT_URL) {
+            // URL短縮ライブラリを導入済みの場合
+            $pagenames[$href] = get_pagename_from_short_url($href);
+        } else {
+            // URL短縮ライブラリを未導入の場合
+            $pagenames[$href] = urldecode($href);
+        }
+        if (!file_exists(get_filename($pagenames[$href]))) return $msg['noexists'] . $pagenames[$href];
+    }
+
+    foreach($pagenames as $href => $pagename) {
         // ページ名からURL、デスクリプション、更新日を取得する
-        // $url = $uri . '?' . urlencode($pagename);
-        $url = $uri . get_short_url_from_pagename($pagename);
+        $url = $uri . '?' . $href;
         $description = plugin_card_make_description($pagename);
         $date = date("Y-m-d", get_filetime($pagename));
   
-        if (!file_exists(get_filename($pagename))) return $msg['expired'] . $pagename;
         // サムネイルの取得 (ページでrefプラグインが使われている必要あり)
         $eyecatch = IMAGE_DIR . 'eyecatch.jpg';
         $source = get_source($pagename,true,true);
@@ -153,16 +170,15 @@ function plugin_card_get_thumbnail ($uri, $pagename, $eyecatch, $match_thumb) {
         // refプラグインが呼び出されている場合
         if (strpos($match_thumb[1], '/') === false) {
             // そのページに添付されている場合
-            $thumb_src = file_exists(UPLOAD_DIR . strtoupper(bin2hex($pagename)) . '_' . strtoupper(bin2hex($match_thumb[1])))
-                         ? $uri . '?plugin=ref&page=' . urlencode($pagename) . '&src=' . $match_thumb[1]
-                         : $eyecatch;
+            $attachfile = UPLOAD_DIR . strtoupper(bin2hex($pagename)) . '_' . strtoupper(bin2hex($match_thumb[1]));
+            $ref_url = $uri . '?plugin=ref&page=' . urlencode($pagename) . '&src=' . $match_thumb[1];
         } else {
             // 他のページに添付されている場合
             list($refer, $src) = explode('/', $match_thumb[1]);
-            $thumb_src = file_exists(UPLOAD_DIR . strtoupper(bin2hex($refer)) . '_' . strtoupper(bin2hex($src)))
-                         ? $uri . '?plugin=ref&page=' . urlencode($refer) . '&src=' . $src
-                         : $eyecatch;
+            $attachfile = UPLOAD_DIR . strtoupper(bin2hex($refer)) . '_' . strtoupper(bin2hex($src));
+            $ref_url = $uri . '?plugin=ref&page=' . urlencode($refer) . '&src=' . $src;
         }
+        $thumb_src = file_exists($attachfile) ? $ref_url : $eyecatch;
     } else {
         // refプラグインが呼び出されてない場合
         $thumb_src = $eyecatch;
