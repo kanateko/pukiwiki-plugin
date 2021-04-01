@@ -2,13 +2,15 @@
 /**
  * ブログカード風にページを並べるプラグイン
  *
- * @version 0.7.0
+ * @version 1.0
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
  * -- Update --
  * 2021-04-01 短縮URLライブラリ未導入でも動くよう修正
  *            エイリアスに対応
+ *            キャッシュ更新機能追加
+ *            未改造状態のPukiWiki向けにいくつかの設定を追加
  * 2021-03-31 カラム数指定機能追加
  *            サムネイルキャッシュ機能追加
  * 2021-03-30 初版作成
@@ -17,13 +19,15 @@
 // デスクリプションを非表示にするカラム数
 define('NO_DESC_NUM', 4);
 // 固定レイアウト化
-define('FIX_WIDTH', FALSE);
+define('FIX_WIDTH', TRUE);
 define('WRAPPER_WIDTH', '770px');
 // サムネイル作成
 define('ALLOW_MAKE_THUMBNAILS', TRUE);
 define('THUMB_DIR', IMAGE_DIR . 'thumb/');
 // 短縮URLの使用/未使用
-define('USE_SHORT_URL', TRUE);
+define('USE_SHORT_URL', FALSE);
+// FontAwesomeの使用/未使用
+define('USE_FONTAWESOME_ICON', FALSE);
 
 // 画像圧縮ライブラリの読込
 require_once(PLUGIN_DIR . 'resize.php');
@@ -53,6 +57,7 @@ function plugin_card_convert()
     $list = convert_html(array_pop($args));
     $uri = get_base_uri();
     $card_list = '';
+    $clock_icon = USE_FONTAWESOME_ICON ? '<i class="fas fa-history">' : '&#128339;';
 
     // 幅固定
     $fix_width = FIX_WIDTH ? ' style="width:' . WRAPPER_WIDTH . '"' : '';    
@@ -119,7 +124,7 @@ function plugin_card_convert()
         <div class="plugin-card-title">$pagename</div>
         <p class="plugin-card-description">$description</p>
         <div class="plugin-card-date"><i class="fas fa-history"></i> $date</div>
-        <div class="plugin-card-date long"><i class="fas fa-history"></i> $date_long</div>
+        <div class="plugin-card-date long">$clock_icon</i> $date_long</div>
         <a class ="plugin-card-link" href="$url"></a>
     </div>
 
@@ -152,13 +157,15 @@ function plugin_card_make_description ($pagename) {
     $source = preg_replace('/^\|(.*?)$/u', '', $source);
     $source = preg_replace('/^\*(.*?)$/u', '', $source);
     $source = preg_replace('/^[\-\+]{1,3}(.*?)$/u', '$1', $source);
+    $source = preg_replace('/^>(.*?)$/u', '$1', $source);
     $source = preg_replace('/\[\[(.*?)>(.*?)\]\]/u', '$1', $source);
+    $source = preg_replace('/\[\[(.*?):(.*?)\]\]/u', '$1', $source);
     $source = preg_replace('/\[\[(.*?)\]\]/u', '$1', $source);
     $source = preg_replace('/\'\'\'(.*?)\'\'\'/u', '$1', $source);
     $source = preg_replace('/\'\'(.*?)\'\'/u', '$1', $source);
     $source = preg_replace('/%%%(.*?)%%%/u', '$1', $source);
     $source = preg_replace('/%%(.*?)%%/u', '$1', $source);
-    $source = preg_replace('/\/\/(.*?)/u', '', $source);
+    $source = preg_replace('/\/\/(.*?)$/u', '', $source);
     $source = htmlsc(mb_substr(implode($source),0 ,200));
     if (empty(trim($source))) {
         $source = 'クリック or タップでこのページに移動します。';
