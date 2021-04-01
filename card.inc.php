@@ -25,7 +25,7 @@ function plugin_card_convert()
 {
     // メッセージ
     $msg = array (
-        'usage'    =>    '#card([2-6]){{' . "\n" . 'links' . "\n" . '}}',
+        'usage'    =>    '#card([2-6]){{ links }}',
         'unknown'  =>    '#card Error: Unknown argument. -> ',
         'expired'  =>    '#card Error: The link is expired. -> ',
         'range'    =>    '#card Error: The number of columns must be set between 2 to 6'
@@ -119,8 +119,11 @@ function plugin_card_make_description ($pagename) {
     $source = preg_replace('/^\#(.*?)$/u', '', $source);
     $source = preg_replace('/^RIGHT:|LEFT:|CENTER:|SIZE\(.*?\):|COLOR\(.*?\):/u', '', $source);
     $source = preg_replace('/^\}(.*?)$/u', '', $source);
-    $source = preg_replace('/&(.*?)\{(.*?)\};/u', '$2', $source);
-    $source = preg_replace('/&(.*?);/u', '', $source);
+    $source = preg_replace('/\&null\{(.*?)\};/u', '', $source);
+    $source = preg_replace('/\&(.*?)\{(.*?)\};/u', '$2', $source);
+    $source = preg_replace('/\&(.*?)\((.*?)\);/u', '', $source);
+    $source = preg_replace('/\&([a-zA-Z0-9]*?);/u', '', $source);
+    $source = preg_replace('/\&(.*?);/u', '$1', $source);
     $source = preg_replace('/^\|(.*?)$/u', '', $source);
     $source = preg_replace('/^\*(.*?)$/u', '', $source);
     $source = preg_replace('/^[\-\+]{1,3}(.*?)$/u', '$1', $source);
