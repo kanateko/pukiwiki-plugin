@@ -1,6 +1,7 @@
 /* card.inc.php */
 .plugin-card,
 .plugin-card-bigimg {
+    max-width: 100%;
     display: -webkit-flex;
     display: flex;
     flex-wrap: wrap;
