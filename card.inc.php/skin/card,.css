@@ -75,11 +75,17 @@
 
 .plugin-card .plugin-card-date,
 .plugin-card-bigimg .plugin-card-date {
+  display: none;
   position: absolute;
   text-align: right;
   font-size: .8em;
   bottom: 0;
   right: 8px;
+}
+
+.plugin-card .plugin-card-date.long,
+.plugin-card-bigimg .plugin-card-date.long {
+  display: block;
 }
 
 .plugin-card .plugin-card-link,
@@ -137,6 +143,14 @@
   display: none;
 }
 
+.plugin-card-bigimg.nodesc .plugin-card-date {
+  display: block;
+}
+
+.plugin-card-bigimg.nodesc .plugin-card-date.long {
+  display: none;
+}
+
 @media screen and (max-width: 479px) {
   /* card.inc.php */
   .plugin-card,
@@ -171,6 +185,14 @@
   .plugin-card.nodesc .plugin-card-description,
   .plugin-card-bigimg.nodesc .plugin-card-description {
     display: -webkit-box;
+  }
+  .plugin-card.nodesc .plugin-card-date,
+  .plugin-card-bigimg.nodesc .plugin-card-date {
+    display: none;
+  }
+  .plugin-card.nodesc .plugin-card-date.long,
+  .plugin-card-bigimg.nodesc .plugin-card-date.long {
+    display: block;
   }
 }
 /*# sourceMappingURL=card,.css.map */

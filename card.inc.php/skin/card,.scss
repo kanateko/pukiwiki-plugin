@@ -58,11 +58,16 @@
     }
 
     .plugin-card-date {
+        display: none;
         position: absolute;
         text-align: right;
         font-size: .8em;
         bottom: 0;
         right: 8px;
+
+        &.long {
+            display: block;
+        }
     }
 
     .plugin-card-link {
@@ -121,6 +126,12 @@
         .plugin-card-description {
             display: none;
         }
+        .plugin-card-date {
+            display: block;
+            &.long {
+                display: none;
+            }
+        }
     }
 }
     @media screen and (max-width: 479px) {    
@@ -142,7 +153,6 @@
                     display: block;
                     padding-top: 56.25%;
                 }
-                
                 img {
                     position: absolute;
                     top: 0;
@@ -152,7 +162,12 @@
                 .plugin-card-description {
                     display: -webkit-box;
                 }
+                .plugin-card-date {
+                    display: none;
+                    &.long {
+                        display: block;
+                    }
+                }
             }
         }
     }
-
