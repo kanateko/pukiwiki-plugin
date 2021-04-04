@@ -2,11 +2,14 @@
 /**
  * ブログカード風にページを並べるプラグイン
  *
- * @version 1.0
+ * @version 1.1
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
- * -- Update --
+ * -- Updates --
+ * 2021-04-04 カラム数指定時に確実に引数をintで取得できるよう修正
+ *            カードの高さをプラグイン側で調整するよう変更
+ *            カラム数2以下の場合はスマホでも横長のカードになるよう変更 (cssの変更のみ)
  * 2021-04-01 短縮URLライブラリ未導入でも動くよう修正
  *            エイリアスに対応
  *            キャッシュ更新機能追加
@@ -46,6 +49,7 @@ function plugin_card_convert()
     $cols = array (
         'num'      =>    1,
         'width'    =>    600,
+        'height'   =>    120,
         'class'    =>    ''
     );
 
@@ -64,24 +68,27 @@ function plugin_card_convert()
 
     // カラム数設定
     if (!empty($args)) {
-        $arg = htmlsc($args[0]);
-        if(is_numeric($arg)) {
-            if ($arg == 1) {
-                unset($arg);
-            } else if ($arg > 1 && $arg < 7) {
-                // ページ幅770pxでだいたいいい感じに収まるよう調整
-                $cols['width'] = (750 / $arg - (10 - ($arg - 1)));
+        if (is_numeric($args[0])) {
+            // 引数が数字かどうかをチェック
+            $arg = intval($args[0]);
+            if ($arg > 1 && $arg < 7) {
+                // ページ幅770pxでだいたいいい感じに収まるようカードの幅を調整
+                $cols['width'] = 750 / $arg - 6;
                 if ($arg > 2) {
                     // 3列以上の場合はサムネイルを最大化 & デスクリプション非表示判定
                     $cols['class'] = $arg < NO_DESC_NUM ? '-bigimg' : '-bigimg nodesc';
+                    $cols['height'] = $arg < NO_DESC_NUM ? 260 : $cols['width'] * 0.5625 + 80;
                 }
-            } else {
+            } else if ($arg < 1 || $arg > 6) {
+                // 1-6以外の数字場合はエラー
                 return $msg['range'];
             }
-        } else {
-            return $msg['unknown'] . $arg;
+        }else {
+            // 数字じゃなければエラー
+            return $msg['unknown'] . htmlsc($args[0]);
         }
-    }    
+    }
+
     // ページ名の取得
     $pagenames = array();
     preg_match_all('/<a.*?href="\.\/\?([^\.]+?)".*?>(.+?)<\/a>/', $list, $matches);
@@ -117,7 +124,7 @@ function plugin_card_convert()
             $thumb = plugin_card_get_thumbnail($uri, $pagename, $eyecatch, $match_thumb);
         }
         $card = <<<EOD
-    <div class="plugin-card-box" style="width:{$cols['width']}px;">
+    <div class="plugin-card-box" style="width:{$cols['width']}px;height:{$cols['height']}px;">
         <div class="plugin-card-img">
             <img src="$thumb" alt="$pagename" >
         </div>
@@ -158,9 +165,9 @@ function plugin_card_make_description ($pagename) {
     $source = preg_replace('/^\*(.*?)$/u', '', $source);
     $source = preg_replace('/^[\-\+]{1,3}(.*?)$/u', '$1', $source);
     $source = preg_replace('/^>(.*?)$/u', '$1', $source);
-    $source = preg_replace('/\[\[(.*?)>(.*?)\]\]/u', '$1', $source);
-    $source = preg_replace('/\[\[(.*?):(.*?)\]\]/u', '$1', $source);
-    $source = preg_replace('/\[\[(.*?)\]\]/u', '$1', $source);
+    $source = preg_replace('/\[\[([^\]>]*?)>([^\]]*?)\]\]/u', '$1', $source);
+    $source = preg_replace('/\[\[([^\]:]*?):([^\]]*?)\]\]/u', '$1', $source);
+    $source = preg_replace('/\[\[([^\]]*?)\]\]/u', '$1', $source);
     $source = preg_replace('/\'\'\'(.*?)\'\'\'/u', '$1', $source);
     $source = preg_replace('/\'\'(.*?)\'\'/u', '$1', $source);
     $source = preg_replace('/%%%(.*?)%%%/u', '$1', $source);

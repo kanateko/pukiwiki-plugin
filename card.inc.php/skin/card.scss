@@ -1,0 +1,159 @@
+/* card.inc.php */
+.plugin-card,
+.plugin-card-bigimg {
+    display: -webkit-flex;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+
+    .plugin-card-box {
+        padding: 0;
+        position: relative;
+        word-wrap: break-word;
+        word-break: break-all;
+        border: 1px solid rgba(155, 155, 155, 0.5);
+        border-radius: 4px;
+        overflow: hidden;
+        transition: all 0.3s;
+        box-shadow: 0 0 rgba(0, 0, 0, 0.5);
+        
+        &:hover {
+           transform: translate(2px, -5px);
+           box-shadow: 0 5px 10px -5px rgba(0, 0, 0, 0.5);
+        }
+    }
+
+    .plugin-card-img {
+        position: relative;
+        overflow: hidden;
+        
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    }
+
+    .plugin-card-title {
+        font-size: 1.2em;
+        font-weight: bold;
+        margin: 5px;
+        line-height: 110%;
+        color: inherit;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+    }
+
+    .plugin-card-description {
+        line-height: 1.5em;
+        font-size: .8em;
+        margin: 5px;
+        color: gray;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 4;
+        -webkit-box-orient: vertical;
+    }
+
+    .plugin-card-date {
+        display: none;
+        position: absolute;
+        text-align: right;
+        font-size: .8em;
+        bottom: 0;
+        right: 8px;
+
+        &.long {
+            display: block;
+        }
+    }
+
+    .plugin-card-link {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 2;
+    }
+}
+.plugin-card {
+    .plugin-card-box {
+        height: 120px;
+        margin: 5px;
+    }
+    .plugin-card-img {
+        width: 120px;
+        height: 100%;
+        float: left;
+        margin-right: 10px;
+    }
+
+}
+.plugin-card-bigimg {
+    .plugin-card-box {
+        margin: 5px 3px;
+    }
+    .plugin-card-img {
+        &::before {
+            content:"";
+            display: block;
+            padding-top: 56.25%;
+        }
+        
+        img {
+            position: absolute;
+            top: 0;
+        }
+    }
+    &.nodesc {
+        .plugin-card-title {
+            font-size: 1.1em;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+        .plugin-card-description {
+            display: none;
+        }
+        .plugin-card-date {
+            display: block;
+            &.long {
+                display: none;
+            }
+        }
+    }
+}
+
+@media screen and (max-width: 479px) {
+    /* card.inc.php */
+    .plugin-card,
+    .plugin-card-bigimg {
+        justify-content: center;
+    }
+    .plugin-card {
+        width: 100%;
+        .plugin-card-box {
+            margin: 5px 0;
+        }
+    }
+    .plugin-card-bigimg {
+        .plugin-card-box {
+            width: 320px!important;
+            height: 300px!important;
+            margin: 10px 0;
+        }
+        &.nodesc {
+            .plugin-card-description {
+                display: -webkit-box;
+            }
+            .plugin-card-date {
+                display: none;
+                &.long {
+                    display: block;
+                }
+            }
+        }
+    }
+}
