@@ -2,12 +2,16 @@
 /**
  * ブログカード風にページを並べるプラグイン
  *
- * @version 1.1
+ * @version 1.2
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
  * -- Updates --
- * 2021-04-04 カラム数指定時に確実に引数をintで取得できるよう修正
+ * 2021-04-07 ベースネーム表示機能を追加
+ * 　　　　　　上記に付随してカラム数を複数回指定した場合にエラーを返すよう変更
+ *            デスクリプション作成時の正規表現を修正
+ *            更新日アイコンの表示に関するバグを修正
+ * 2021-04-04 カラム数指定時に確実にintを取得できるよう修正
  *            カードの高さをプラグイン側で調整するよう変更
  *            カラム数2以下の場合はスマホでも横長のカードになるよう変更 (cssの変更のみ)
  * 2021-04-01 短縮URLライブラリ未導入でも動くよう修正
@@ -29,8 +33,10 @@ define('ALLOW_MAKE_THUMBNAILS', TRUE);
 define('THUMB_DIR', IMAGE_DIR . 'thumb/');
 // 短縮URLの使用/未使用
 define('USE_SHORT_URL', FALSE);
-// FontAwesomeの使用/未使用
+// FontAwesomeの使用/未使用 (更新日のアイコン)
 define('USE_FONTAWESOME_ICON', FALSE);
+// ベースネーム表示の強制
+define('FORCE_BASENAME', FALSE);
 
 // 画像圧縮ライブラリの読込
 require_once(PLUGIN_DIR . 'resize.php');
@@ -42,7 +48,8 @@ function plugin_card_convert()
         'usage'    =>    '#card([2-6]){{ internal links }}',
         'unknown'  =>    '#card Error: Unknown argument. -> ',
         'noexists' =>    '#card Error: There is no such page. -> ',
-        'range'    =>    '#card Error: The number of columns must be set between 1 to 6'
+        'range'    =>    '#card Error: The number of columns must be set between 1 to 6',
+        'doubled'  =>    '#card Error: The number of columns can be set only once.'
     );
 
     // カラム数関連
@@ -50,42 +57,53 @@ function plugin_card_convert()
         'num'      =>    1,
         'width'    =>    600,
         'height'   =>    120,
-        'class'    =>    ''
+        'class'    =>    '',
+        'isset'   =>    false
     );
 
     // 引数がなければ使い方表示
     if (func_num_args() == 0) return $msg['usage'];
 
-    // 変数
+    // 変数の初期設定
     $args = func_get_args();
     $list = convert_html(array_pop($args));
     $uri = get_base_uri();
     $card_list = '';
-    $clock_icon = USE_FONTAWESOME_ICON ? '<i class="fas fa-history">' : '&#128339;';
+    $clock_icon = USE_FONTAWESOME_ICON ? '<i class="fas fa-history"></i>' : '<span>&#128339;</span>';
+    $show_basename = FORCE_BASENAME; 
 
     // 幅固定
     $fix_width = FIX_WIDTH ? ' style="width:' . WRAPPER_WIDTH . '"' : '';    
 
-    // カラム数設定
+    // オプション振り分け
     if (!empty($args)) {
-        if (is_numeric($args[0])) {
-            // 引数が数字かどうかをチェック
-            $arg = intval($args[0]);
-            if ($arg > 1 && $arg < 7) {
-                // ページ幅770pxでだいたいいい感じに収まるようカードの幅を調整
-                $cols['width'] = 750 / $arg - 6;
-                if ($arg > 2) {
-                    // 3列以上の場合はサムネイルを最大化 & デスクリプション非表示判定
-                    $cols['class'] = $arg < NO_DESC_NUM ? '-bigimg' : '-bigimg nodesc';
-                    $cols['height'] = $arg < NO_DESC_NUM ? 260 : $cols['width'] * 0.5625 + 80;
+        foreach ($args as $arg) {
+            if ($arg == 'base') {
+                // ベースネーム表示
+                $show_basename = true;
+            } else if (is_numeric($arg)) {
+                if ($cols['isset']) return $msg['doubled'];
+                // 数字1の場合はカラム数設定
+                $arg = intval($arg);
+                if ($arg === 1) {
+                    continue;
+                } else if ($arg > 1 && $arg < 7) {
+                    // ページ幅770pxでだいたいいい感じに収まるようカードの幅を調整
+                    $cols['width'] = 720 / $arg - 6;
+                    if ($arg > 2) {
+                        // 3列以上の場合はサムネイルを最大化 & デスクリプション非表示判定
+                        $cols['class'] = $arg < NO_DESC_NUM ? '-bigimg' : '-bigimg nodesc';
+                        $cols['height'] = $arg < NO_DESC_NUM ? 260 : $cols['width'] * 0.5625 + 80;
+                    }
+                } else {
+                    // 1-6以外の数字場合はエラー
+                    return $msg['range'];
                 }
-            } else if ($arg < 1 || $arg > 6) {
-                // 1-6以外の数字場合はエラー
-                return $msg['range'];
+                $cols['isset'] = true;
+            } else {
+                // 不明な引数の場合はエラー
+                return $msg['unknown'] . htmlsc($arg);
             }
-        }else {
-            // 数字じゃなければエラー
-            return $msg['unknown'] . htmlsc($args[0]);
         }
     }
 
@@ -123,19 +141,25 @@ function plugin_card_convert()
         } else {
             $thumb = plugin_card_get_thumbnail($uri, $pagename, $eyecatch, $match_thumb);
         }
+
+        // ページタイトルのベースネーム表示化
+        $card_title = $show_basename ? array_pop(explode('/', $pagename)) : $pagename;
+        
+        // カード作成
         $card = <<<EOD
     <div class="plugin-card-box" style="width:{$cols['width']}px;height:{$cols['height']}px;">
         <div class="plugin-card-img">
             <img src="$thumb" alt="$pagename" >
         </div>
-        <div class="plugin-card-title">$pagename</div>
+        <div class="plugin-card-title">$card_title</div>
         <p class="plugin-card-description">$description</p>
-        <div class="plugin-card-date"><i class="fas fa-history"></i> $date</div>
-        <div class="plugin-card-date long">$clock_icon</i> $date_long</div>
+        <div class="plugin-card-date">$clock_icon $date</div>
+        <div class="plugin-card-date long">$clock_icon $date_long</div>
         <a class ="plugin-card-link" href="$url"></a>
     </div>
 
 EOD;
+        // カードをリストに追加
         $card_list .= $card . "\n";
     }
 
@@ -157,10 +181,10 @@ function plugin_card_make_description ($pagename) {
     $source = preg_replace('/^RIGHT:|LEFT:|CENTER:|SIZE\(.*?\):|COLOR\(.*?\):/u', '', $source);
     $source = preg_replace('/^\}(.*?)$/u', '', $source);
     $source = preg_replace('/\&null\{(.*?)\};/u', '', $source);
-    $source = preg_replace('/\&(.*?)\{(.*?)\};/u', '$2', $source);
-    $source = preg_replace('/\&(.*?)\((.*?)\);/u', '', $source);
+    $source = preg_replace('/\&([^;\(\{]*?)\{(.*?)\};/u', '$2', $source);
+    $source = preg_replace('/\&([^;\(\{]*?)\((.*?)\);/u', '', $source);
     $source = preg_replace('/\&([a-zA-Z0-9]*?);/u', '', $source);
-    $source = preg_replace('/\&(.*?);/u', '$1', $source);
+    $source = preg_replace('/\&([^;]*?);/u', '$1', $source);
     $source = preg_replace('/^\|(.*?)$/u', '', $source);
     $source = preg_replace('/^\*(.*?)$/u', '', $source);
     $source = preg_replace('/^[\-\+]{1,3}(.*?)$/u', '$1', $source);
