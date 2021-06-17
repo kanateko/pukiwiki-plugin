@@ -14,7 +14,7 @@
  * 2021-06-16 初版作成
  */
 
- // アップロード可能なファイルの最大サイズ
+// アップロード可能なファイルの最大サイズ
 define('PLUGIN_GALLERY_MAX_FILESIZE', (2048 * 1024)); // default: 2MB
 
 function plugin_gallery_init()
@@ -32,7 +32,7 @@ function plugin_gallery_convert()
 
     // エラーメッセージ類
     $_err = array (
-        'usage'    =>  '#gallery([width=][noadd]){{<br />>image>caption<br />}}',
+        'usage'    =>  '#gallery([width=][noadd]){{<br />image>caption<br />}}',
         'unknown'  =>  '#gallery Error: Unknown argument -> ',
     );
 
@@ -144,7 +144,7 @@ EOD;
 
         // ページ内容を書き換え
         $postdata_old = get_source($page, TRUE, TRUE);
-        preg_match_all('/(#gallery[^{]*?{{\n(?:[^}]+?\n)*)}}/', $postdata_old, $matches);
+        preg_match_all('/(#gallery[^{]*?{{\n(?:[^}]*?\n)*)}}/', $postdata_old, $matches);
         $gallery_items = $matches[1][$gallery_no];
         $postdata = str_replace($gallery_items, $gallery_items . $new_item . "\n", $postdata_old);
         page_write($page, $postdata, FALSE);
