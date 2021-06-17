@@ -6,6 +6,8 @@
 }
 .gallery-item {
     position: relative;
+    max-width: 100%;
+    height: auto;
     margin: 8px 6px;
     border: 5px solid rgba(60,60,60,.8);
     border-radius: 4px;
@@ -18,7 +20,7 @@
     position: absolute;
     bottom: 0;
     padding: 3px 5px;
-    width: 100%;
+    width: calc(100% - 10px);
     max-height: 40%;
     min-height: 18px;
     background: linear-gradient(to top, rgba(0,0,0,.9) 20%, transparent);
@@ -26,7 +28,5 @@
     font-size: .9em;
 }
 .gallery-source {
-    max-width: 300px;
-    height: auto;
     transition: transform .2s;
 }
