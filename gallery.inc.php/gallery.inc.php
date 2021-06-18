@@ -2,11 +2,12 @@
 /**
  * photoswipe版 画像のギャラリー表示プラグイン
  * 
- * @version 0.6
+ * @version 0.7
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
  * -- Updates --
+ * 2021-06-19 添付されたファイルのフォーマット判別を厳正化
  * 2021-06-18 使用するライブラリをlightnox.jsからphotoswipe.jsに変更
  * 2021-06-17 画像追加機能を追加
  *            他のページの添付画像を表示する機能を追加
@@ -92,7 +93,7 @@ function plugin_gallery_convert()
 
     // ギャラリーの作成
     $gallery = <<<EOD
-<div class="plugin-gallery" data-pswp>
+<div class="plugin-gallery" id="gallery-$gallery_counts" data-pswp>
 $item
 </div>
 <div class="gallery-add"{$option['noadd']}>
@@ -108,13 +109,13 @@ EOD;
     
 }
 
-function plugin_gallery_action ()
+function plugin_gallery_action()
 {
     global $vars;
     $page = $vars['page'];
     $gallery_no = $vars['gallery_no'];
+    $file = $_FILES['attach_file'];
     $max_size = number_format(PLUGIN_GALLERY_MAX_FILESIZE/1024);
-    $new_item = '';
 
     // 画像追加用フォーム
     $body = <<<EOD
@@ -133,13 +134,17 @@ function plugin_gallery_action ()
 EOD;
 
     // 添付画像があればアップロード
-    if (isset($_FILES['attach_file']) && is_uploaded_file($_FILES['attach_file']['tmp_name'])
-     && $_FILES['attach_file']['size'] < PLUGIN_GALLERY_MAX_FILESIZE) {
-        $t_file = $_FILES['attach_file']['tmp_name'];
-        $file = $_FILES['attach_file']['name'];
-        $attach_name = strtoupper(bin2hex($page)) . '_' . strtoupper(bin2hex($file));
-        move_uploaded_file($t_file, UPLOAD_DIR . $attach_name);
-        $new_item = $file;
+    if (isset($file) && is_uploaded_file($file['tmp_name'])) {
+        // ファイルがアップロードに適しているか判定
+        $upload_err = plugin_gallery_check_file($file, $max_size);
+        if ($upload_err !== false) {
+            return array('msg' => '画像を追加', 'body' => $upload_err . $body); 
+        }
+
+        // アップロードされた画像を保存
+        $attach_name = strtoupper(bin2hex($page)) . '_' . strtoupper(bin2hex($file['name']));
+        move_uploaded_file($file['tmp_name'], UPLOAD_DIR . $attach_name);
+        $new_item = $file['name'];
     
         // キャプションの有無を判別
         if (!empty($_POST['caption'])) {
@@ -147,11 +152,11 @@ EOD;
         }
 
         // ページ内容を書き換え
-        $postdata_old = get_source($page, TRUE, TRUE);
+        $postdata_old = get_source($page, true, true);
         preg_match_all('/(#gallery[^{]*?{{\n(?:[^}]*?\n)*)}}/', $postdata_old, $matches);
         $gallery_items = $matches[1][$gallery_no];
         $postdata = str_replace($gallery_items, $gallery_items . $new_item . "\n", $postdata_old);
-        page_write($page, $postdata, FALSE);
+        page_write($page, $postdata, false);
 
         // 処理が終わったら元のページに戻る
         $uri = get_base_uri() . get_short_url_from_pagename($page);
@@ -159,5 +164,29 @@ EOD;
     }
 
     return array('msg' => '画像を追加', 'body' => $body);
+}
+
+/**
+ * 添付ファイルチェック
+ */
+function plugin_gallery_check_file($file, $max_size)
+{
+    $upload_err = array (
+        'size'    =>  '<span>ファイルサイズが' . $max_size . 'KBを超えています。</span><br />' . "\n",
+        'format'  =>  '<span>画像ファイル （jpg, png, gif）以外はアップロードできません。</span><br />' . "\n"
+    );
+
+    // 最大サイズ
+    if ($file['size'] > PLUGIN_GALLERY_MAX_FILESIZE) {
+        return $upload_err['size'];
+    }
+
+    // フォーマット
+    $mime_type = getimagesize($file['tmp_name'])['mime'];
+    if(!preg_match('/image\/(jpeg|png|gif)/i', $mime_type)) {
+        return $upload_err['format'];
+    }
+
+    return false;
 }
 ?>
