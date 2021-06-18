@@ -1,13 +1,13 @@
 <?php
 /**
- * photoswipe版 画像のギャラリー表示プラグイン
+ * lightbox版 画像のギャラリー表示プラグイン
  * 
- * @version 0.6
+ * @version 0.5
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
  * -- Updates --
- * 2021-06-18 使用するライブラリをlightnox.jsからphotoswipe.jsに変更
+ * 
  * 2021-06-17 画像追加機能を追加
  *            他のページの添付画像を表示する機能を追加
  *            画像の横幅を指定する機能を追加
@@ -17,15 +17,12 @@
 // アップロード可能なファイルの最大サイズ
 define('PLUGIN_GALLERY_MAX_FILESIZE', (2048 * 1024)); // default: 2MB
 
-function plugin_gallery_init()
+function plugin_gallery_lb_init()
 {
     global $head_tags;
 	//jsとcssを読み込む
-	$head_tags[] = '<script src="' . SKIN_DIR . 'pswp/photoswipe.min.js" charset="utf-8"></script>';
-    $head_tags[] = '<script src="' . SKIN_DIR . 'pswp/photoswipe-ui-default.min.js" charset="utf-8"></script>';
-    $head_tags[] = '<script src="' . SKIN_DIR . 'pswp/photoswipe-simplify.min.js" charset="utf-8"></script>';
-    $head_tags[] = '<link rel="stylesheet" href="' . SKIN_DIR . 'pswp/photoswipe.css" />';
-	$head_tags[] = '<link rel="stylesheet" href="' . SKIN_DIR . 'pswp/default-skin/default-skin.css" />';
+	$head_tags[] = '<script src="' . SKIN_DIR . 'lb/js/lightbox.min.js"></script>';
+	$head_tags[] = '<link rel="stylesheet" href="' . SKIN_DIR . 'lb/css/lightbox.min.css" />';
 }
 
 function plugin_gallery_convert()
@@ -42,7 +39,7 @@ function plugin_gallery_convert()
     // オプション
     $option = array (
         'width'    =>  '300',
-        'noadd'    =>  '',
+        'noadd'      =>  '',
     );
 
     $args = func_get_args();
@@ -82,25 +79,24 @@ function plugin_gallery_convert()
         if (strpos($image, '>') !== false) {
             list($image, $cap) = explode('>', $image);
             $item .= '<figure class="gallery-item" style="width:' . $option['width'] . 'px"><a href="' . $url  . '&src=' . $image .'"
-             class="gallery-thumb" data-caption="' . $cap . '"><img class="gallery-source" src="' . $url  . '&src=' . $image .'"></a>
+             class="gallery-thumb" data-lightbox="gallery-' . $gallery_counts . '"
+              data-title="' . $cap . '"><img class="gallery-source" src="' . $url  . '&src=' . $image .'"></a>
               <figcaption class="gallery-caption">' . $cap . '</figcaption></figure>' . "\n";
         } else {
             $item .= '<figure class="gallery-item" style="width:' . $option['width'] . 'px"><a href="' . $url  . '&src=' . $image .'"
-             class="gallery-thumb"><img class="gallery-source" src="' . $url  . '&src=' . $image .'"></a></figure>' . "\n";
+             class="gallery-thumb" data-lightbox="gallery-' . $gallery_counts . '">
+             <img class="gallery-source" src="' . $url  . '&src=' . $image .'"></a></figure>' . "\n";
         }
     }
 
     // ギャラリーの作成
     $gallery = <<<EOD
-<div class="plugin-gallery" data-pswp>
+<div class="plugin-gallery">
 $item
 </div>
 <div class="gallery-add"{$option['noadd']}>
     <a href="./?plugin=gallery&gallery_no=$gallery_counts&page={$vars['page']}">画像を追加する</a>
 </div>
-<script charset="utf-8">
-  photoswipeSimplify.init();
-</script>
 EOD;
 
     $gallery_counts++;
@@ -108,7 +104,7 @@ EOD;
     
 }
 
-function plugin_gallery_action ()
+function plugin_gallery_lb_action ()
 {
     global $vars;
     $page = $vars['page'];
