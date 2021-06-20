@@ -11,9 +11,11 @@
  *            画像追加ボタンのデザインを調整
  *            画像一覧の左寄せ・中央・右寄せを設定する機能を追加
  *            画像一覧の画像を正方形・円に切り抜いて表示する機能を追加
+ *            画像一覧でキャプションを非表示にする機能を追加
  * 2021-06-19 添付されたファイルのフォーマット判別を厳正化
  * 2021-06-18 使用するライブラリをlightnox.jsからphotoswipe.jsに変更
  * 2021-06-17 画像追加機能を追加
+ *            画像追加ボタンの表示/非表示切り替え機能を追加
  *            他のページの添付画像を表示する機能を追加
  *            画像の横幅を指定する機能を追加
  * 2021-06-16 初版作成
@@ -75,10 +77,10 @@ function plugin_gallery_convert()
                     case 'center':
                         $option['position'] = ' flex-' . $arg;
                         break;
-                    case 'square':
                     case 'circle':
-                        $option['trim'] = ' trim-' . $arg;
                         $option['nocap'] = ' hidden';
+                    case 'square':
+                        $option['trim'] = ' trim-' . $arg;
                         break;
                     case 'nocap':
                     case 'noadd':
