@@ -2,11 +2,15 @@
 /**
  * photoswipe版 画像のギャラリー表示プラグイン
  * 
- * @version 0.7
+ * @version 1.0
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
  * -- Updates --
+ * 2021-06-20 ページの編集権限をチェックする機能を追加
+ *            画像追加ボタンのデザインを調整
+ *            画像一覧の左寄せ・中央・右寄せを設定する機能を追加
+ *            画像一覧の画像を正方形・円に切り抜いて表示する機能を追加
  * 2021-06-19 添付されたファイルのフォーマット判別を厳正化
  * 2021-06-18 使用するライブラリをlightnox.jsからphotoswipe.jsに変更
  * 2021-06-17 画像追加機能を追加
@@ -37,13 +41,16 @@ function plugin_gallery_convert()
     // エラーメッセージ類
     $_err = array (
         'usage'    =>  '#gallery([width=][noadd]){{<br />image>caption<br />}}',
-        'unknown'  =>  '#gallery Error: Unknown argument -> ',
+        'unknown'  =>  '#gallery Error: Unknown argument -> '
     );
 
     // オプション
     $option = array (
         'width'    =>  '300',
+        'position' =>  ' flex-center',
         'noadd'    =>  '',
+        'nocap'    =>  '',
+        'trim'     =>  ''
     );
 
     $args = func_get_args();
@@ -59,12 +66,27 @@ function plugin_gallery_convert()
     // オプション判別
     if (!empty($args)) {
         foreach ($args as $arg) {
-            if (preg_match('/(width)=(\d+)/', $arg, $match)) {
+            if (preg_match('/^(width)=(\d+)$/', $arg, $match)) {
                 $option[$match[1]] = $match[2];
-            } else if (preg_match('/^(noadd)$/', $arg, $match)) {
-                $option[$match[1]] = ' style="display:none"';
             } else {
-                return $_err['unknown'] . $arg;
+                switch ($arg) {
+                    case 'left':
+                    case 'right':
+                    case 'center':
+                        $option['position'] = ' flex-' . $arg;
+                        break;
+                    case 'square':
+                    case 'circle':
+                        $option['trim'] = ' trim-' . $arg;
+                        $option['nocap'] = ' hidden';
+                        break;
+                    case 'nocap':
+                    case 'noadd':
+                        $option[$arg] = ' hidden';
+                        break;
+                    default:
+                        return $_err['unknown'] . $arg;
+                }
             }
         }
     }
@@ -84,7 +106,7 @@ function plugin_gallery_convert()
             list($image, $cap) = explode('>', $image);
             $item .= '<figure class="gallery-item" style="width:' . $option['width'] . 'px"><a href="' . $url  . '&src=' . $image .'"
              class="gallery-thumb" data-caption="' . $cap . '"><img class="gallery-source" src="' . $url  . '&src=' . $image .'"></a>
-              <figcaption class="gallery-caption">' . $cap . '</figcaption></figure>' . "\n";
+              <figcaption class="gallery-caption' . $option['nocap'] . '">' . $cap . '</figcaption></figure>' . "\n";
         } else {
             $item .= '<figure class="gallery-item" style="width:' . $option['width'] . 'px"><a href="' . $url  . '&src=' . $image .'"
              class="gallery-thumb"><img class="gallery-source" src="' . $url  . '&src=' . $image .'"></a></figure>' . "\n";
@@ -93,10 +115,10 @@ function plugin_gallery_convert()
 
     // ギャラリーの作成
     $gallery = <<<EOD
-<div class="plugin-gallery" id="gallery-$gallery_counts" data-pswp>
+<div class="plugin-gallery{$option['position']}{$option['trim']}" id="gallery-$gallery_counts" data-pswp>
 $item
 </div>
-<div class="gallery-add"{$option['noadd']}>
+<div class="gallery-add{$option['noadd']}">
     <a href="./?plugin=gallery&gallery_no=$gallery_counts&page={$vars['page']}">画像を追加する</a>
 </div>
 <script charset="utf-8">
@@ -109,6 +131,9 @@ EOD;
     
 }
 
+/**
+ * 画像の追加
+ */
 function plugin_gallery_action()
 {
     global $vars;
@@ -116,6 +141,9 @@ function plugin_gallery_action()
     $gallery_no = $vars['gallery_no'];
     $file = $_FILES['attach_file'];
     $max_size = number_format(PLUGIN_GALLERY_MAX_FILESIZE/1024);
+
+    //編集権限のチェック
+    check_editable($page);
 
     // 画像追加用フォーム
     $body = <<<EOD
