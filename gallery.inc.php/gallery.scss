@@ -25,7 +25,9 @@
 }
 .hidden {display: none!important;}
 .plugin-gallery {
+    color: #cfcfcf;
     display: flex;
+    align-items: center;
     flex-wrap: wrap;
     &.flex-center {justify-content: center;}
     &.flex-left {justify-content: flex-start;}
