@@ -26,19 +26,19 @@
     .plugin-card-img {
         position: relative;
         overflow: hidden;
-        
         img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
+        &.img-tall img {object-position: top;}
     }
 
     .plugin-card-title {
         font-size: 1.2em;
         font-weight: bold;
         margin: 5px;
-        line-height: 110%;
+        line-height: 115%;
         color: inherit;
         overflow: hidden;
         display: -webkit-box;
@@ -121,38 +121,6 @@
             display: block;
             &.long {
                 display: none;
-            }
-        }
-    }
-}
-
-@media screen and (max-width: 479px) {
-    /* card.inc.php */
-    .plugin-card,
-    .plugin-card-bigimg {
-        justify-content: center;
-    }
-    .plugin-card {
-        width: 100%;
-        .plugin-card-box {
-            margin: 5px 0;
-        }
-    }
-    .plugin-card-bigimg {
-        .plugin-card-box {
-            width: 320px!important;
-            height: 300px!important;
-            margin: 10px 0;
-        }
-        &.nodesc {
-            .plugin-card-description {
-                display: -webkit-box;
-            }
-            .plugin-card-date {
-                display: none;
-                &.long {
-                    display: block;
-                }
             }
         }
     }

@@ -2,11 +2,14 @@
 /**
  * ブログカード風にページを並べるプラグイン
  *
- * @version 1.2
+ * @version 1.3
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
  * -- Updates --
+ * 2021-06-20 画像が縦長の場合はサムネイルの切り抜きを画像の上端に合わせるよう変更
+ * 2021-04-30 存在しないページが含まれている場合にエラーを出すかどうかを設定できるように変更
+ *            デスクリプション作成時の正規表現を修正
  * 2021-04-07 ベースネーム表示機能を追加
  * 　　　　　　上記に付随してカラム数を複数回指定した場合にエラーを返すよう変更
  *            デスクリプション作成時の正規表現を修正
@@ -37,6 +40,10 @@ define('USE_SHORT_URL', FALSE);
 define('USE_FONTAWESOME_ICON', FALSE);
 // ベースネーム表示の強制
 define('FORCE_BASENAME', FALSE);
+// 存在しないページが含まれている場合にエラーを出すかどうか
+define('ERROR_ON_NO_EXISTS', FALSE);
+// 縦長画像の場合にサムネイルの切り抜きを上端に合わせるかどうか
+define('OBJECT_POSITION_TOP', TRUE);
 
 // 画像圧縮ライブラリの読込
 require_once(PLUGIN_DIR . 'resize.php');
@@ -111,7 +118,7 @@ function plugin_card_convert()
     $pagenames = array();
     preg_match_all('/<a.*?href="\.\/\?([^\.]+?)".*?>(.+?)<\/a>/', $list, $matches);
     
-    foreach ($matches[1] as $href) {
+    foreach ($matches[1] as $i => $href) {
         if (USE_SHORT_URL) {
             // URL短縮ライブラリを導入済みの場合
             $pagenames[$href] = get_pagename_from_short_url($href);
@@ -119,10 +126,15 @@ function plugin_card_convert()
             // URL短縮ライブラリを未導入の場合
             $pagenames[$href] = urldecode($href);
         }
-        if (!file_exists(get_filename($pagenames[$href]))) return $msg['noexists'] . $pagenames[$href];
+        // 存在しないページが含まれている場合エラーを返す
+        if (ERROR_ON_NO_EXISTS && !file_exists(get_filename($pagenames[$href]))) {
+            return $msg['noexists'] . $matches[2][$i];
+        }
     }
 
     foreach($pagenames as $href => $pagename) {
+        // 存在しないページをスキップ
+        if (!file_exists(get_filename($pagename))) continue;
         // URLの作成
         $url = $uri . '?' . $href;
         //デスクリプションの取得
@@ -142,13 +154,16 @@ function plugin_card_convert()
             $thumb = plugin_card_get_thumbnail($uri, $pagename, $eyecatch, $match_thumb);
         }
 
+        // サムネイルが縦長か判定
+        $tall_img = OBJECT_POSITION_TOP ? plugin_card_get_image_size($thumb) : '';
+
         // ページタイトルのベースネーム表示化
         $card_title = $show_basename ? array_pop(explode('/', $pagename)) : $pagename;
         
         // カード作成
         $card = <<<EOD
     <div class="plugin-card-box" style="width:{$cols['width']}px;height:{$cols['height']}px;">
-        <div class="plugin-card-img">
+        <div class="plugin-card-img$tall_img">
             <img src="$thumb" alt="$pagename" >
         </div>
         <div class="plugin-card-title">$card_title</div>
@@ -173,15 +188,15 @@ EOD;
 
 /**
  * ページ内容からプラグインやPukiWiki構文をある程度除いた200文字を抜き出す
- * @param string $pagename
+ * @param string $pagename エンコード前のページ名
  */
-function plugin_card_make_description ($pagename) {
+function plugin_card_make_description($pagename) {
     $source = get_source($pagename);
-    $source = preg_replace('/^\#(.*?)$/u', '', $source);
     $source = preg_replace('/^RIGHT:|LEFT:|CENTER:|SIZE\(.*?\):|COLOR\(.*?\):/u', '', $source);
+    $source = preg_replace('/^\#(.*?)$/u', '', $source);
     $source = preg_replace('/^\}(.*?)$/u', '', $source);
     $source = preg_replace('/\&null\{(.*?)\};/u', '', $source);
-    $source = preg_replace('/\&([^;\(\{]*?)\{(.*?)\};/u', '$2', $source);
+    $source = preg_replace('/\&([^;\{]*?)\{(.*?)\};/u', '$2', $source);
     $source = preg_replace('/\&([^;\(\{]*?)\((.*?)\);/u', '', $source);
     $source = preg_replace('/\&([a-zA-Z0-9]*?);/u', '', $source);
     $source = preg_replace('/\&([^;]*?);/u', '$1', $source);
@@ -205,13 +220,27 @@ function plugin_card_make_description ($pagename) {
 }
 
 /**
- * サムネイルの取得
- * @param string $uri
- * @param string $pagename
- * @param string $eyecatch
- * @param array $match_thumb
+ * 画像が縦長かどうかの判定
+ * @param string $pagename エンコード前のページ名
+ * @param array $match_thumb そのページで見つかった最初のrefプラグイン
+ * @return string $tall_img サムネイル画像に付与する追加のクラス
  */
-function plugin_card_get_thumbnail ($uri, $pagename, $eyecatch, $match_thumb) {
+function plugin_card_get_image_size($thumb) {
+    $tall_img = '';
+    $info = getimagesize($thumb);
+    $tall_img = $info[0] < $info[1] ? ' img-tall' : '';
+    return $tall_img;
+}
+
+/**
+ * サムネイルの取得
+ * @param string $uri get_base_uriで取得したuri
+ * @param string $pagename エンコード前のページ名
+ * @param string $eyecatch refプラグインが使われていないページ用のサムネイル画像
+ * @param array $match_thumb そのページで見つかった最初のrefプラグイン
+ * @return string $thumb_src 画像ファイルのパス (直リン)
+ */
+function plugin_card_get_thumbnail($uri, $pagename, $eyecatch, $match_thumb) {
     if (isset($match_thumb[1])) {
         // refプラグインが呼び出されている場合
         if (strpos($match_thumb[1], '/') === false) {
@@ -235,9 +264,10 @@ function plugin_card_get_thumbnail ($uri, $pagename, $eyecatch, $match_thumb) {
 
 /**
  * サムネイルの取得とキャッシュの生成
- * @param string $pagename
- * @param string $eyecatch
- * @param array $match_thumb
+ * @param string $pagename エンコード前のページ名
+ * @param string $eyecatch refプラグインが使われていないページ用のサムネイル画像
+ * @param array $match_thumb そのページで見つかった最初のrefプラグイン
+ * @return string $thumb_cache | $thumb_path . $match_thumb[2] サムネイルのパス (キャッシュ) 
  */
 function plugin_card_make_thumbnail($pagename, $eyecatch, $match_thumb)
 {
@@ -297,8 +327,9 @@ function plugin_card_make_thumbnail($pagename, $eyecatch, $match_thumb)
 
 /**
  * サムネイルキャッシュの作成日とリンク先ページの更新日を比較する
- * @param string $page
- * @param string $cache
+ * @param string $page エンコード前のページ名
+ * @param string $cache キャッシュされたサムネイル画像のパス
+ * @return bool  $is_new キャッシュの作成日がページの更新日よりも新しいかどうか
  */
 function plugin_card_check_updates($page, $cache) {
     $time_cache = filemtime($cache);

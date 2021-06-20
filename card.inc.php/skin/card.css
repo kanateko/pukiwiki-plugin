@@ -48,12 +48,18 @@
      object-fit: cover;
 }
 
+.plugin-card .plugin-card-img.img-tall img,
+.plugin-card-bigimg .plugin-card-img.img-tall img {
+  -o-object-position: top;
+     object-position: top;
+}
+
 .plugin-card .plugin-card-title,
 .plugin-card-bigimg .plugin-card-title {
   font-size: 1.2em;
   font-weight: bold;
   margin: 5px;
-  line-height: 110%;
+  line-height: 115%;
   color: inherit;
   overflow: hidden;
   display: -webkit-box;
@@ -141,35 +147,5 @@
 
 .plugin-card-bigimg.nodesc .plugin-card-date.long {
   display: none;
-}
-
-@media screen and (max-width: 479px) {
-  /* card.inc.php */
-  .plugin-card,
-  .plugin-card-bigimg {
-    -webkit-box-pack: center;
-        -ms-flex-pack: center;
-            justify-content: center;
-  }
-  .plugin-card {
-    width: 100%;
-  }
-  .plugin-card .plugin-card-box {
-    margin: 5px 0;
-  }
-  .plugin-card-bigimg .plugin-card-box {
-    width: 320px !important;
-    height: 300px !important;
-    margin: 10px 0;
-  }
-  .plugin-card-bigimg.nodesc .plugin-card-description {
-    display: -webkit-box;
-  }
-  .plugin-card-bigimg.nodesc .plugin-card-date {
-    display: none;
-  }
-  .plugin-card-bigimg.nodesc .plugin-card-date.long {
-    display: block;
-  }
 }
 /*# sourceMappingURL=card.css.map */
