@@ -2,7 +2,7 @@
 /**
  * photoswipe版 画像のギャラリー表示プラグイン
  * 
- * @version 1.0
+ * @version 1.1
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
@@ -31,9 +31,9 @@ function plugin_gallery_init()
     global $head_tags;
 	//jsとcssを読み込む
 	$head_tags[] = '<script src="' . SKIN_DIR . 'pswp/photoswipe.min.js" charset="utf-8"></script>';
-    $head_tags[] = '<script src="' . SKIN_DIR . 'pswp/photoswipe-ui-default.min.js" charset="utf-8"></script>';
-    $head_tags[] = '<script src="' . SKIN_DIR . 'pswp/photoswipe-simplify.min.js" charset="utf-8"></script>';
-    $head_tags[] = '<link rel="stylesheet" href="' . SKIN_DIR . 'pswp/photoswipe.css" />';
+    	$head_tags[] = '<script src="' . SKIN_DIR . 'pswp/photoswipe-ui-default.min.js" charset="utf-8"></script>';
+    	$head_tags[] = '<script src="' . SKIN_DIR . 'pswp/photoswipe-simplify.min.js" charset="utf-8"></script>';
+    	$head_tags[] = '<link rel="stylesheet" href="' . SKIN_DIR . 'pswp/photoswipe.css" />';
 	$head_tags[] = '<link rel="stylesheet" href="' . SKIN_DIR . 'pswp/default-skin/default-skin.css" />';
 }
 
