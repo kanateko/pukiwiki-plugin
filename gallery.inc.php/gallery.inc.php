@@ -2,11 +2,12 @@
 /**
  * photoswipe版 画像のギャラリー表示プラグイン
  * 
- * @version 1.1
+ * @version 1.2
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
  * -- Updates --
+ * 2021-06-22 短縮URLを導入してあるかどうかで処理を変えるよう変更
  * 2021-06-21 画像の縁取り無効オプションを追加
  *            切り抜きがsquareの場合はキャプションを表示するよう変更
  * 2021-06-20 ページの編集権限をチェックする機能を追加
@@ -25,16 +26,18 @@
 
 // アップロード可能なファイルの最大サイズ
 define('PLUGIN_GALLERY_MAX_FILESIZE', (2048 * 1024)); // default: 2MB
+// URL短縮機能を導入してあるか
+define('PLUGIN_GALLERY_USE_SHORT_URL', false);
 
 function plugin_gallery_init()
 {
     global $head_tags;
 	//jsとcssを読み込む
 	$head_tags[] = '<script src="' . SKIN_DIR . 'pswp/photoswipe.min.js" charset="utf-8"></script>';
-    	$head_tags[] = '<script src="' . SKIN_DIR . 'pswp/photoswipe-ui-default.min.js" charset="utf-8"></script>';
-    	$head_tags[] = '<script src="' . SKIN_DIR . 'pswp/photoswipe-simplify.min.js" charset="utf-8"></script>';
-    	$head_tags[] = '<link rel="stylesheet" href="' . SKIN_DIR . 'pswp/photoswipe.css" />';
-	$head_tags[] = '<link rel="stylesheet" href="' . SKIN_DIR . 'pswp/default-skin/default-skin.css" />';
+    $head_tags[] = '<script src="' . SKIN_DIR . 'pswp/photoswipe-ui-default.min.js" charset="utf-8"></script>';
+    $head_tags[] = '<script src="' . SKIN_DIR . 'pswp/photoswipe-simplify.min.js" charset="utf-8"></script>';
+    $head_tags[] = '<link rel="stylesheet" href="' . SKIN_DIR . 'pswp/photoswipe.css" />';
+    $head_tags[] = '<link rel="stylesheet" href="' . SKIN_DIR . 'pswp/default-skin/default-skin.css" />';
 }
 
 function plugin_gallery_convert()
@@ -195,7 +198,8 @@ EOD;
         page_write($page, $postdata, false);
 
         // 処理が終わったら元のページに戻る
-        $uri = get_base_uri() . get_short_url_from_pagename($page);
+        $pagename = PLUGIN_GALLERY_USE_SHORT_URL ? get_short_url_from_pagename($page) : '?' . $page;
+        $uri = get_base_uri() . $pagename;
         header("Location: " . $uri);
     }
 

@@ -127,6 +127,7 @@
 }
 
 .gallery-source {
+  max-width: 100%;
   -webkit-transition: -webkit-transform .2s;
   transition: -webkit-transform .2s;
   transition: transform .2s;
