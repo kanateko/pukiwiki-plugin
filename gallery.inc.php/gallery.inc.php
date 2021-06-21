@@ -7,6 +7,8 @@
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
  * -- Updates --
+ * 2021-06-21 画像の縁取り無効オプションを追加
+ *            切り抜きがsquareの場合はキャプションを表示するよう変更
  * 2021-06-20 ページの編集権限をチェックする機能を追加
  *            画像追加ボタンのデザインを調整
  *            画像一覧の左寄せ・中央・右寄せを設定する機能を追加
@@ -52,6 +54,7 @@ function plugin_gallery_convert()
         'position' =>  ' flex-center',
         'noadd'    =>  '',
         'nocap'    =>  '',
+        'nowrap'   =>  '',
         'trim'     =>  ''
     );
 
@@ -86,6 +89,9 @@ function plugin_gallery_convert()
                     case 'noadd':
                         $option[$arg] = ' hidden';
                         break;
+                    case 'nowrap':
+                        $option[$arg] = ' ' . $arg;
+                        break;
                     default:
                         return $_err['unknown'] . $arg;
                 }
@@ -106,11 +112,11 @@ function plugin_gallery_convert()
         // キャプションの有無を判別
         if (strpos($image, '>') !== false) {
             list($image, $cap) = explode('>', $image);
-            $item .= '<figure class="gallery-item" style="width:' . $option['width'] . 'px"><a href="' . $url  . '&src=' . $image .'"
+            $item .= '<figure class="gallery-item' . $option['nowrap'] . '" style="width:' . $option['width'] . 'px"><a href="' . $url  . '&src=' . $image .'"
              class="gallery-thumb" data-caption="' . $cap . '"><img class="gallery-source" src="' . $url  . '&src=' . $image .'"></a>
               <figcaption class="gallery-caption' . $option['nocap'] . '">' . $cap . '</figcaption></figure>' . "\n";
         } else {
-            $item .= '<figure class="gallery-item" style="width:' . $option['width'] . 'px"><a href="' . $url  . '&src=' . $image .'"
+            $item .= '<figure class="gallery-item' . $option['nowrap'] . '" style="width:' . $option['width'] . 'px"><a href="' . $url  . '&src=' . $image .'"
              class="gallery-thumb"><img class="gallery-source" src="' . $url  . '&src=' . $image .'"></a></figure>' . "\n";
         }
     }
