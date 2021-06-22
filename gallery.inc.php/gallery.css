@@ -53,12 +53,12 @@
 }
 
 .plugin-gallery.trim-square .gallery-item .gallery-source {
+  width: 100%;
+  height: 100%;
   -o-object-fit: cover;
      object-fit: cover;
   -o-object-position: top;
      object-position: top;
-  height: 100%;
-  width: 100%;
 }
 
 .plugin-gallery.trim-circle .gallery-item {
@@ -81,17 +81,18 @@
 }
 
 .plugin-gallery.trim-circle .gallery-item .gallery-source {
+  width: 100%;
+  height: 100%;
   -o-object-fit: cover;
      object-fit: cover;
   -o-object-position: top;
      object-position: top;
-  height: 100%;
-  width: 100%;
 }
 
 .gallery-item {
   position: relative;
   max-width: 100%;
+  width: auto;
   height: auto;
   margin: 8px 6px;
   border: 5px solid #666;
@@ -128,6 +129,7 @@
 
 .gallery-source {
   max-width: 100%;
+  max-height: 100%;
   -webkit-transition: -webkit-transform .2s;
   transition: -webkit-transform .2s;
   transition: transform .2s;

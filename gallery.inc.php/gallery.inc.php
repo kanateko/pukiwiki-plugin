@@ -27,7 +27,7 @@
 // アップロード可能なファイルの最大サイズ
 define('PLUGIN_GALLERY_MAX_FILESIZE', (2048 * 1024)); // default: 2MB
 // URL短縮機能を導入してあるか
-define('PLUGIN_GALLERY_USE_SHORT_URL', false);
+define('PLUGIN_GALLERY_USE_SHORT_URL', true);
 
 function plugin_gallery_init()
 {
@@ -53,7 +53,7 @@ function plugin_gallery_convert()
 
     // オプション
     $option = array (
-        'width'    =>  '300',
+        'size'     =>  'height:180px',
         'position' =>  ' flex-center',
         'noadd'    =>  '',
         'nocap'    =>  '',
@@ -74,8 +74,8 @@ function plugin_gallery_convert()
     // オプション判別
     if (!empty($args)) {
         foreach ($args as $arg) {
-            if (preg_match('/^(width)=(\d+)$/', $arg, $match)) {
-                $option[$match[1]] = $match[2];
+            if (preg_match('/^(width|height)=(\d+)$/', $arg, $match)) {
+                $option['size'] = $match[1] . ':' . $match[2] . 'px';
             } else {
                 switch ($arg) {
                     case 'left':
@@ -100,6 +100,9 @@ function plugin_gallery_convert()
                 }
             }
         }
+        if (!empty($option['trim'])) {
+            $option['size'] = str_replace('height', 'width', $option['size']);
+        }
     }
 
     // ギャラリーアイテムの作成
@@ -113,15 +116,20 @@ function plugin_gallery_convert()
         $url = $url_base . $page;
 
         // キャプションの有無を判別
+        $item .= '<figure class="gallery-item' . $option['nowrap'] . '" style="' . $option['size'] . '">
+        <a href="' . $url  . '&src=%image%"class="gallery-thumb"%data-cap%">
+        <img class="gallery-source" src="' . $url  . '&src=%image%"></a>
+        %figcap%</figure>' . "\n";
+
         if (strpos($image, '>') !== false) {
             list($image, $cap) = explode('>', $image);
-            $item .= '<figure class="gallery-item' . $option['nowrap'] . '" style="width:' . $option['width'] . 'px"><a href="' . $url  . '&src=' . $image .'"
-             class="gallery-thumb" data-caption="' . $cap . '"><img class="gallery-source" src="' . $url  . '&src=' . $image .'"></a>
-              <figcaption class="gallery-caption' . $option['nocap'] . '">' . $cap . '</figcaption></figure>' . "\n";
+            $item = str_replace('%data-cap%', ' data-caption="' . $cap . '"', $item);
+            $item = str_replace('%figcap%', '<figcaption class="gallery-caption' . $option['nocap'] . '">' . $cap . '</figcaption>', $item);
         } else {
-            $item .= '<figure class="gallery-item' . $option['nowrap'] . '" style="width:' . $option['width'] . 'px"><a href="' . $url  . '&src=' . $image .'"
-             class="gallery-thumb"><img class="gallery-source" src="' . $url  . '&src=' . $image .'"></a></figure>' . "\n";
+            $item = str_replace('%data-cap%', '', $item);
+            $item = str_replace('%figcap%', '', $item);
         }
+        $item = str_replace('%image%', $image, $item);
     }
 
     // ギャラリーの作成
