@@ -27,7 +27,7 @@
 // アップロード可能なファイルの最大サイズ
 define('PLUGIN_GALLERY_MAX_FILESIZE', (2048 * 1024)); // default: 2MB
 // URL短縮機能を導入してあるか
-define('PLUGIN_GALLERY_USE_SHORT_URL', true);
+define('PLUGIN_GALLERY_USE_SHORT_URL', false);
 
 function plugin_gallery_init()
 {
