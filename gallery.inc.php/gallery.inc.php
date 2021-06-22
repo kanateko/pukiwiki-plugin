@@ -2,12 +2,13 @@
 /**
  * photoswipe版 画像のギャラリー表示プラグイン
  * 
- * @version 1.2
+ * @version 1.3
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
  * -- Updates --
  * 2021-06-22 短縮URLを導入してあるかどうかで処理を変えるよう変更
+ *            一覧画像の高さ指定機能を追加
  * 2021-06-21 画像の縁取り無効オプションを追加
  *            切り抜きがsquareの場合はキャプションを表示するよう変更
  * 2021-06-20 ページの編集権限をチェックする機能を追加
