@@ -2,11 +2,12 @@
 /**
  * ブログカード風にページを並べるプラグイン
  *
- * @version 1.3
+ * @version 1.4
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
  * -- Updates --
+ * 2021-06-29 プラグインの呼び出し毎に個別のIDを割り振る機能を追加
  * 2021-06-20 画像が縦長の場合はサムネイルの切り抜きを画像の上端に合わせるよう変更
  * 2021-04-30 存在しないページが含まれている場合にエラーを出すかどうかを設定できるように変更
  *            デスクリプション作成時の正規表現を修正
@@ -50,6 +51,8 @@ require_once(PLUGIN_DIR . 'resize.php');
 
 function plugin_card_convert()
 {
+    static $card_counts = 0;
+
     // メッセージ
     $msg = array (
         'usage'    =>    '#card([2-6]){{ internal links }}',
@@ -179,10 +182,11 @@ EOD;
     }
 
     $card_wrap = <<<EOD
-<div class="plugin-card{$cols['class']}"$fix_width>
+<div class="plugin-card{$cols['class']}" id="plugin-card-container-$card_counts"$fix_width>
 $card_list
 </div>
 EOD;
+    $card_counts++;
     return $card_wrap;
 }
 
