@@ -2,11 +2,12 @@
 /**
  * photoswipe版 画像のギャラリー表示プラグイン
  * 
- * @version 1.3
+ * @version 1.4
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
  * -- Updates --
+ * 2021-07-01 階層化されたページの添付ファイルを正常に表示できなかった問題を修正
  * 2021-06-22 短縮URLを導入してあるかどうかで処理を変えるよう変更
  *            一覧画像の高さ指定機能を追加
  * 2021-06-21 画像の縁取り無効オプションを追加
@@ -26,15 +27,15 @@
  */
 
 // アップロード可能なファイルの最大サイズ
-define('PLUGIN_GALLERY_MAX_FILESIZE', (2048 * 1024)); // default: 2MB
+define('PLUGIN_GALLERY_MAX_FILESIZE', (1024 * 1024)); // default: 1MB
 // URL短縮機能を導入してあるか
 define('PLUGIN_GALLERY_USE_SHORT_URL', false);
 
 function plugin_gallery_init()
 {
     global $head_tags;
-	//jsとcssを読み込む
-	$head_tags[] = '<script src="' . SKIN_DIR . 'pswp/photoswipe.min.js" charset="utf-8"></script>';
+    //jsとcssを読み込む
+    $head_tags[] = '<script src="' . SKIN_DIR . 'pswp/photoswipe.min.js" charset="utf-8"></script>';
     $head_tags[] = '<script src="' . SKIN_DIR . 'pswp/photoswipe-ui-default.min.js" charset="utf-8"></script>';
     $head_tags[] = '<script src="' . SKIN_DIR . 'pswp/photoswipe-simplify.min.js" charset="utf-8"></script>';
     $head_tags[] = '<link rel="stylesheet" href="' . SKIN_DIR . 'pswp/photoswipe.css" />';
@@ -110,7 +111,9 @@ function plugin_gallery_convert()
     foreach ($matches[0] as $image) {
         // 添付ファイルのあるページを確認
         if(strpos($image, '/') !== false) {
-            list($page, $image) = explode('/', $image);
+            preg_match('/(.+)\/([^\/]+)/', $image, $matches);
+            $page = $matches[1];
+            $image = $matches[2];
         } else {
             $page = $vars['page'];
         }
