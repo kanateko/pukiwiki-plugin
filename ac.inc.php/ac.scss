@@ -1,0 +1,47 @@
+.plugin-ac-header {
+    position: relative;
+    padding-left: calc(1em + 5px)!important;
+    user-select: none;
+    cursor: pointer;
+    &:hover {
+        filter: brightness(1.2);
+    }
+    &::before,
+    &::after {
+        font-family: 'Font Awesome 5 Free';
+        position: absolute;
+        left: 5px;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+    &::before {
+        opacity: 1;
+        content: '\f0fe';
+    }
+    &::after {
+        opacity: 0;
+        content: '\f146';
+    }
+    &.open {
+        &::before {
+            opacity: 0;
+        }
+        &::after {
+            opacity: 1;
+        }
+        &+.plugin-ac {
+            &+.plugin-ac-altmsg{
+                opacity: 0;
+            }
+        }
+    }
+}
+.plugin-ac {
+    overflow: hidden;
+    border-left: 1px ridge silver;
+    padding: 0 10px;
+    margin-left: 10px;
+}
+.plugin-ac-altmsg {
+    opacity: 1;
+}

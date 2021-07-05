@@ -1,0 +1,57 @@
+.plugin-ac-header {
+  position: relative;
+  padding-left: calc(1em + 5px) !important;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+      -ms-user-select: none;
+          user-select: none;
+  cursor: pointer;
+}
+
+.plugin-ac-header:hover {
+  -webkit-filter: brightness(1.2);
+          filter: brightness(1.2);
+}
+
+.plugin-ac-header::before, .plugin-ac-header::after {
+  font-family: 'Font Awesome 5 Free';
+  position: absolute;
+  left: 5px;
+  top: 50%;
+  -webkit-transform: translateY(-50%);
+          transform: translateY(-50%);
+}
+
+.plugin-ac-header::before {
+  opacity: 1;
+  content: '\f0fe';
+}
+
+.plugin-ac-header::after {
+  opacity: 0;
+  content: '\f146';
+}
+
+.plugin-ac-header.open::before {
+  opacity: 0;
+}
+
+.plugin-ac-header.open::after {
+  opacity: 1;
+}
+
+.plugin-ac-header.open + .plugin-ac + .plugin-ac-altmsg {
+  opacity: 0;
+}
+
+.plugin-ac {
+  overflow: hidden;
+  border-left: 1px ridge silver;
+  padding: 0 10px;
+  margin-left: 10px;
+}
+
+.plugin-ac-altmsg {
+  opacity: 1;
+}
+/*# sourceMappingURL=ac.css.map */
