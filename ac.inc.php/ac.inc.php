@@ -89,6 +89,7 @@ function plugin_ac_inline()
             switch ($arg) {
                 case 'h':
                     return $ac->msg['incorrect'] . $arg;
+                    break;
                 case 'open':
                     // no break
                 case 'alt':
@@ -154,6 +155,7 @@ Class PluginAc
         switch ($arg) {
             case 'h':
                 $this->set_header('');
+                break;
             case 'open':
                 // 初期状態を開いた状態にする
                 $class['header'] .= ' open';
