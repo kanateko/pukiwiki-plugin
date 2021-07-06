@@ -54,4 +54,17 @@
 .plugin-ac-altmsg {
   opacity: 1;
 }
+
+.plugin-ac-ctrl {
+  font-weight: bold;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+      -ms-user-select: none;
+          user-select: none;
+  cursor: pointer;
+}
+
+.plugin-ac-ctrl span {
+  pointer-events: none;
+}
 /*# sourceMappingURL=ac.css.map */

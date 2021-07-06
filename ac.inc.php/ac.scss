@@ -45,3 +45,11 @@
 .plugin-ac-altmsg {
     opacity: 1;
 }
+.plugin-ac-ctrl {
+    font-weight: bold;
+    user-select: none;
+    cursor: pointer;
+    span {
+        pointer-events: none;
+    }
+}
