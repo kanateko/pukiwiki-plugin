@@ -2,11 +2,12 @@
 /**
  * 折りたたみ可能な見出しを作成するプラグイン
  *
- * @version 1.3
+ * @version 1.4
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
  * -- Updates --
+ * 2021-07-07 全開閉ボタンにも状態に合わせてクラスを切り替える機能を追加
  * 2021-07-06 全開閉ボタン作成機能を追加。設置位置以降の同階層にある全てのアコーディオンが対象となる
  * 2021-07-05 ヘッダーに見出しを指定する場合はオプションで明示するように変更
  * 2021-07-04 インライン型を追加
@@ -238,6 +239,7 @@ Class PluginAc
                 var allC = $(this).nextUntil('#$next_id', '.plugin-ac');
                 if (cancelFlag == 0) {
                     cancelFlag = 1;
+                    $(this).toggleClass('open');
                     if (btnText.text() === '全て開く') {
                         $(allH).not('.open').toggleClass('open');
                         $(allC).slideDown(500);
