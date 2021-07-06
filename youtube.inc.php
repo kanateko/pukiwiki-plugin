@@ -2,15 +2,16 @@
 /**
 * Youtubeをページに埋め込むプラグイン
 *
-* @version 1.3.0
+* @version 1.4
 * @author kanateko
 * @link https://jpngamerswiki.com/?82f1460fdb
 * @license http://www.gnu.org/licenses/gpl.ja.html GPL
-* 
-* 2020-02-12 (ver 1.3.0)
+* 2021-07-07 (ver 1.4)
+*	埋め込み用のURLを更新
+* 2020-02-12 (ver 1.3)
 *   レスポンシブ化
 *   ループ機能追加
-* 2020-02-11 (ver 1.2.0)
+* 2020-02-11 (ver 1.2)
 *   インライン型の廃止
 *   objectモードの廃止
 *   ループ機能追加
@@ -59,11 +60,11 @@ function plugin_youtube_convert() {
 	$id = htmlsc($id);
 	if (preg_match('/^(list|user|search)=(.+)/', $id, $match)) {
 		// リスト
-		$video = '?listType=' . $list_type[$match[1]] . '&list=' .$match[2];
+		$video = '/videoseries?listType=' . $list_type[$match[1]] . '&list=' .$match[2];
 		$isList = TRUE;
 	} else if (preg_match('/^PL[\w\-_]{32}$/', $id)) {
 		// 再生リスト (PL + 32文字)
-		$video = '?listType=' . $list_type['list'] . '&list=' . $id;
+		$video = '/videoseries?listType=' . $list_type['list'] . '&list=' . $id;
 		$isList = TRUE;
 	} else if (preg_match('/^[\w\-_]{11}$/', $id)) {
 		// 動画ID
