@@ -8,6 +8,8 @@
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
  * -- Updates --
  * 2021-07-07 全開閉ボタンにも状態に合わせてクラスを切り替える機能を追加
+ *            全開閉ボタンが連打できたバグを修正
+ *            全開閉ボタンの制御範囲の終了位置を作成する機能を追加
  * 2021-07-06 全開閉ボタン作成機能を追加。設置位置以降の同階層にある全てのアコーディオンが対象となる
  * 2021-07-05 ヘッダーに見出しを指定する場合はオプションで明示するように変更
  * 2021-07-04 インライン型を追加
@@ -17,7 +19,7 @@
 // 折りたたみ時に変わりに表示するメッセージ
 define('PLUGIN_AC_ALT_MESSAGE', '&#9652; クリック or タップで詳細を表示');
 // オプションリスト
-define('PLUGIN_AC_OPTION_LIST', '/^(all|h|open|alt)$/');
+define('PLUGIN_AC_OPTION_LIST', '/^(end|all|h|open|alt)$/');
 
 /**
  * ブロック型
@@ -37,7 +39,7 @@ function plugin_ac_convert()
         $header = convert_html(array_shift($args));
         $ac->set_header($header);
     }
-    if($args[0] != 'all') {
+    if(!preg_match('/^(end|all)$/', $args[0])) {
         $contents = preg_replace("/\r|\r\n/", "\n", array_pop($args));
         $contents = convert_html($contents);
     }
@@ -47,6 +49,8 @@ function plugin_ac_convert()
         foreach ($args as $arg) {
             $arg = htmlsc($arg);
             switch ($arg) {
+                case 'end':
+                    return $ac->build_control_end();
                 case 'all':
                     return $ac->build_control_button();
                     break;
@@ -97,6 +101,8 @@ function plugin_ac_inline()
         foreach ($args as $arg) {
             $arg = htmlsc($arg);
             switch ($arg) {
+                case 'end':
+                    // no break
                 case 'all':
                     // no break
                 case 'h':
@@ -129,11 +135,11 @@ Class PluginAc
     public $msg = array(
         'usage'     => '#ac Usage:<br>
                         &lt;title or header&gt;<br>
-                        #ac([open,alt]){{<br>
+                        #ac([end,all,h,open,alt]){{<br>
                         &lt;ontents&gt;<br>
                         }}<br>
                         or<br>
-                        &ac(&lt;title&gt;){&lt;contents&gt;};',
+                        &ac(&lt;title&gt;[,open,alt]){&lt;contents&gt;};',
         'unknown'   => '#ac Error: Unknown argument. -> ',
         'empty'     => '&ac; Error: The text area is empty.',
         'incorrect' => '$ac; Error: This option is not available for inline-type plugin. -> '
@@ -231,9 +237,9 @@ Class PluginAc
         $html = <<<EOD
         <div class="plugin-ac-ctrl" id="$id"><span>全て開く</span></div>
         <script type="text/javascript">
+            var cancelFlag = 0;
             $('#$id').on('click', function(e){
                 if(e.target !== e.currentTarget) return;
-                var cancelFlag = 0;
                 var btnText = $('span', this);
                 var allH = $(this).nextUntil('#$next_id', '.plugin-ac-header');
                 var allC = $(this).nextUntil('#$next_id', '.plugin-ac');
@@ -257,6 +263,16 @@ Class PluginAc
         </script>
         EOD;
 
+        return $html;
+    }
+
+    /**
+     * 全開閉ボタンの制御範囲の終了位置を作成
+     */
+    public function build_control_end()
+    {
+        $id = 'ac-c-' . self::$ac_ctrl_counts++;
+        $html = '<div id="' . $id . '" style="display:none"></div>';
         return $html;
     }
 }
