@@ -4,7 +4,7 @@
  *
  * v5.15.3フリー版 https://fontawesome.com/v5.15/icons?d=gallery&p=2&m=free
  *
- * @version 1.2
+ * @version 1.3
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
@@ -12,6 +12,7 @@
  * 2021-07-11 アニメーションやサイズ変更といったのFAのクラスを引数で追加する機能を追加
  *            text-shadowとbackgroundオプションを追加
  *            アイコン同士を重ねる機能を追加
+ *            リスト用オプションを追加
  * 2021-07-10 初版作成
  */
 
@@ -45,7 +46,11 @@ function plugin_fa_inline()
         'icon_style' => 'fas',
         'style'      => '',
     );
-    $is_stack = false;
+    $is = array(
+        'stack' => false,
+        'li'  => false,
+    );
+
 
     $args = func_get_args();
     if (empty(end($args))) return $msg['empty'];
@@ -80,15 +85,15 @@ function plugin_fa_inline()
             } else if (in_array($arg, $options['stack'])) {
                 // stack option
                 $add['class'] .= ' fa-stack-' . $arg . 'x';
-            } else if (in_array($arg, list_icon_style($options['icon_style']))) {
+            } else if (in_array($arg, array_icon_style($options['icon_style']))) {
                 // icon style
                 foreach ($options['icon_style'] as $fa => $fa_style) {
                     if (in_array($arg, $fa_style)) {
                         $add['icon_style'] = $fa;
                     }
                 }
-            } else if ($arg == 'stack') {
-                $is_stack = true;
+            } else if (array_key_exists($arg, $is)) {
+                $is[$arg] = true;
             } else {
                 return $msg['option'] . $arg;
             }
@@ -98,23 +103,30 @@ function plugin_fa_inline()
         }
     }
 
-    if (! $is_stack && ! preg_match('/^fa[srb]? /', $class)) {
+    if (! $is['stack'] && ! preg_match('/^fa[srb]? /', $class)) {
         // アイコンのスタイルを指定 (デフォルト: solid)
         $class = $add['icon_style'] . ' fa-' . $class;
     }
 
-    if ($is_stack) {
+    if ($is['stack']) {
         // 2つのアイコンを重ねて表示
         return stack_icons($class, $add['class'], $add['style']);
     }
 
-    return '<i class="' . $class . $add['class'] . FA_ADD_CLASS .  '"' . $add['style'] . '></i>';
+    $html = '<i class="' . $class . $add['class'] . FA_ADD_CLASS .  '"' . $add['style'] . '></i>';
+
+    if ($is['li']) {
+        // リストにアイコンを使う
+        return icon_in_list($html);
+    }
+
+    return $html;
 }
 
 /**
  * アイコンスタイルの検索用リストの作成
  */
-function list_icon_style($styles) {
+function array_icon_style($styles) {
     $list_style = '';
     foreach ($styles as $style) {
         $list_style .= empty($list_style) ? implode(',', $style) : ',' . implode(',', $style);
@@ -135,4 +147,32 @@ function stack_icons($icons, $span_class, $span_style) {
     return $html;
 }
 
+/**
+ * リストにアイコンを使う
+ */
+function icon_in_list($html)
+{
+    static $duplicated = false;
+    $js = '';
+    if (! $duplicated) {
+        $duplicated = true;
+        $js = <<<EOD
+        <script>
+            var insertHTML = document.createElement('script');
+            insertHTML.innerHTML = 'document.addEventListener("DOMContentLoaded", function() {'+
+                                   'var targets = document.getElementsByClassName("fa-li");'+
+                                   'for (var target of targets) {'+
+                                   'var parent = target.parentNode;'+
+                                   'var grand = parent.parentNode;'+
+                                   'grand.classList.add("fa-ul");'+
+                                   '}'+
+                                   '});';
+            document.body.appendChild(insertHTML);
+        </script>
+        EOD;
+    }
+    $html = '<span class="fa-li">' . $html . '</span>' . $js;
+    return $html;
+
+}
 ?>
