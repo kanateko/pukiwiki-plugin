@@ -1,12 +1,13 @@
 <?php
 /**
  * photoswipe版 画像のギャラリー表示プラグイン
- * 
- * @version 1.4
+ *
+ * @version 1.5
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
  * -- Updates --
+ * 2021-07-11 初期化用コードの呼び出しを1回のみに変更
  * 2021-07-01 階層化されたページの添付ファイルを正常に表示できなかった問題を修正
  * 2021-06-22 短縮URLを導入してあるかどうかで処理を変えるよう変更
  *            一覧画像の高さ指定機能を追加
@@ -46,6 +47,7 @@ function plugin_gallery_convert()
 {
     global $vars;
     static $gallery_counts = 0;
+    static $duplicated = false;
 
     // エラーメッセージ類
     $_err = array (
@@ -136,6 +138,21 @@ function plugin_gallery_convert()
         $item = str_replace('%image%', $image, $item);
     }
 
+    // photoswipeの初期化用コード
+    $js = '';
+    if (! $duplicated) {
+        $duplicated = true;
+        $js = <<<EOD
+        <script>
+            var insertHTML = document.createElement('script');
+            insertHTML.innerHTML = 'document.addEventListener("DOMContentLoaded", function() {'+
+                                   'photoswipeSimplify.init();'+
+                                   '});';
+            document.body.appendChild(insertHTML);
+        </script>
+        EOD;
+    }
+
     // ギャラリーの作成
     $gallery = <<<EOD
 <div class="plugin-gallery{$option['position']}{$option['trim']}" id="gallery-$gallery_counts" data-pswp>
@@ -144,14 +161,11 @@ $item
 <div class="gallery-add{$option['noadd']}">
     <a href="./?plugin=gallery&gallery_no=$gallery_counts&page={$vars['page']}">画像を追加する</a>
 </div>
-<script charset="utf-8">
-  photoswipeSimplify.init();
-</script>
+$js
 EOD;
 
     $gallery_counts++;
     return $gallery;
-    
 }
 
 /**
