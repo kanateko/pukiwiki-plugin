@@ -30,7 +30,7 @@ function plugin_fa_inline()
 
     // オプション関連
     $options = array(
-        'fa'         => array('xs', 'sm', 'lg', '2x', '3x', '5x', '7x', '10x', 'fw', 'spin', 'pulse', 'border', 'inverse'),
+        'fa'         => array('xs', 'sm', 'lg', '2x', '3x', '4x', '5x', '6x', '7x', '8x', '9x', '10x', 'fw', 'spin', 'pulse', 'border', 'inverse'),
         'rotate'     => array('90', '180', '270'),
         'flip'       => array('horizontal', 'vertical', 'both'),
         'pulled'     => array('left', 'right'),
