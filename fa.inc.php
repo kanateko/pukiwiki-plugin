@@ -33,7 +33,7 @@ function plugin_fa_inline()
         'fa'         => array('xs', 'sm', 'lg', '2x', '3x', '4x', '5x', '6x', '7x', '8x', '9x', '10x', 'fw', 'spin', 'pulse', 'border', 'inverse'),
         'rotate'     => array('90', '180', '270'),
         'flip'       => array('horizontal', 'vertical', 'both'),
-        'pulled'     => array('left', 'right'),
+        'pull'     => array('left', 'right'),
         'stack'      => array('1', '2'),
         'icon_style' => array(
             'fas' => array('solid', 'fas', 's'),
@@ -80,9 +80,9 @@ function plugin_fa_inline()
             } else if (in_array($arg, $options['flip'])) {
                 // flip
                 $add['class'] .= ' fa-flip-' . $arg;
-            } else if (in_array($arg, $options['pulled'])) {
+            } else if (in_array($arg, $options['pull'])) {
                 // float
-                $add['class'] .= ' fa-pulled-' . $arg;
+                $add['class'] .= ' fa-pull-' . $arg;
             } else if (in_array($arg, $options['stack'])) {
                 // stack option
                 $add['class'] .= ' fa-stack-' . $arg . 'x';
