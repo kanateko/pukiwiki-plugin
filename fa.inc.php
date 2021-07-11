@@ -33,7 +33,7 @@ function plugin_fa_inline()
         'fa'         => array('xs', 'sm', 'lg', '2x', '3x', '4x', '5x', '6x', '7x', '8x', '9x', '10x', 'fw', 'spin', 'pulse', 'border', 'inverse'),
         'rotate'     => array('90', '180', '270'),
         'flip'       => array('horizontal', 'vertical', 'both'),
-        'pull'     => array('left', 'right'),
+        'pull'       => array('left', 'right'),
         'stack'      => array('1', '2'),
         'icon_style' => array(
             'fas' => array('solid', 'fas', 's'),
@@ -49,7 +49,7 @@ function plugin_fa_inline()
     );
     $is = array(
         'stack' => false,
-        'li'  => false,
+        'li'    => false,
     );
 
 
