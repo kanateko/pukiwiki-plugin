@@ -16,8 +16,9 @@
  * 2021-07-10 初版作成
  */
 
-// 固定で追加するクラス
-define('FA_ADD_CLASS', ' fa-fw');
+// 固定で追加するクラス (先頭に半角スペースを入れること)
+// 例：' fa-fw'
+define('FA_ADD_CLASS', '');
 
 function plugin_fa_inline()
 {
@@ -29,7 +30,7 @@ function plugin_fa_inline()
 
     // オプション関連
     $options = array(
-        'fa'         => array('xs', 'sm', 'lg', '2x', '3x', '5x', '7x', '10x', 'spin', 'pulse', 'border', 'inverse'),
+        'fa'         => array('xs', 'sm', 'lg', '2x', '3x', '5x', '7x', '10x', 'fw', 'spin', 'pulse', 'border', 'inverse'),
         'rotate'     => array('90', '180', '270'),
         'flip'       => array('horizontal', 'vertical', 'both'),
         'pulled'     => array('left', 'right'),
