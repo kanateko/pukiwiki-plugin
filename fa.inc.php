@@ -38,7 +38,7 @@ function plugin_fa_inline()
         'icon_style' => array(
             'fas' => array('solid', 'fas', 's'),
             'far' => array('regular', 'far', 'r'),
-            'fab' => array('brand', 'fab', 'b'),
+            'fab' => array('brands', 'fab', 'b'),
         ),
         'style'      => array('color', 'text-shadow', 'background'),
     );
