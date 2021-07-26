@@ -159,16 +159,14 @@ function icon_in_list($html)
         $duplicated = true;
         $js = <<<EOD
         <script>
-            var insertHTML = document.createElement('script');
-            insertHTML.innerHTML = 'document.addEventListener("DOMContentLoaded", function() {'+
-                                   'var targets = document.getElementsByClassName("fa-li");'+
-                                   'for (var target of targets) {'+
-                                   'var parent = target.parentNode;'+
-                                   'var grand = parent.parentNode;'+
-                                   'grand.classList.add("fa-ul");'+
-                                   '}'+
-                                   '});';
-            document.body.appendChild(insertHTML);
+            document.addEventListener("DOMContentLoaded", function() {
+                var targets = document.getElementsByClassName("fa-li");
+                for (var target of targets) {
+                    var parent = target.parentNode;
+                    var grand = parent.parentNode;
+                    grand.classList.add("fa-ul");
+                }
+            });
         </script>
         EOD;
     }
