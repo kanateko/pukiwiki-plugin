@@ -2,11 +2,13 @@
 /**
  * photoswipe版 画像のギャラリー表示プラグイン
  *
- * @version 1.5
+ * @version 1.6
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
  * -- Updates --
+ * 2021-07-26 対応する拡張子にwebpを追加
+ *            初期化用コードの挿入部分を少し変更
  * 2021-07-11 初期化用コードの呼び出しを1回のみに変更
  * 2021-07-01 階層化されたページの添付ファイルを正常に表示できなかった問題を修正
  * 2021-06-22 短縮URLを導入してあるかどうかで処理を変えるよう変更
@@ -47,7 +49,6 @@ function plugin_gallery_convert()
 {
     global $vars;
     static $gallery_counts = 0;
-    static $duplicated = false;
 
     // エラーメッセージ類
     $_err = array (
@@ -70,7 +71,7 @@ function plugin_gallery_convert()
 
     $images = array_pop($args);
     $images = str_replace("\r", "\n", str_replace("\r\n", "\n", $images));
-    preg_match_all('/.+\.(?:jpe?g|png|gif)>?.*?\n/i', $images, $matches);
+    preg_match_all('/.+\.(?:jpe?g|png|gif|webp)>?.*?\n/i', $images, $matches);
 
     $item = '';
     $url_base = get_base_uri() . '?plugin=ref&amp;page=';
@@ -140,29 +141,26 @@ function plugin_gallery_convert()
 
     // photoswipeの初期化用コード
     $js = '';
-    if (! $duplicated) {
-        $duplicated = true;
+    if ($gallery_counts === 0) {
         $js = <<<EOD
         <script>
-            var insertHTML = document.createElement('script');
-            insertHTML.innerHTML = 'document.addEventListener("DOMContentLoaded", function() {'+
-                                   'photoswipeSimplify.init();'+
-                                   '});';
-            document.body.appendChild(insertHTML);
+            document.addEventListener("DOMContentLoaded", function() {
+                photoswipeSimplify.init();
+            });
         </script>
         EOD;
     }
 
     // ギャラリーの作成
     $gallery = <<<EOD
-<div class="plugin-gallery{$option['position']}{$option['trim']}" id="gallery-$gallery_counts" data-pswp>
-$item
-</div>
-<div class="gallery-add{$option['noadd']}">
-    <a href="./?plugin=gallery&gallery_no=$gallery_counts&page={$vars['page']}">画像を追加する</a>
-</div>
-$js
-EOD;
+    <div class="plugin-gallery{$option['position']}{$option['trim']}" id="gallery-$gallery_counts" data-pswp>
+        $item
+    </div>
+    <div class="gallery-add{$option['noadd']}">
+        <a href="./?plugin=gallery&gallery_no=$gallery_counts&page={$vars['page']}">画像を追加する</a>
+    </div>
+    $js
+    EOD;
 
     $gallery_counts++;
     return $gallery;
@@ -184,33 +182,33 @@ function plugin_gallery_action()
 
     // 画像追加用フォーム
     $body = <<<EOD
-<div style="margin:10px">
-    <span class="small">アップロード可能なファイルの最大サイズ：$max_size KB</span>
-    <form enctype="multipart/form-data" action="./" method="post" >
-        <input type="hidden" name="plugin" value="gallery" />
-        <input type="hidden" name="gallery_no" value="$gallery_no" />
-        <input type="hidden" name="page" value="$page" />
-        <input type="file" name="attach_file"  accept="image/png, image/jpeg, image/gif" />&nbsp;
-        <label for="caption">キャプション: </label>
-        <input type="text" name="caption" />
-        <input type="submit" name="btn_submit" value="追加"/>
-    </form>
-</div>
-EOD;
+    <div style="margin:10px">
+        <span class="small">アップロード可能なファイルの最大サイズ：$max_size KB</span>
+        <form enctype="multipart/form-data" action="./" method="post" >
+            <input type="hidden" name="plugin" value="gallery" />
+            <input type="hidden" name="gallery_no" value="$gallery_no" />
+            <input type="hidden" name="page" value="$page" />
+            <input type="file" name="attach_file"  accept="image/png, image/jpeg, image/gif, image/webp" />&nbsp;
+            <label for="caption">キャプション: </label>
+            <input type="text" name="caption" />
+            <input type="submit" name="btn_submit" value="追加"/>
+        </form>
+    </div>
+    EOD;
 
     // 添付画像があればアップロード
     if (isset($file) && is_uploaded_file($file['tmp_name'])) {
         // ファイルがアップロードに適しているか判定
         $upload_err = plugin_gallery_check_file($file, $max_size);
         if ($upload_err !== false) {
-            return array('msg' => '画像を追加', 'body' => $upload_err . $body); 
+            return array('msg' => '画像を追加', 'body' => $upload_err . $body);
         }
 
         // アップロードされた画像を保存
         $attach_name = strtoupper(bin2hex($page)) . '_' . strtoupper(bin2hex($file['name']));
         move_uploaded_file($file['tmp_name'], UPLOAD_DIR . $attach_name);
         $new_item = $file['name'];
-    
+
         // キャプションの有無を判別
         if (!empty($_POST['caption'])) {
             $new_item .= '>' . htmlsc($_POST['caption']);
@@ -249,7 +247,7 @@ function plugin_gallery_check_file($file, $max_size)
 
     // フォーマット
     $mime_type = getimagesize($file['tmp_name'])['mime'];
-    if(!preg_match('/image\/(jpeg|png|gif)/i', $mime_type)) {
+    if(!preg_match('/image\/(jpeg|png|gif|webp)/i', $mime_type)) {
         return $upload_err['format'];
     }
 
