@@ -2,12 +2,13 @@
 /**
  * 折りたたみ可能な見出しを作成するプラグイン
  *
- * @version 1.5
+ * @version 1.6
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
  * -- Updates --
  * 2021-07-26 プラグインの呼び出し毎に挿入されていたスクリプトを大幅に削減
+ *            h使用時に元々ある疑似要素と開閉アイコンが干渉しないよう、アイコン表示用の要素を追加
  * 2021-07-07 全開閉ボタンにも状態に合わせてクラスを切り替える機能を追加
  *            全開閉ボタンが連打できたバグを修正
  *            全開閉ボタンの制御範囲の終了位置を作成する機能を追加
@@ -285,7 +286,7 @@ Class PluginAc
         if (! $is_ctrl) {
             // 通常の折りたたみ開閉用スクリプト
             $base_script = <<<EOD
-            $('.$class_contents').prev().addClass('$class_header');
+            $('.$class_contents').prev().addClass('$class_header').prepend('<i class=\"ac-icon\"></i>');
             $('.$class_contents').next('.$class_alt').show();
             $('.$class_header').on('click', function() {
                 $(this).toggleClass('open');

@@ -6,31 +6,36 @@
     &:hover {
         filter: brightness(1.2);
     }
-    &::before,
-    &::after {
-        font-family: 'Font Awesome 5 Free';
-        position: absolute;
-        left: 5px;
-        top: 50%;
-        transform: translateY(-50%);
-    }
-    &::before {
-        opacity: 1;
-        content: '\f0fe';
-    }
-    &::after {
-        opacity: 0;
-        content: '\f146';
-    }
-    &.open {
+    .ac-icon {
+        font-style: normal;
+        &::before,
+        &::after {
+            font-family: 'Font Awesome 5 Free';
+            position: absolute;
+            left: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
         &::before {
-            opacity: 0;
+            opacity: 1;
+            content: '\f0fe';
         }
         &::after {
-            opacity: 1;
+            opacity: 0;
+            content: '\f146';
         }
-        &+.plugin-ac {
-            &+.plugin-ac-altmsg{
+    }
+    &.open {
+        .ac-icon {
+            &::before {
+                opacity: 0;
+            }
+            &::after {
+                opacity: 1;
+            }
+        }
+        + .plugin-ac {
+            + .plugin-ac-altmsg{
                 opacity: 0;
             }
         }
