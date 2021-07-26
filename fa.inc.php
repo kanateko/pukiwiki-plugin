@@ -4,11 +4,12 @@
  *
  * v5.15.3フリー版 https://fontawesome.com/v5.15/icons?d=gallery&p=2&m=free
  *
- * @version 1.3
+ * @version 1.4
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
  * -- Update --
+ * 2021-07-26 リスト用のスクリプトを少し変更
  * 2021-07-11 アニメーションやサイズ変更といったのFAのクラスを引数で追加する機能を追加
  *            text-shadowとbackgroundオプションを追加
  *            アイコン同士を重ねる機能を追加
