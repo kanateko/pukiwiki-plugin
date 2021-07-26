@@ -287,7 +287,7 @@ Class PluginAc
             $base_script = <<<EOD
             $('.$class_contents').prev().addClass('$class_header');
             $('.$class_contents').next('.$class_alt').show();
-            $('body').on('click', '.$class_header', function() {
+            $('.$class_header').on('click', function() {
                 $(this).toggleClass('open');
                 $(this).next().stop().slideToggle(500);
             });
