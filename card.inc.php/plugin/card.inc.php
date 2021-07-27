@@ -2,11 +2,13 @@
 /**
  * ブログカード風にページを並べるプラグイン
  *
- * @version 1.4
+ * @version 1.5
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
  * -- Updates --
+ * 2021-07-26 webpに対応
+ *            他のページの画像を呼び出している場合のサムネイル取得処理を修正
  * 2021-06-29 プラグインの呼び出し毎に個別のIDを割り振る機能を追加
  * 2021-06-20 画像が縦長の場合はサムネイルの切り抜きを画像の上端に合わせるよう変更
  * 2021-04-30 存在しないページが含まれている場合にエラーを出すかどうかを設定できるように変更
@@ -30,21 +32,21 @@
 // デスクリプションを非表示にするカラム数
 define('NO_DESC_NUM', 4);
 // 固定レイアウト化
-define('FIX_WIDTH', TRUE);
+define('FIX_WIDTH', true);
 define('WRAPPER_WIDTH', '770px');
 // サムネイル作成
-define('ALLOW_MAKE_THUMBNAILS', TRUE);
+define('ALLOW_MAKE_THUMBNAILS', true);
 define('THUMB_DIR', IMAGE_DIR . 'thumb/');
 // 短縮URLの使用/未使用
-define('USE_SHORT_URL', FALSE);
+define('USE_SHORT_URL', false);
 // FontAwesomeの使用/未使用 (更新日のアイコン)
-define('USE_FONTAWESOME_ICON', FALSE);
+define('USE_FONTAWESOME_ICON', false);
 // ベースネーム表示の強制
-define('FORCE_BASENAME', FALSE);
+define('FORCE_BASENAME', false);
 // 存在しないページが含まれている場合にエラーを出すかどうか
-define('ERROR_ON_NO_EXISTS', FALSE);
+define('ERROR_ON_NO_EXISTS', false);
 // 縦長画像の場合にサムネイルの切り抜きを上端に合わせるかどうか
-define('OBJECT_POSITION_TOP', TRUE);
+define('OBJECT_POSITION_TOP', true);
 
 // 画像圧縮ライブラリの読込
 require_once(PLUGIN_DIR . 'resize.php');
@@ -80,10 +82,10 @@ function plugin_card_convert()
     $uri = get_base_uri();
     $card_list = '';
     $clock_icon = USE_FONTAWESOME_ICON ? '<i class="fas fa-history"></i>' : '<span>&#128339;</span>';
-    $show_basename = FORCE_BASENAME; 
+    $show_basename = FORCE_BASENAME;
 
     // 幅固定
-    $fix_width = FIX_WIDTH ? ' style="width:' . WRAPPER_WIDTH . '"' : '';    
+    $fix_width = FIX_WIDTH ? ' style="width:' . WRAPPER_WIDTH . '"' : '';
 
     // オプション振り分け
     if (!empty($args)) {
@@ -120,7 +122,7 @@ function plugin_card_convert()
     // ページ名の取得
     $pagenames = array();
     preg_match_all('/<a.*?href="\.\/\?([^\.]+?)".*?>(.+?)<\/a>/', $list, $matches);
-    
+
     foreach ($matches[1] as $i => $href) {
         if (USE_SHORT_URL) {
             // URL短縮ライブラリを導入済みの場合
@@ -150,7 +152,7 @@ function plugin_card_convert()
         // サムネイルの取得 (ページでrefプラグインが使われている必要あり)
         $eyecatch = IMAGE_DIR . 'eyecatch.jpg';
         $source = get_source($pagename,true,true);
-        preg_match('/ref\(([^,]+(\.jpg|\.png|\.gif))/', $source, $match_thumb);
+        preg_match('/ref\(([^,]+?\.(?:jpg|png|gif|webp))/', $source, $match_thumb);
         if (ALLOW_MAKE_THUMBNAILS) {
             $thumb = plugin_card_make_thumbnail($pagename, $eyecatch, $match_thumb);
         } else {
@@ -162,7 +164,7 @@ function plugin_card_convert()
 
         // ページタイトルのベースネーム表示化
         $card_title = $show_basename ? array_pop(explode('/', $pagename)) : $pagename;
-        
+
         // カード作成
         $card = <<<EOD
     <div class="plugin-card-box" style="width:{$cols['width']}px;height:{$cols['height']}px;">
@@ -271,7 +273,7 @@ function plugin_card_get_thumbnail($uri, $pagename, $eyecatch, $match_thumb) {
  * @param string $pagename エンコード前のページ名
  * @param string $eyecatch refプラグインが使われていないページ用のサムネイル画像
  * @param array $match_thumb そのページで見つかった最初のrefプラグイン
- * @return string $thumb_cache | $thumb_path . $match_thumb[2] サムネイルのパス (キャッシュ) 
+ * @return string $thumb_cache | $thumb_path . $match_thumb[2] サムネイルのパス (キャッシュ)
  */
 function plugin_card_make_thumbnail($pagename, $eyecatch, $match_thumb)
 {
@@ -280,7 +282,7 @@ function plugin_card_make_thumbnail($pagename, $eyecatch, $match_thumb)
         mkdir(THUMB_DIR, 0755);
         chmod(THUMB_DIR, 0755);
     }
-    
+
     $thumb_path = THUMB_DIR . strtoupper(bin2hex($pagename));
     $thumb_cache = $thumb_path . '.jpg';
 
@@ -304,8 +306,8 @@ function plugin_card_make_thumbnail($pagename, $eyecatch, $match_thumb)
                 $thumb_src = UPLOAD_DIR . strtoupper(bin2hex($pagename)) . '_' . strtoupper(bin2hex($match_thumb[1]));
             } else {
                 // 他のページに添付されている場合
-                list($refer, $src) = explode('/', $match_thumb[1]);
-                $thumb_src = UPLOAD_DIR . strtoupper(bin2hex($refer)) . '_' . strtoupper(bin2hex($src));
+                preg_match('/(.+)\/(.+)/', $match_thumb[1], $matches);
+                $thumb_src = UPLOAD_DIR . strtoupper(bin2hex($matches[1])) . '_' . strtoupper(bin2hex($matches[2]));
             }
         } else {
             // refプラグインが呼び出されてない場合
