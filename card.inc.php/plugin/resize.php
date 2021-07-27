@@ -44,6 +44,9 @@ function transform_image_size($srcPath, $dstPath, $width, $height)
         case IMAGETYPE_GIF:
             $source = imagecreatefromgif($srcPath);
             break;
+        case IMAGETYPE_WEBP:
+            $source = imagecreatefromwebp($srcPath);
+            break;
         default:
             //throw new RuntimeException("サポートしていない画像形式です: $type");
     }
