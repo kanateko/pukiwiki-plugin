@@ -151,10 +151,6 @@ function plugin_slider_convert()
                         break;
                 }
             }
-            if ($p_link['card'] || $plugin['gallery']) {
-                // 他のプラグインと連携する場合の設定
-                
-            }
             if ($list_slick_options['slidesToScroll'] > $list_slick_options['slidesToShow']) {
                 // 表示するスライド数よりもスクロール数が大きく設定されている場合
                 $list_slick_options['slidesToShow'] = $list_slick_options['slidesToScroll'];
@@ -173,7 +169,7 @@ function plugin_slider_convert()
         }
         if ($p_link['card'] || $p_link['gallery']) {
             // 他のプラグインと連携している場合はターゲットを書き換える
-            preg_match('/id="((?:plugin-card-container|gallery)-\d+)/', $item, $match);
+            preg_match('/id="((?:cardContainer|gallery-)\d+)/', $item, $match);
             $slider_target = $match[1];
             // オプションを書き換える
             $list_slick_options['lazyLoad'] = 'progressive';
