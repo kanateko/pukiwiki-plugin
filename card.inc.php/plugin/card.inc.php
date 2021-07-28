@@ -174,7 +174,7 @@ function plugin_card_convert()
                 <fig class="card-image$tall_img">
                     <img src="$thumb" alt="$pagename">
                 </fig>
-                <span class="card-title bold ellipsis">$card_title</span>
+                <span class="card-title bold">$card_title</span>
                 <span class="card-description">$description</span>
                 <span class="card-date">$clock_icon $date</span>
                 <span class="card-date long">$clock_icon $date_long</span>

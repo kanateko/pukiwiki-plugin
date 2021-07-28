@@ -11,6 +11,7 @@ $square-size: 150px;
     $width: #{math.div($container-width - $col-gap * ($col - 1), $col)};
     .card-cols-#{$col} {
         grid-template-columns: repeat(auto-fill, minmax(auto, $width));
+        .card-box {width: $width;}
         @if $col >= 4 {
             .card-description {
                 height: 2.5em;
@@ -31,7 +32,10 @@ $square-size: 150px;
     margin: 0 auto;
     &.minimal {
         .card-description {display: none;}
-        .card-date {padding-top: 1em;}
+        .card-title {
+            -webkit-line-clamp: 2;
+            height: 2em;
+        }
     }
     &:not(.vertical) {
         .card-box {
@@ -75,18 +79,21 @@ $square-size: 150px;
      }
 }
 
-// title
+// title (and description)
+.card-title, .card-description {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
 .card-title {
-    display: block;
+    -webkit-line-clamp: 1;
     font-size: 1.2em;
     padding: 5px 5px 0 5px;
 }
 
 // description
 .card-description {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
     font-size: .9em;
     height: 4.3em;
     opacity: .9;
@@ -131,13 +138,5 @@ $square-size: 150px;
     }
 }
 
-// additional classes
-.bold {
-    font-weight: bold;
-}
-
-.ellipsis {
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-}
+// font-weight
+.bold {font-weight: bold;}

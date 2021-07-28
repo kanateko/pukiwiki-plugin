@@ -1,17 +1,29 @@
 .card-cols-1 {
   grid-template-columns: repeat(auto-fill, minmax(auto, 720px));
 }
+.card-cols-1 .card-box {
+  width: 720px;
+}
 
 .card-cols-2 {
   grid-template-columns: repeat(auto-fill, minmax(auto, 355px));
+}
+.card-cols-2 .card-box {
+  width: 355px;
 }
 
 .card-cols-3 {
   grid-template-columns: repeat(auto-fill, minmax(auto, 233.3333333333px));
 }
+.card-cols-3 .card-box {
+  width: 233.3333333333px;
+}
 
 .card-cols-4 {
   grid-template-columns: repeat(auto-fill, minmax(auto, 172.5px));
+}
+.card-cols-4 .card-box {
+  width: 172.5px;
 }
 .card-cols-4 .card-description {
   height: 2.5em;
@@ -27,6 +39,9 @@
 .card-cols-5 {
   grid-template-columns: repeat(auto-fill, minmax(auto, 136px));
 }
+.card-cols-5 .card-box {
+  width: 136px;
+}
 .card-cols-5 .card-description {
   height: 2.5em;
   -webkit-line-clamp: 2;
@@ -40,6 +55,9 @@
 
 .card-cols-6 {
   grid-template-columns: repeat(auto-fill, minmax(auto, 111.6666666667px));
+}
+.card-cols-6 .card-box {
+  width: 111.6666666667px;
 }
 .card-cols-6 .card-description {
   height: 2.5em;
@@ -64,8 +82,9 @@
 .plugin-card.minimal .card-description {
   display: none;
 }
-.plugin-card.minimal .card-date {
-  padding-top: 1em;
+.plugin-card.minimal .card-title {
+  -webkit-line-clamp: 2;
+  height: 2em;
 }
 .plugin-card:not(.vertical) .card-box {
   display: grid;
@@ -110,16 +129,19 @@
           box-shadow: 0 5px 10px -5px rgba(0, 0, 0, 0.5);
 }
 
+.card-title, .card-description {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .card-title {
-  display: block;
+  -webkit-line-clamp: 1;
   font-size: 1.2em;
   padding: 5px 5px 0 5px;
 }
 
 .card-description {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
   font-size: 0.9em;
   height: 4.3em;
   opacity: 0.9;
@@ -166,11 +188,5 @@
 
 .bold {
   font-weight: bold;
-}
-
-.ellipsis {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
 }
 /*# sourceMappingURL=card.css.map */
