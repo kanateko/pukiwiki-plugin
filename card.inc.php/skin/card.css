@@ -84,7 +84,7 @@
 }
 .plugin-card.minimal .card-title {
   -webkit-line-clamp: 2;
-  height: 2em;
+  height: 2.3em;
 }
 .plugin-card:not(.vertical) .card-box {
   display: grid;
