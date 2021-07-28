@@ -1,151 +1,176 @@
-/* card.inc.php */
-.plugin-card,
-.plugin-card-bigimg {
-  display: -webkit-box;
-  display: -ms-flexbox;
-  display: flex;
-  -ms-flex-wrap: wrap;
-      flex-wrap: wrap;
-  -webkit-box-pack: start;
-      -ms-flex-pack: start;
-          justify-content: flex-start;
+.card-cols-1 {
+  grid-template-columns: repeat(auto-fill, minmax(auto, 720px));
 }
 
-.plugin-card .plugin-card-box,
-.plugin-card-bigimg .plugin-card-box {
-  padding: 0;
+.card-cols-2 {
+  grid-template-columns: repeat(auto-fill, minmax(auto, 355px));
+}
+
+.card-cols-3 {
+  grid-template-columns: repeat(auto-fill, minmax(auto, 233.3333333333px));
+}
+
+.card-cols-4 {
+  grid-template-columns: repeat(auto-fill, minmax(auto, 172.5px));
+}
+.card-cols-4 .card-description {
+  height: 2.5em;
+  -webkit-line-clamp: 2;
+}
+.card-cols-4 .card-date.long {
+  display: none;
+}
+.card-cols-4 .card-date {
+  display: block;
+}
+
+.card-cols-5 {
+  grid-template-columns: repeat(auto-fill, minmax(auto, 136px));
+}
+.card-cols-5 .card-description {
+  height: 2.5em;
+  -webkit-line-clamp: 2;
+}
+.card-cols-5 .card-date.long {
+  display: none;
+}
+.card-cols-5 .card-date {
+  display: block;
+}
+
+.card-cols-6 {
+  grid-template-columns: repeat(auto-fill, minmax(auto, 111.6666666667px));
+}
+.card-cols-6 .card-description {
+  height: 2.5em;
+  -webkit-line-clamp: 2;
+}
+.card-cols-6 .card-date.long {
+  display: none;
+}
+.card-cols-6 .card-date {
+  display: block;
+}
+
+.plugin-card {
+  display: grid;
+  -webkit-column-gap: 10px;
+     -moz-column-gap: 10px;
+          column-gap: 10px;
+  row-gap: 20px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+.plugin-card.minimal .card-description {
+  display: none;
+}
+.plugin-card.minimal .card-date {
+  padding-top: 1em;
+}
+.plugin-card:not(.vertical) .card-box {
+  display: grid;
+  grid-template: "image title      " auto "image description" auto "image date       " auto/150px 1fr;
+  height: 150px;
+}
+.plugin-card:not(.vertical) .card-image {
+  grid-area: image;
+  align-self: center;
+}
+.plugin-card:not(.vertical) .card-title {
+  grid-area: title;
+  align-self: center;
+}
+.plugin-card:not(.vertical) .card-description {
+  grid-area: description;
+  align-self: center;
+}
+.plugin-card:not(.vertical) .card-date {
+  grid-area: date;
+  align-self: center;
+}
+.plugin-card.vertical .card-image::before {
+  content: "";
+  display: block;
+  padding-top: 56.25%;
+}
+
+.card-box {
   position: relative;
-  word-wrap: break-word;
-  word-break: break-all;
+  max-width: 100%;
   border: 1px solid rgba(155, 155, 155, 0.5);
   border-radius: 4px;
   overflow: hidden;
-  -webkit-transition: all 0.3s;
-  transition: all 0.3s;
-  -webkit-box-shadow: 0 0 rgba(0, 0, 0, 0.5);
-          box-shadow: 0 0 rgba(0, 0, 0, 0.5);
+  -webkit-transition: 0.3s;
+  transition: 0.3s;
 }
-
-.plugin-card .plugin-card-box:hover,
-.plugin-card-bigimg .plugin-card-box:hover {
+.card-box:hover {
   -webkit-transform: translate(2px, -5px);
           transform: translate(2px, -5px);
   -webkit-box-shadow: 0 5px 10px -5px rgba(0, 0, 0, 0.5);
           box-shadow: 0 5px 10px -5px rgba(0, 0, 0, 0.5);
 }
 
-.plugin-card .plugin-card-img,
-.plugin-card-bigimg .plugin-card-img {
-  position: relative;
-  overflow: hidden;
+.card-title {
+  display: block;
+  font-size: 1.2em;
+  padding: 5px 5px 0 5px;
 }
 
-.plugin-card .plugin-card-img img,
-.plugin-card-bigimg .plugin-card-img img {
+.card-description {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 0.9em;
+  height: 4.3em;
+  opacity: 0.9;
+  -webkit-line-clamp: 3;
+  padding: 5px 5px 0 5px;
+}
+
+.card-date {
+  display: none;
+  text-align: right;
+  font-size: 0.9em;
+  padding: 5px;
+}
+
+.card-date.long {
+  display: block;
+}
+
+.card-image {
+  position: relative;
+  overflow: hidden;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.card-image.img-tall img {
+  -o-object-position: top;
+     object-position: top;
+}
+.card-image img {
+  position: absolute;
+  top: 0;
   width: 100%;
   height: 100%;
   -o-object-fit: cover;
      object-fit: cover;
 }
 
-.plugin-card .plugin-card-img.img-tall img,
-.plugin-card-bigimg .plugin-card-img.img-tall img {
-  -o-object-position: top;
-     object-position: top;
+.card-link:link, .card-link:visited, .card-link:hover {
+  text-decoration: unset;
+  color: unset;
+  background-color: unset;
 }
 
-.plugin-card .plugin-card-title,
-.plugin-card-bigimg .plugin-card-title {
-  font-size: 1.2em;
+.bold {
   font-weight: bold;
-  margin: 5px;
-  line-height: 115%;
-  color: inherit;
+}
+
+.ellipsis {
   overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  -webkit-box-orient: vertical;
-}
-
-.plugin-card .plugin-card-description,
-.plugin-card-bigimg .plugin-card-description {
-  line-height: 1.5em;
-  font-size: .8em;
-  margin: 5px;
-  color: gray;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 4;
-  -webkit-box-orient: vertical;
-}
-
-.plugin-card .plugin-card-date,
-.plugin-card-bigimg .plugin-card-date {
-  display: none;
-  position: absolute;
-  text-align: right;
-  font-size: .8em;
-  bottom: 0;
-  right: 8px;
-}
-
-.plugin-card .plugin-card-date.long,
-.plugin-card-bigimg .plugin-card-date.long {
-  display: block;
-}
-
-.plugin-card .plugin-card-link,
-.plugin-card-bigimg .plugin-card-link {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 2;
-}
-
-.plugin-card .plugin-card-box {
-  height: 120px;
-  margin: 5px;
-}
-
-.plugin-card .plugin-card-img {
-  width: 120px;
-  height: 100%;
-  float: left;
-  margin-right: 10px;
-}
-
-.plugin-card-bigimg .plugin-card-box {
-  margin: 5px 3px;
-}
-
-.plugin-card-bigimg .plugin-card-img::before {
-  content: "";
-  display: block;
-  padding-top: 56.25%;
-}
-
-.plugin-card-bigimg .plugin-card-img img {
-  position: absolute;
-  top: 0;
-}
-
-.plugin-card-bigimg.nodesc .plugin-card-title {
-  font-size: 1.1em;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-
-.plugin-card-bigimg.nodesc .plugin-card-description {
-  display: none;
-}
-
-.plugin-card-bigimg.nodesc .plugin-card-date {
-  display: block;
-}
-
-.plugin-card-bigimg.nodesc .plugin-card-date.long {
-  display: none;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 /*# sourceMappingURL=card.css.map */

@@ -1,127 +1,143 @@
-/* card.inc.php */
-.plugin-card,
-.plugin-card-bigimg {
-    display: -webkit-flex;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-start;
+@use 'sass:math';
 
-    .plugin-card-box {
-        padding: 0;
-        position: relative;
-        word-wrap: break-word;
-        word-break: break-all;
-        border: 1px solid rgba(155, 155, 155, 0.5);
-        border-radius: 4px;
-        overflow: hidden;
-        transition: all 0.3s;
-        box-shadow: 0 0 rgba(0, 0, 0, 0.5);
-        
-        &:hover {
-           transform: translate(2px, -5px);
-           box-shadow: 0 5px 10px -5px rgba(0, 0, 0, 0.5);
+// variables
+$col-gap: 10px;
+$container-width: 720px;
+$grid-area: image, title, description, date;
+$square-size: 150px;
+
+// columns setting
+@for $col from 1 through 6 {
+    $width: #{math.div($container-width - $col-gap * ($col - 1), $col)};
+    .card-cols-#{$col} {
+        grid-template-columns: repeat(auto-fill, minmax(auto, $width));
+        @if $col >= 4 {
+            .card-description {
+                height: 2.5em;
+                -webkit-line-clamp: 2;
+            }
+            .card-date.long {display: none;}
+            .card-date {display: block;}
         }
-    }
-
-    .plugin-card-img {
-        position: relative;
-        overflow: hidden;
-        img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        &.img-tall img {object-position: top;}
-    }
-
-    .plugin-card-title {
-        font-size: 1.2em;
-        font-weight: bold;
-        margin: 5px;
-        line-height: 115%;
-        color: inherit;
-        overflow: hidden;
-        display: -webkit-box;
-        -webkit-line-clamp: 1;
-        -webkit-box-orient: vertical;
-    }
-
-    .plugin-card-description {
-        line-height: 1.5em;
-        font-size: .8em;
-        margin: 5px;
-        color: gray;
-        overflow: hidden;
-        display: -webkit-box;
-        -webkit-line-clamp: 4;
-        -webkit-box-orient: vertical;
-    }
-
-    .plugin-card-date {
-        display: none;
-        position: absolute;
-        text-align: right;
-        font-size: .8em;
-        bottom: 0;
-        right: 8px;
-
-        &.long {
-            display: block;
-        }
-    }
-
-    .plugin-card-link {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 2;
     }
 }
+
+// card container (and settings for each additional classes)
 .plugin-card {
-    .plugin-card-box {
-        height: 120px;
-        margin: 5px;
+    display: grid;
+    column-gap: $col-gap;
+    row-gap: 20px;
+    max-width: $container-width;
+    margin: 0 auto;
+    &.minimal {
+        .card-description {display: none;}
+        .card-date {padding-top: 1em;}
     }
-    .plugin-card-img {
-        width: 120px;
-        height: 100%;
-        float: left;
-        margin-right: 10px;
-    }
-
-}
-.plugin-card-bigimg {
-    .plugin-card-box {
-        margin: 5px 3px;
-    }
-    .plugin-card-img {
-        &::before {
-            content:"";
-            display: block;
-            padding-top: 56.25%;
+    &:not(.vertical) {
+        .card-box {
+            display: grid;
+            grid-template:
+            'image title      ' auto
+            'image description' auto
+            'image date       ' auto /
+            $square-size 1fr;
+             height: $square-size;
         }
-        
-        img {
-            position: absolute;
-            top: 0;
-        }
-    }
-    &.nodesc {
-        .plugin-card-title {
-            font-size: 1.1em;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-        }
-        .plugin-card-description {
-            display: none;
-        }
-        .plugin-card-date {
-            display: block;
-            &.long {
-                display: none;
+        @each $area in $grid-area {
+            .card-#{$area} {
+                grid-area: #{$area};
+                align-self: center;
             }
         }
     }
+    &.vertical {
+        .card-image {
+            &::before {
+                content: '';
+                display: block;
+                padding-top: 56.25%;
+            }
+        }
+    }
+}
+
+// card body
+.card-box {
+    position: relative;
+    max-width: 100%;
+    border: 1px solid rgba(155, 155, 155, 0.5);
+    border-radius: 4px;
+    overflow: hidden;
+    transition: .3s;
+    &:hover {
+        transform: translate(2px, -5px);
+        box-shadow: 0 5px 10px -5px rgba(0, 0, 0, 0.5);
+     }
+}
+
+// title
+.card-title {
+    display: block;
+    font-size: 1.2em;
+    padding: 5px 5px 0 5px;
+}
+
+// description
+.card-description {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: .9em;
+    height: 4.3em;
+    opacity: .9;
+    -webkit-line-clamp: 3;
+    padding: 5px 5px 0 5px;
+}
+
+// date
+.card-date {
+    display: none;
+    text-align: right;
+    font-size: .9em;
+    padding: 5px;
+}
+.card-date.long {display: block;}
+
+// image
+.card-image {
+    position: relative;
+    overflow: hidden;
+    display: block;
+    width: 100%;
+    height: 100%;
+    &.img-tall {
+        img {object-position: top;}
+    }
+    img {
+        position: absolute;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+}
+
+// disable link decoration
+.card-link {
+    &:link, &:visited, &:hover {
+        text-decoration: unset;
+        color: unset;
+        background-color: unset;
+    }
+}
+
+// additional classes
+.bold {
+    font-weight: bold;
+}
+
+.ellipsis {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }

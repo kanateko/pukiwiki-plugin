@@ -2,11 +2,17 @@
 /**
  * ブログカード風にページを並べるプラグイン
  *
- * @version 1.5
+ * @version 2.0
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
  * -- Updates --
+ * 2021-07-28 定数を整理、よりわかりやすい名前に変更
+ *            カード表示エリアの幅を固定化。幅はCSSで制御するように
+ *            上記に伴って幅の固定化をON/OFFするオプションを廃止
+ *            カードを縦長表示するカラム数の閾値の設定を追加
+ *            各カードの幅をCSSのgridで制御するように変更
+ *            指定した見出しをデスクリプション代わりに表示する機能を追加
  * 2021-07-26 webpに対応
  *            他のページの画像を呼び出している場合のサムネイル取得処理を修正
  * 2021-06-29 プラグインの呼び出し毎に個別のIDを割り振る機能を追加
@@ -29,24 +35,23 @@
  * 2021-03-30 初版作成
  */
 
+// カードを縦長表示にするカラム数
+define('CARD_DISPLAY_VERTICAL_THRESHOLD', 3);
 // デスクリプションを非表示にするカラム数
-define('NO_DESC_NUM', 4);
-// 固定レイアウト化
-define('FIX_WIDTH', true);
-define('WRAPPER_WIDTH', '770px');
+define('CARD_HIDE_DESCRIPTION_THRESHOLD', 4);
 // サムネイル作成
-define('ALLOW_MAKE_THUMBNAILS', true);
-define('THUMB_DIR', IMAGE_DIR . 'thumb/');
+define('CARD_ALLOW_CHACHE_THUMBNAILS', true);
+define('CARD_THUMB_DIR', IMAGE_DIR . 'thumb/');
 // 短縮URLの使用/未使用
-define('USE_SHORT_URL', false);
+define('CARD_USE_SHORT_URL', false);
 // FontAwesomeの使用/未使用 (更新日のアイコン)
-define('USE_FONTAWESOME_ICON', false);
+define('CARD_USE_FONTAWESOME_ICON', false);
 // ベースネーム表示の強制
-define('FORCE_BASENAME', false);
+define('CARD_FORCE_BASENAME', false);
 // 存在しないページが含まれている場合にエラーを出すかどうか
-define('ERROR_ON_NO_EXISTS', false);
+define('CARD_ERROR_ON_NO_EXISTS', false);
 // 縦長画像の場合にサムネイルの切り抜きを上端に合わせるかどうか
-define('OBJECT_POSITION_TOP', true);
+define('CARD_IMAGE_BASELINE_TOP', true);
 
 // 画像圧縮ライブラリの読込
 require_once(PLUGIN_DIR . 'resize.php');
@@ -66,11 +71,8 @@ function plugin_card_convert()
 
     // カラム数関連
     $cols = array (
-        'num'      =>    1,
-        'width'    =>    600,
-        'height'   =>    120,
-        'class'    =>    '',
-        'isset'   =>    false
+        'class'    =>    'card-cols-1',
+        'isset'    =>    false
     );
 
     // 引数がなければ使い方表示
@@ -81,32 +83,26 @@ function plugin_card_convert()
     $list = convert_html(array_pop($args));
     $uri = get_base_uri();
     $card_list = '';
-    $clock_icon = USE_FONTAWESOME_ICON ? '<i class="fas fa-history"></i>' : '<span>&#128339;</span>';
-    $show_basename = FORCE_BASENAME;
-
-    // 幅固定
-    $fix_width = FIX_WIDTH ? ' style="width:' . WRAPPER_WIDTH . '"' : '';
+    $clock_icon = CARD_USE_FONTAWESOME_ICON ? '<i class="fas fa-history"></i>' : '<span>&#128339;</span>';
+    $show_basename = CARD_FORCE_BASENAME;
 
     // オプション振り分け
-    if (!empty($args)) {
+    if (! empty($args)) {
         foreach ($args as $arg) {
             if ($arg == 'base') {
                 // ベースネーム表示
                 $show_basename = true;
+            } else if (preg_match('/\*{1,3}=\d+/', $arg)) {
+                // 見出しの抜き出し
+                $headline = explode('=', $arg);
             } else if (is_numeric($arg)) {
                 if ($cols['isset']) return $msg['doubled'];
                 // 数字1の場合はカラム数設定
                 $arg = intval($arg);
-                if ($arg === 1) {
-                    continue;
-                } else if ($arg > 1 && $arg < 7) {
-                    // ページ幅770pxでだいたいいい感じに収まるようカードの幅を調整
-                    $cols['width'] = 720 / $arg - 6;
-                    if ($arg > 2) {
-                        // 3列以上の場合はサムネイルを最大化 & デスクリプション非表示判定
-                        $cols['class'] = $arg < NO_DESC_NUM ? '-bigimg' : '-bigimg nodesc';
-                        $cols['height'] = $arg < NO_DESC_NUM ? 260 : $cols['width'] * 0.5625 + 80;
-                    }
+                if ($arg > 0 && $arg < 7) {
+                    $cols['class'] = 'card-cols-' . $arg;
+                    if ($arg >= CARD_DISPLAY_VERTICAL_THRESHOLD) $cols['class'] .= ' vertical';
+                    if ($arg >= CARD_HIDE_DESCRIPTION_THRESHOLD) $cols['class'] .= ' minimal';
                 } else {
                     // 1-6以外の数字場合はエラー
                     return $msg['range'];
@@ -124,7 +120,7 @@ function plugin_card_convert()
     preg_match_all('/<a.*?href="\.\/\?([^\.]+?)".*?>(.+?)<\/a>/', $list, $matches);
 
     foreach ($matches[1] as $i => $href) {
-        if (USE_SHORT_URL) {
+        if (CARD_USE_SHORT_URL) {
             // URL短縮ライブラリを導入済みの場合
             $pagenames[$href] = get_pagename_from_short_url($href);
         } else {
@@ -132,18 +128,24 @@ function plugin_card_convert()
             $pagenames[$href] = urldecode($href);
         }
         // 存在しないページが含まれている場合エラーを返す
-        if (ERROR_ON_NO_EXISTS && !file_exists(get_filename($pagenames[$href]))) {
+        if (CARD_ERROR_ON_NO_EXISTS && ! file_exists(get_filename($pagenames[$href]))) {
             return $msg['noexists'] . $matches[2][$i];
         }
     }
 
     foreach($pagenames as $href => $pagename) {
         // 存在しないページをスキップ
-        if (!file_exists(get_filename($pagename))) continue;
+        if (! file_exists(get_filename($pagename))) continue;
         // URLの作成
         $url = $uri . '?' . $href;
         //デスクリプションの取得
-        $description = plugin_card_make_description($pagename);
+        if (isset($headline)) {
+            // 指定した見出しを取得する
+            $description = plugin_card_get_headline($headline[0], $headline[1], $pagename);
+        } else {
+            // 最初の200文字を抜き出す
+            $description = plugin_card_make_description($pagename);
+        }
         // 更新日の取得
         $filetime = get_filetime($pagename);
         $date = get_date('Y-m-d', $filetime);
@@ -153,38 +155,38 @@ function plugin_card_convert()
         $eyecatch = IMAGE_DIR . 'eyecatch.jpg';
         $source = get_source($pagename,true,true);
         preg_match('/ref\(([^,]+?\.(?:jpg|png|gif|webp))/', $source, $match_thumb);
-        if (ALLOW_MAKE_THUMBNAILS) {
+        if (CARD_ALLOW_CHACHE_THUMBNAILS) {
             $thumb = plugin_card_make_thumbnail($pagename, $eyecatch, $match_thumb);
         } else {
             $thumb = plugin_card_get_thumbnail($uri, $pagename, $eyecatch, $match_thumb);
         }
 
         // サムネイルが縦長か判定
-        $tall_img = OBJECT_POSITION_TOP ? plugin_card_get_image_size($thumb) : '';
+        $tall_img = CARD_IMAGE_BASELINE_TOP ? plugin_card_get_image_size($thumb) : '';
 
         // ページタイトルのベースネーム表示化
         $card_title = $show_basename ? array_pop(explode('/', $pagename)) : $pagename;
 
         // カード作成
         $card = <<<EOD
-    <div class="plugin-card-box" style="width:{$cols['width']}px;height:{$cols['height']}px;">
-        <div class="plugin-card-img$tall_img">
-            <img src="$thumb" alt="$pagename" >
-        </div>
-        <div class="plugin-card-title">$card_title</div>
-        <p class="plugin-card-description">$description</p>
-        <div class="plugin-card-date">$clock_icon $date</div>
-        <div class="plugin-card-date long">$clock_icon $date_long</div>
-        <a class ="plugin-card-link" href="$url"></a>
-    </div>
-
-EOD;
+        <a class ="card-link" title="$pagename" href="$url">
+            <div class="card-box">
+                <fig class="card-image$tall_img">
+                    <img src="$thumb" alt="$pagename">
+                </fig>
+                <span class="card-title bold ellipsis">$card_title</span>
+                <span class="card-description">$description</span>
+                <span class="card-date">$clock_icon $date</span>
+                <span class="card-date long">$clock_icon $date_long</span>
+            </div>
+        </a>
+        EOD;
         // カードをリストに追加
         $card_list .= $card . "\n";
     }
 
     $card_wrap = <<<EOD
-<div class="plugin-card{$cols['class']}" id="plugin-card-container-$card_counts"$fix_width>
+<div class="plugin-card {$cols['class']}" id="cardContainer$card_counts">
 $card_list
 </div>
 EOD;
@@ -193,36 +195,59 @@ EOD;
 }
 
 /**
+ * ページ内容から指定番号の見出しを抜き出す
+ * @param string $pagename エンコード前のページ名
+ * @return string $headline 指定した見出しの文字列
+ */
+function plugin_card_get_headline($h_depth, $h_num, $pagename) {
+    $source = get_source($pagename, true, true);
+    $h_depth = '#[^\*]' . preg_quote($h_depth) . '([^\*]+?) \[#';
+    preg_match_all($h_depth, $source, $headlines);
+    $headline = plugin_card_get_raw_strings($headlines[1][$h_num - 1]);
+    return $headline;
+}
+
+/**
  * ページ内容からプラグインやPukiWiki構文をある程度除いた200文字を抜き出す
  * @param string $pagename エンコード前のページ名
+ * @return string $source ページから抜き出した200字
  */
 function plugin_card_make_description($pagename) {
     $source = get_source($pagename);
-    $source = preg_replace('/^RIGHT:|LEFT:|CENTER:|SIZE\(.*?\):|COLOR\(.*?\):/u', '', $source);
-    $source = preg_replace('/^\#(.*?)$/u', '', $source);
-    $source = preg_replace('/^\}(.*?)$/u', '', $source);
-    $source = preg_replace('/\&null\{(.*?)\};/u', '', $source);
-    $source = preg_replace('/\&([^;\{]*?)\{(.*?)\};/u', '$2', $source);
-    $source = preg_replace('/\&([^;\(\{]*?)\((.*?)\);/u', '', $source);
-    $source = preg_replace('/\&([a-zA-Z0-9]*?);/u', '', $source);
-    $source = preg_replace('/\&([^;]*?);/u', '$1', $source);
-    $source = preg_replace('/^\|(.*?)$/u', '', $source);
-    $source = preg_replace('/^\*(.*?)$/u', '', $source);
-    $source = preg_replace('/^[\-\+]{1,3}(.*?)$/u', '$1', $source);
-    $source = preg_replace('/^>(.*?)$/u', '$1', $source);
-    $source = preg_replace('/\[\[([^\]>]*?)>([^\]]*?)\]\]/u', '$1', $source);
-    $source = preg_replace('/\[\[([^\]:]*?):([^\]]*?)\]\]/u', '$1', $source);
-    $source = preg_replace('/\[\[([^\]]*?)\]\]/u', '$1', $source);
-    $source = preg_replace('/\'\'\'(.*?)\'\'\'/u', '$1', $source);
-    $source = preg_replace('/\'\'(.*?)\'\'/u', '$1', $source);
-    $source = preg_replace('/%%%(.*?)%%%/u', '$1', $source);
-    $source = preg_replace('/%%(.*?)%%/u', '$1', $source);
-    $source = preg_replace('/\/\/(.*?)$/u', '', $source);
+    $source = plugin_card_get_raw_strings($source);
     $source = htmlsc(mb_substr(implode($source),0 ,200));
     if (empty(trim($source))) {
         $source = 'クリック or タップでこのページに移動します。';
     }
     return $source;
+}
+
+/**
+ * @param string $str PukiWiki記法の混じった文字列
+ * @return string $str PukiWiki記法を取り除いた文字列
+ */
+function plugin_card_get_raw_strings($str) {
+    $str = preg_replace('/^RIGHT:|LEFT:|CENTER:|SIZE\(.*?\):|COLOR\(.*?\):/u', '', $str);
+    $str = preg_replace('/^\#(.*?)$/u', '', $str);
+    $str = preg_replace('/^\}(.*?)$/u', '', $str);
+    $str = preg_replace('/\&null\{(.*?)\};/u', '', $str);
+    $str = preg_replace('/\&([^;\{]*?)\{(.*?)\};/u', '$2', $str);
+    $str = preg_replace('/\&([^;\(\{]*?)\((.*?)\);/u', '', $str);
+    $str = preg_replace('/\&([a-zA-Z0-9]*?);/u', '', $str);
+    $str = preg_replace('/\&([^;]*?);/u', '$1', $str);
+    $str = preg_replace('/^\|(.*?)$/u', '', $str);
+    $str = preg_replace('/^\*(.*?)$/u', '', $str);
+    $str = preg_replace('/^[\-\+]{1,3}(.*?)$/u', '$1', $str);
+    $str = preg_replace('/^>(.*?)$/u', '$1', $str);
+    $str = preg_replace('/\[\[([^\]>]*?)>([^\]]*?)\]\]/u', '$1', $str);
+    $str = preg_replace('/\[\[([^\]:]*?):([^\]]*?)\]\]/u', '$1', $str);
+    $str = preg_replace('/\[\[([^\]]*?)\]\]/u', '$1', $str);
+    $str = preg_replace('/\'\'\'(.*?)\'\'\'/u', '$1', $str);
+    $str = preg_replace('/\'\'(.*?)\'\'/u', '$1', $str);
+    $str = preg_replace('/%%%(.*?)%%%/u', '$1', $str);
+    $str = preg_replace('/%%(.*?)%%/u', '$1', $str);
+    $str = preg_replace('/\/\/(.*?)$/u', '', $str);
+    return $str;
 }
 
 /**
@@ -277,13 +302,13 @@ function plugin_card_get_thumbnail($uri, $pagename, $eyecatch, $match_thumb) {
  */
 function plugin_card_make_thumbnail($pagename, $eyecatch, $match_thumb)
 {
-    if (!file_exists(THUMB_DIR)) {
+    if (!file_exists(CARD_THUMB_DIR)) {
         // ディレクトリの確認と作成
-        mkdir(THUMB_DIR, 0755);
-        chmod(THUMB_DIR, 0755);
+        mkdir(CARD_THUMB_DIR, 0755);
+        chmod(CARD_THUMB_DIR, 0755);
     }
 
-    $thumb_path = THUMB_DIR . strtoupper(bin2hex($pagename));
+    $thumb_path = CARD_THUMB_DIR . strtoupper(bin2hex($pagename));
     $thumb_cache = $thumb_path . '.jpg';
 
     // 拡張子の違うキャッシュファイルを修正する
