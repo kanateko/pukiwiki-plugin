@@ -97,8 +97,8 @@ class Infobox {
         $source = explode("\r", $source);
 
         foreach ($source as $str) {
-            list($key, $val) = explode('=', $str);
-            $keywords[$key] =$val;
+            list($key, $val) = explode('=', $str, 2);
+            $keywords[$key] = $val;
         }
 
         return $keywords;
