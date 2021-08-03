@@ -2,11 +2,12 @@
 /**
  * テンプレートを読み込んでインフォボックスを設置するプラグイン
  *
- * @version 0.1
+ * @version 0.2
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
  * -- Update --
+ * 2021-08-04 テンプレートの読み込みがループする場合はエラーを表示する機能を追加
  * 2021-08-03 初版作成
  */
 
@@ -33,6 +34,8 @@ class Infobox {
     public static $msg = array(
         'usage'    => '#infobox([template][,nozoom][,class=xxx]){{<br>&lt;key&gt; = xxx<br>...<br>}}<br>',
         'notfound' => '#infobox Error: The template you specified does not exist. -> ',
+        'loop'     => '#infobox Error: The template you specified is already included. -> ',
+        'self'     => '#Infobox Error: It is not allowed that loading self as a template.',
     );
 
     private $options = array('nozoom');
@@ -44,13 +47,14 @@ class Infobox {
     {
         $this->source = array_pop($args);
         // オプション判別
-        foreach($args as $arg) {
+        foreach($args as $i => $arg) {
             $arg = htmlsc($arg);
             if (in_array($arg, $this->options)) {
                 $this->add_class .= ' ' . $arg;
-                unset($args[$arg]);
+                unset($args[$i]);
             } else if (strpos($arg, 'class=') !== false) {
                 $this->add_class .= ' ' . explode('=', $arg)[1];
+                unset($args[$i]);
             }
         }
         // テンプレートページの指定
@@ -124,6 +128,7 @@ class Infobox {
  */
 class IncludeTemplate
 {
+    private static $included = array();
     private $template_page;
 
     public function __construct($template)
@@ -136,13 +141,24 @@ class IncludeTemplate
      */
     public function get_template()
     {
+        global $vars;
         $page = $this->template_page;
-        if (! is_page($page)) {
-            return Infobox::$msg['notfound'] . htmlsc($this->template_page);
-        }
-        $template = get_source($page);
 
-        return $template;
+        // エラーチェック
+        if (! is_page($page)) {
+            // テンプレートが存在しなければエラー
+            return Infobox::$msg['notfound'] . htmlsc($page);
+        } else if (isset(self::$included[$page])) {
+            // テンプレートが既に1回読み込まれていればエラー
+            return Infobox::$msg['loop'] . htmlsc($page);
+        } else if ($page == $vars['page']) {
+            // テンプレートページ内で自分自身が呼び出されていればエラー
+            return Infobox::$msg['self'];
+        } else {
+            self::$included[$page] = true;
+            $template = get_source($page);
+            return $template;
+        }
     }
 }
 ?>
