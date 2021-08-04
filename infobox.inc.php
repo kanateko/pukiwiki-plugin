@@ -137,7 +137,7 @@ class Infobox {
      */
     private function trim_disused($infobox)
     {
-        $infobox = preg_replace("/^[^{]*{{{[^}]*}}}[^}]*$/", '', $infobox);
+        $infobox = preg_replace("/^[\s\S]*{{{[^}]*}}}[\s\S]*$/", '', $infobox);
         $infobox = preg_replace('/^#author[\s\S]*$/', '', $infobox);
         if ($regexp = $this->options['except']) {
             $infobox = preg_replace($regexp, '', $infobox);
