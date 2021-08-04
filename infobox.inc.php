@@ -2,17 +2,20 @@
 /**
  * テンプレートを読み込んでインフォボックスを設置するプラグイン
  *
- * @version 0.2
+ * @version 0.3
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
  * -- Update --
  * 2021-08-04 テンプレートの読み込みがループする場合はエラーを表示する機能を追加
+ *            テンプレートページの凍結が必要かどうかを設定できる機能を追加
  * 2021-08-03 初版作成
  */
 
 // テンプレートページ
 define('INFOBOX_TEMPLATE_LOCATION', ':config/plugin/infobox');
+// 使用するのにテンプレートページが凍結されてる必要があるかどうか
+define('INFOBOX_NEED_TO_FREEZE', false);
 
 function plugin_infobox_convert()
 {
@@ -35,7 +38,8 @@ class Infobox {
         'usage'    => '#infobox([template][,nozoom][,class=xxx]){{<br>&lt;key&gt; = xxx<br>...<br>}}<br>',
         'notfound' => '#infobox Error: The template you specified does not exist. -> ',
         'loop'     => '#infobox Error: The template you specified is already included. -> ',
-        'self'     => '#Infobox Error: It is not allowed that loading self as a template.',
+        'self'     => '#infobox Error: It is not allowed that loading self as a template.',
+        'freeze'   => '#infobox Error: According to the setting, you should freeze templates before use this plugin.',
     );
 
     private $options = array('nozoom');
@@ -148,6 +152,9 @@ class IncludeTemplate
         if (! is_page($page)) {
             // テンプレートが存在しなければエラー
             return Infobox::$msg['notfound'] . htmlsc($page);
+        } else if (INFOBOX_ADMIN_ONLY && ! is_freeze($page)) {
+            // テンプレートの凍結が必要な設定で凍結されてなければエラー
+            return Infobox::$msg['freeze'];
         } else if (isset(self::$included[$page])) {
             // テンプレートが既に1回読み込まれていればエラー
             return Infobox::$msg['loop'] . htmlsc($page);
