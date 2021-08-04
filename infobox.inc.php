@@ -2,13 +2,14 @@
 /**
  * テンプレートを読み込んでインフォボックスを設置するプラグイン
  *
- * @version 0.3
+ * @version 0.4
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
  * -- Update --
  * 2021-08-04 テンプレートの読み込みがループする場合はエラーを表示する機能を追加
  *            テンプレートページの凍結が必要かどうかを設定できる機能を追加
+ *            指定した文字列を含む行をinclude時に除外する機能を追加
  * 2021-08-03 初版作成
  */
 
@@ -35,29 +36,33 @@ function plugin_infobox_convert()
  */
 class Infobox {
     public static $msg = array(
-        'usage'    => '#infobox([template][,nozoom][,class=xxx]){{<br>&lt;key&gt; = xxx<br>...<br>}}<br>',
+        'usage'    => '#infobox([template][,nozoom][,class=xxx][,except=xxx]){{<br>&lt;key&gt; = xxx<br>...<br>}}<br>',
         'notfound' => '#infobox Error: The template you specified does not exist. -> ',
         'loop'     => '#infobox Error: The template you specified is already included. -> ',
         'self'     => '#infobox Error: It is not allowed that loading self as a template.',
         'freeze'   => '#infobox Error: According to the setting, you should freeze templates before use this plugin.',
     );
-
-    private $options = array('nozoom');
-    private $add_class;
-    private $source;
+    private $options = array(
+        'class'  => '',
+        'except' => '',
+    );
+    private $lines;
     private $template;
 
     public function __construct($args)
     {
-        $this->source = array_pop($args);
+        $this->lines = array_pop($args);
         // オプション判別
         foreach($args as $i => $arg) {
             $arg = htmlsc($arg);
-            if (in_array($arg, $this->options)) {
-                $this->add_class .= ' ' . $arg;
+            if ($arg == 'nozoom') {
+                $this->options['class'] .= ' ' . $arg;
                 unset($args[$i]);
             } else if (strpos($arg, 'class=') !== false) {
-                $this->add_class .= ' ' . explode('=', $arg)[1];
+                $this->options['class'] .= ' ' . explode('=', $arg, 2)[1];
+                unset($args[$i]);
+            } else if (strpos($arg, 'except=') !== false) {
+                $this->options['except'] = $this->convert_regexp(explode('=', $arg, 2)[1]);
                 unset($args[$i]);
             }
         }
@@ -70,8 +75,8 @@ class Infobox {
      */
     public function convert_infobox()
     {
-        $add_class = $this->add_class;
-        $keywords = $this->get_keywords($this->source);
+        $add_class = $this->options['class'];
+        $keywords = $this->get_keywords($this->lines);
         $template = $this->template->get_template();
         if (! is_array($template)) {
             // 配列以外ならエラーとして出力
@@ -79,7 +84,6 @@ class Infobox {
         }
 
         // キーを値に置き換え
-        $template = implode($template);
         foreach($keywords as $key => $val) {
             $template = str_replace('{{{' . $key . '}}}', $val, $template);
         }
@@ -99,12 +103,12 @@ class Infobox {
     /**
      * マルチライン部分をキーと値に分離して配列に格納する
      */
-    private function get_keywords($source)
+    private function get_keywords($lines)
     {
         $keywords = array();
-        $source = explode("\r", $source);
+        $lines = explode("\r", $lines);
 
-        foreach ($source as $str) {
+        foreach ($lines as $str) {
             list($key, $val) = explode('=', $str, 2);
             $keywords[$key] = $val;
         }
@@ -114,13 +118,32 @@ class Infobox {
     }
 
     /**
+     * 除外用の正規表現を組み立てる
+     */
+    private function convert_regexp($str)
+    {
+        $str = str_replace('/', '\/', $str);
+        if (preg_match('/^\^/', $str)) {
+            return '/^(' . preg_replace('/^\^/', '', $str) . ')[\s\S]*$/';
+        } else if (preg_match('/[^\\]\$$/', $str)) {
+            return '/^[\s\S]*(' . preg_replace('/\$$/', '', $str) . ')$/';
+        } else {
+            return '/^[\s\S]*(' . $str . ')[\s\S]*$/';
+        }
+    }
+
+    /**
      * テンプレートの不要な部分を削除
      */
     private function trim_disused($infobox)
     {
-        $infobox = preg_replace("/[^{\n]*{{{[^}\n]+}}}[^}\n]*\n/", '', $infobox);
-        $infobox = preg_replace('/#author\(.+?\)/', '', $infobox);
-        $infobox = preg_replace('/==noinclude==[\s\S]*?==\/noinclude==/', '', $infobox);
+        $infobox = preg_replace("/^[^{]*{{{[^}]*}}}[^}]*$/", '', $infobox);
+        $infobox = preg_replace('/^#author[\s\S]*$/', '', $infobox);
+        if ($regexp = $this->options['except']) {
+            $infobox = preg_replace($regexp, '', $infobox);
+        }
+        $infobox = implode($infobox);
+        $infobox = preg_replace('/==noinclude==[\s\S]*?==\/noinclude==\s/', '', $infobox);
         $infobox = convert_html($infobox);
 
         return $infobox;
@@ -152,7 +175,7 @@ class IncludeTemplate
         if (! is_page($page)) {
             // テンプレートが存在しなければエラー
             return Infobox::$msg['notfound'] . htmlsc($page);
-        } else if (INFOBOX_ADMIN_ONLY && ! is_freeze($page)) {
+        } else if (INFOBOX_NEED_TO_FREEZE && ! is_freeze($page)) {
             // テンプレートの凍結が必要な設定で凍結されてなければエラー
             return Infobox::$msg['freeze'];
         } else if (isset(self::$included[$page])) {
