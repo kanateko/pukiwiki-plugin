@@ -2,11 +2,12 @@
 /**
  * ブログカード風にページを並べるプラグイン
  *
- * @version 2.0
+ * @version 2.1
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
  * -- Updates --
+ * 2021-08-04 infoboxプラグインとの兼ね合いで一部正規表現を変更・追加
  * 2021-07-28 定数を整理、よりわかりやすい名前に変更
  *            カード表示エリアの幅を固定化。幅はCSSで制御するように
  *            上記に伴って幅の固定化をON/OFFするオプションを廃止
@@ -154,7 +155,7 @@ function plugin_card_convert()
         // サムネイルの取得 (ページでrefプラグインが使われている必要あり)
         $eyecatch = IMAGE_DIR . 'eyecatch.jpg';
         $source = get_source($pagename,true,true);
-        preg_match('/ref\(([^,]+?\.(?:jpg|png|gif|webp))/', $source, $match_thumb);
+        preg_match('/(?:ref\(|image=)([^,]+?\.(?:jpg|png|gif|webp))/', $source, $match_thumb);
         if (CARD_ALLOW_CHACHE_THUMBNAILS) {
             $thumb = plugin_card_make_thumbnail($pagename, $eyecatch, $match_thumb);
         } else {
@@ -247,6 +248,7 @@ function plugin_card_get_raw_strings($str) {
     $str = preg_replace('/%%%(.*?)%%%/u', '$1', $str);
     $str = preg_replace('/%%(.*?)%%/u', '$1', $str);
     $str = preg_replace('/\/\/(.*?)$/u', '', $str);
+    $str = preg_replace('/^.+=.+$/', '', $str);
     return $str;
 }
 
