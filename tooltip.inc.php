@@ -2,12 +2,15 @@
 /**
  * ホバーorタップでツールチップを表示するプラグイン
  *
- * @version 0.1
+ * @version 0.2
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
  * -- Update --
- * 2021-08-18 初版作成
+ * 2021-08-20 v0.2 対象の語句がページとして存在している場合はツールチップにページリンクを挿入する機能を追加
+ *                 エラー表示時に前後に改行を入れるよう変更
+ *                 ツールチップの内容を取得する際に改行コードを排除するように修正
+ * 2021-08-18 v0.1 初版作成
  */
 
 // 用語集ページ
@@ -19,6 +22,9 @@ define('TOOLTIP_ADD_DEFAULT_SETTINGS', array(
     'allowHTML'   => 'true',
     'interactive' => 'true',
 ));
+
+// 語句がページとして存在する場合にリンクを追加するかどうか
+define('TOOLTIP_ENABLE_AUTOLINK', true);
 
 function plugin_tooltip_init()
 {
@@ -51,9 +57,9 @@ class Tooltip
     public $error;
 
     public $msg = array(
-        'usage'   => '&amp;tooltip(&lt;term&gt;){&lt;definition&gt;};' . "\n",
-        'unknown' => '&amp;tooltip Error: Unknown argument. ->',
-        'def'     => '&amp;tooltip Error: Undefined term. ->',
+        'usage'   => '<br>&amp;tooltip(&lt;term&gt;){&lt;definition&gt;};<br>',
+        'unknown' => '<br>&amp;tooltip Error: Unknown argument. -> ',
+        'def'     => '<br>&amp;tooltip Error: Undefined term. -> ',
     );
 
     private $options = array(
@@ -70,7 +76,7 @@ class Tooltip
         // 対象の定義を検索or設定
         if (empty($this->def)) {
             $this->def = $glossary->search_defs($this->term);
-            if ($this->def === false) $this->error = $this->msg['def'] . $this->term;
+            if ($this->def === false) $this->error = $this->msg['def'] . $this->term . '<br>';
         } else {
             $glossary->add_defs($this->term, $this->def);
         }
@@ -97,11 +103,11 @@ class Tooltip
                     if (preg_match($regexp, $val)) {
                         $this->options['props'][$key] = $val;
                     } else {
-                        $this->error = $this->msg['unknown'] . $arg;
+                        $this->error = $this->msg['unknown'] . $arg . '<br>';
                     }
                     break;
                 default:
-                    $this->error = $this->msg['unknown'] . $arg;
+                    $this->error = $this->msg['unknown'] . $arg . '<br>';
             }
         }
     }
@@ -113,6 +119,12 @@ class Tooltip
     {
         $tag = substr(md5($this->term), 0, 10);
         $cfg = $this->const_tippy_props();
+        $def = $this->def;
+
+        // ページとして存在するかチェック
+        if (TOOLTIP_ENABLE_AUTOLINK && is_page($this->term)) {
+            $def .='<hr>詳細: ' . make_pagelink($this->term);
+        }
 
         // ツールチップ表示用スクリプト
         if (isset(self::$loaded[$tag])) {
@@ -122,7 +134,7 @@ class Tooltip
             $script = <<<EOD
                 document.addEventListener('DOMContentLoaded', () => {
                     tippy('.tooltip-$tag', {
-                        content: '$this->def',
+                        content: '$def',
                         $cfg
                     });
                 });
@@ -191,11 +203,11 @@ class Glossary
      */
     private function init_defs()
     {
-        preg_match_all('/:([^\|:]+?)\|(.*?)\n/', $this->source, $defs);
+        preg_match_all('/:(.+?)\|(.*)\n/', $this->source, $defs);
 
         foreach ($defs[1] as $i => $val) {
             $defs[2][$i] = preg_replace("/<\/?p>\n?/", '', convert_html($defs[2][$i]));
-            self::$defs[$val] = $defs[2][$i];
+            self::$defs[$val] = preg_replace("/\r|\n|\r\n/", '', $defs[2][$i]);
         }
     }
 
