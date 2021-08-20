@@ -2,12 +2,13 @@
 /**
  * ホバーorタップでツールチップを表示するプラグイン
  *
- * @version 0.2
+ * @version 0.3
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
  * -- Update --
- * 2021-08-20 v0.2 対象の語句がページとして存在している場合はツールチップにページリンクを挿入する機能を追加
+ * 2021-08-20 v0.3 識別用文字列を使って、同じ語句でツールチップの内容を切り替える機能を追加
+ *            v0.2 対象の語句がページとして存在している場合はツールチップにページリンクを挿入する機能を追加
  *                 エラー表示時に前後に改行を入れるよう変更
  *                 ツールチップの内容を取得する際に改行コードを排除するように修正
  * 2021-08-18 v0.1 初版作成
@@ -18,13 +19,16 @@ define('TOOLTIP_GLOSSARY_PAGE', ':config/plugin/tooltip');
 
 // デフォルト設定: 0 = disable, 連想配列で追加
 define('TOOLTIP_ADD_DEFAULT_SETTINGS', array(
-    'placement'   => 'auto',
+    'placement'   => 'bottom-start',
     'allowHTML'   => 'true',
     'interactive' => 'true',
 ));
 
 // 語句がページとして存在する場合にリンクを追加するかどうか
 define('TOOLTIP_ENABLE_AUTOLINK', true);
+
+// 語句と識別用文字列のセパレータ
+define('TOOLTIP_TERM_SEPARATOR', ':');
 
 function plugin_tooltip_init()
 {
@@ -120,10 +124,16 @@ class Tooltip
         $tag = substr(md5($this->term), 0, 10);
         $cfg = $this->const_tippy_props();
         $def = $this->def;
+        $term = $this->term;
 
         // ページとして存在するかチェック
-        if (TOOLTIP_ENABLE_AUTOLINK && is_page($this->term)) {
-            $def .='<hr>詳細: ' . make_pagelink($this->term);
+        if (TOOLTIP_ENABLE_AUTOLINK && is_page($term)) {
+            $def .='<hr>詳細: ' . make_pagelink($term);
+        }
+
+        // 識別用文字列が含まれているかチェック
+        if (strpos($term, ':') !== false) {
+            $term = explode(TOOLTIP_TERM_SEPARATOR, $term, 2)[0];
         }
 
         // ツールチップ表示用スクリプト
@@ -143,10 +153,11 @@ class Tooltip
         }
 
         $html = '<span class="plugin-tooltip tooltip-' . $tag . '"
-         id="tooltip' . self::$id++ . '">' . $this->term . '</span>';
+         id="tooltip' . self::$id++ . '">' . $term . '</span>';
         if ($script) {
             $html .= '<script>' . $script .'</script>';
         }
+
         return $html;
     }
 
