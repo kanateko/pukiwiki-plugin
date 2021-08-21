@@ -2,11 +2,14 @@
 /**
  * ホバーorタップでツールチップを表示するプラグイン
  *
- * @version 0.3
+ * @version 0.4
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
  * -- Update --
+ * 2021-08-21 v0.4 デフォルト設定の出力が1回で済むよう修正
+ *                 デフォルト設定でのanimationやthemeの設定に対応
+ *                 引数で設定可能なプロパティにmaxWidthを追加
  * 2021-08-20 v0.3 識別用文字列を使って、同じ語句でツールチップの内容を切り替える機能を追加
  *            v0.2 対象の語句がページとして存在している場合はツールチップにページリンクを挿入する機能を追加
  *                 エラー表示時に前後に改行を入れるよう変更
@@ -17,9 +20,9 @@
 // 用語集ページ
 define('TOOLTIP_GLOSSARY_PAGE', ':config/plugin/tooltip');
 
-// デフォルト設定: 0 = disable, 連想配列で追加
+// デフォルト設定: 配列以外 = disable, 連想配列で追加
 define('TOOLTIP_ADD_DEFAULT_SETTINGS', array(
-    'placement'   => 'bottom-start',
+    'animation'   => 'shift-toward',
     'allowHTML'   => 'true',
     'interactive' => 'true',
 ));
@@ -35,6 +38,12 @@ function plugin_tooltip_init()
     global $head_tags;
     $head_tags[] = '<script src="https://unpkg.com/@popperjs/core@2"></script>';
     $head_tags[] = '<script src="https://unpkg.com/tippy.js@6"></script>';
+    if (isset(TOOLTIP_ADD_DEFAULT_SETTINGS['animation'])) {
+        $head_tags[] = '<link rel="stylesheet" href="https://unpkg.com/tippy.js@6/animations/' . TOOLTIP_ADD_DEFAULT_SETTINGS['animation'] . '.css">';
+    }
+    if (isset(TOOLTIP_ADD_DEFAULT_SETTINGS['theme'])) {
+        $head_tags[] = '<link rel="stylesheet" href="https://unpkg.com/tippy.js@6/themes/' . TOOLTIP_ADD_DEFAULT_SETTINGS['theme'] . '.css">';
+    }
 }
 
 function plugin_tooltip_convert()
@@ -102,6 +111,9 @@ class Tooltip
                 case 'arrow':
                     $regexp = '/^(true|false)$/';
                     // no break
+                case 'maxWidth':
+                    $regexp = $regexp ?: '/^\d+$/';
+                    // no break
                 case 'placement':
                     $regexp = $regexp ?: '/^((top|bottom|left|right|auto)(-(start|end))?)$/';
                     if (preg_match($regexp, $val)) {
@@ -122,9 +134,23 @@ class Tooltip
     public function convert_tooltip()
     {
         $tag = substr(md5($this->term), 0, 10);
-        $cfg = $this->const_tippy_props();
+        $cfg = $this->const_tippy_props($this->options['props']);
         $def = $this->def;
         $term = $this->term;
+
+        // デフォルト設定
+        if (self::$id === 0) {
+            $default = $this->const_tippy_props(TOOLTIP_ADD_DEFAULT_SETTINGS);
+            if ($default) {
+                $default = <<<EOD
+                tippy.setDefaultProps({
+                    $default
+                });
+                EOD;
+            }
+        } else {
+            $default = '';
+        }
 
         // ページとして存在するかチェック
         if (TOOLTIP_ENABLE_AUTOLINK && is_page($term)) {
@@ -143,6 +169,7 @@ class Tooltip
         } else {
             $script = <<<EOD
                 document.addEventListener('DOMContentLoaded', () => {
+                    $default
                     tippy('.tooltip-$tag', {
                         content: '$def',
                         $cfg
@@ -155,7 +182,7 @@ class Tooltip
         $html = '<span class="plugin-tooltip tooltip-' . $tag . '"
          id="tooltip' . self::$id++ . '">' . $term . '</span>';
         if ($script) {
-            $html .= '<script>' . $script .'</script>';
+            $html .= '<script>' . preg_replace('/\s{2,}/', ' ', preg_replace('/\r|\n|\r\n/', ' ', $script)) .'</script>';
         }
 
         return $html;
@@ -164,29 +191,18 @@ class Tooltip
     /**
      * tippyの設定
      */
-    private function const_tippy_props()
+    private function const_tippy_props($props)
     {
-        $add = array();
         $cfg = '';
 
-        // デフォルト設定の読み込み
-        if (is_array(TOOLTIP_ADD_DEFAULT_SETTINGS)) {
-            foreach (TOOLTIP_ADD_DEFAULT_SETTINGS as $key => $val) {
-                $add[$key] = $val;
+        // プロパティの整形
+        if (is_array($props) && ! empty($props)) {
+            foreach ($props as $key => $val) {
+                if (! preg_match('/^(|\d+|true|false)$|^\[([\d\s,]+)\]$/', $val)) {
+                    $val = '\'' . $val . '\'';
+                }
+                $cfg .= $key . ': ' . $val . ',' . "\n";
             }
-        }
-
-        // 引数による追加設定の読み込み
-        if (! empty($this->options['props'])) {
-            foreach ($this->options['props'] as $key => $val) {
-                $add[$key] = $val;
-            }
-        }
-
-        // 設定の整形
-        foreach ($add as $key => $val) {
-            if (! preg_match('/\d+|true|false/', $val)) $val = '\'' . $val . '\'';
-            $cfg .= $key . ': ' . $val . ',' . "\n";
         }
 
         return $cfg;
@@ -217,8 +233,8 @@ class Glossary
         preg_match_all('/:(.+?)\|(.*)\n/', $this->source, $defs);
 
         foreach ($defs[1] as $i => $val) {
-            $defs[2][$i] = preg_replace("/<\/?p>\n?/", '', convert_html($defs[2][$i]));
-            self::$defs[$val] = preg_replace("/\r|\n|\r\n/", '', $defs[2][$i]);
+            $defs[2][$i] = preg_replace('/<\/?p>\n?/', '', convert_html($defs[2][$i]));
+            self::$defs[$val] = preg_replace('/\r|\n|\r\n/', '', $defs[2][$i]);
         }
     }
 
