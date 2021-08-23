@@ -2,38 +2,42 @@
 /**
  * ブログカード風にページを並べるプラグイン
  *
- * @version 2.1
+ * @version 2.2
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
  * -- Updates --
- * 2021-08-04 infoboxプラグインとの兼ね合いで一部正規表現を変更・追加
- * 2021-07-28 定数を整理、よりわかりやすい名前に変更
- *            カード表示エリアの幅を固定化。幅はCSSで制御するように
- *            上記に伴って幅の固定化をON/OFFするオプションを廃止
- *            カードを縦長表示するカラム数の閾値の設定を追加
- *            各カードの幅をCSSのgridで制御するように変更
- *            指定した見出しをデスクリプション代わりに表示する機能を追加
- * 2021-07-26 webpに対応
- *            他のページの画像を呼び出している場合のサムネイル取得処理を修正
- * 2021-06-29 プラグインの呼び出し毎に個別のIDを割り振る機能を追加
- * 2021-06-20 画像が縦長の場合はサムネイルの切り抜きを画像の上端に合わせるよう変更
- * 2021-04-30 存在しないページが含まれている場合にエラーを出すかどうかを設定できるように変更
- *            デスクリプション作成時の正規表現を修正
- * 2021-04-07 ベースネーム表示機能を追加
- * 　　　　　　上記に付随してカラム数を複数回指定した場合にエラーを返すよう変更
- *            デスクリプション作成時の正規表現を修正
- *            更新日アイコンの表示に関するバグを修正
- * 2021-04-04 カラム数指定時に確実にintを取得できるよう修正
- *            カードの高さをプラグイン側で調整するよう変更
- *            カラム数2以下の場合はスマホでも横長のカードになるよう変更 (cssの変更のみ)
- * 2021-04-01 短縮URLライブラリ未導入でも動くよう修正
- *            エイリアスに対応
- *            キャッシュ更新機能追加
- *            未改造状態のPukiWiki向けにいくつかの設定を追加
- * 2021-03-31 カラム数指定機能追加
- *            サムネイルキャッシュ機能追加
- * 2021-03-30 初版作成
+ * 2021-08-23 v2.2 ページ名からファイル名への変換で使用する関数を変更 (strtoupper, bix2hex -> encode)
+ *                 キャッシュを生成しない場合の階層化されたページにある画像の取得方法を修正
+ *                 キャッシュを生成する場合、ページにinfoboxプラグインが使われていた場合の対応を強化
+ *                 キャッシュ保存時に拡張子が正常に付与されない問題を修正
+ * 2021-08-04 v2.1 infoboxプラグインとの兼ね合いで一部正規表現を変更・追加
+ * 2021-07-28 v2.0 定数を整理、よりわかりやすい名前に変更
+ *                 カード表示エリアの幅を固定化。幅はCSSで制御するように
+ *                 上記に伴って幅の固定化をON/OFFするオプションを廃止
+ *                 カードを縦長表示するカラム数の閾値の設定を追加
+ *                 各カードの幅をCSSのgridで制御するように変更
+ *                 指定した見出しをデスクリプション代わりに表示する機能を追加
+ * 2021-07-26 v1.5 webpに対応
+ *                 他のページの画像を呼び出している場合のサムネイル取得処理を修正
+ * 2021-06-29 v1.4 プラグインの呼び出し毎に個別のIDを割り振る機能を追加
+ * 2021-06-20 v1.3 画像が縦長の場合はサムネイルの切り抜きを画像の上端に合わせるよう変更
+ *                 存在しないページが含まれている場合にエラーを出すかどうかを設定できるように変更
+ *                 デスクリプション作成時の正規表現を修正
+ * 2021-04-07 v1.2 ベースネーム表示機能を追加
+ * 　　　　　　     上記に付随してカラム数を複数回指定した場合にエラーを返すよう変更
+ *                 デスクリプション作成時の正規表現を修正
+ *                 更新日アイコンの表示に関するバグを修正
+ * 2021-04-04 v1.1 カラム数指定時に確実にintを取得できるよう修正
+ *                 カードの高さをプラグイン側で調整するよう変更
+ *                 カラム数2以下の場合はスマホでも横長のカードになるよう変更 (cssの変更のみ)
+ * 2021-04-01 v1.0 短縮URLライブラリ未導入でも動くよう修正
+ *                 エイリアスに対応
+ *                 キャッシュ更新機能追加
+ *                 未改造状態のPukiWiki向けにいくつかの設定を追加
+ * 2021-03-31 v0.6 カラム数指定機能追加
+ *                 サムネイルキャッシュ機能追加
+ * 2021-03-30 v0.2 初版作成
  */
 
 // カードを縦長表示にするカラム数
@@ -44,9 +48,9 @@ define('CARD_HIDE_DESCRIPTION_THRESHOLD', 4);
 define('CARD_ALLOW_CHACHE_THUMBNAILS', true);
 define('CARD_THUMB_DIR', IMAGE_DIR . 'thumb/');
 // 短縮URLの使用/未使用
-define('CARD_USE_SHORT_URL', true);
+define('CARD_USE_SHORT_URL', false);
 // FontAwesomeの使用/未使用 (更新日のアイコン)
-define('CARD_USE_FONTAWESOME_ICON', true);
+define('CARD_USE_FONTAWESOME_ICON', false);
 // ベースネーム表示の強制
 define('CARD_FORCE_BASENAME', false);
 // 存在しないページが含まれている場合にエラーを出すかどうか
@@ -155,9 +159,9 @@ function plugin_card_convert()
         // サムネイルの取得 (ページでrefプラグインが使われている必要あり)
         $eyecatch = IMAGE_DIR . 'eyecatch.jpg';
         $source = get_source($pagename,true,true);
-        preg_match('/(?:ref\(|image=)([^,]+?\.(?:jpg|png|gif|webp))/', $source, $match_thumb);
+        preg_match('/(ref\(|image=)([^,]+?(\.(?:jpg|png|gif|webp)))/', $source, $match_thumb);
         if (CARD_ALLOW_CHACHE_THUMBNAILS) {
-            $thumb = plugin_card_make_thumbnail($pagename, $eyecatch, $match_thumb);
+            $thumb = plugin_card_make_thumbnail($pagename, $eyecatch, $match_thumb, $source);
         } else {
             $thumb = plugin_card_get_thumbnail($uri, $pagename, $eyecatch, $match_thumb);
         }
@@ -266,7 +270,7 @@ function plugin_card_get_image_size($thumb) {
 }
 
 /**
- * サムネイルの取得
+ * サムネイルの取得 (infoboxプラグイン未対応)
  * @param string $uri get_base_uriで取得したuri
  * @param string $pagename エンコード前のページ名
  * @param string $eyecatch refプラグインが使われていないページ用のサムネイル画像
@@ -274,17 +278,17 @@ function plugin_card_get_image_size($thumb) {
  * @return string $thumb_src 画像ファイルのパス (直リン)
  */
 function plugin_card_get_thumbnail($uri, $pagename, $eyecatch, $match_thumb) {
-    if (isset($match_thumb[1])) {
+    if (isset($match_thumb[2])) {
         // refプラグインが呼び出されている場合
-        if (strpos($match_thumb[1], '/') === false) {
+        if (strpos($match_thumb[2], '/') === false) {
             // そのページに添付されている場合
-            $attachfile = UPLOAD_DIR . encode($pagename) . '_' . encode($match_thumb[1]);
-            $ref_url = $uri . '?plugin=ref&page=' . urlencode($pagename) . '&src=' . $match_thumb[1];
+            $attachfile = UPLOAD_DIR . encode($pagename) . '_' . encode($match_thumb[2]);
+            $ref_url = $uri . '?plugin=ref&amp;page=' . urlencode($pagename) . '&amp;src=' . $match_thumb[2];
         } else {
             // 他のページに添付されている場合
-            preg_match('/(.+)\/(.+)/', $match_thumb[1], $matches);
+            preg_match('/(.+)\/(.+)/', $match_thumb[2], $matches);
             $attachfile = UPLOAD_DIR . encode($matches[1]) . '_' . encode($matches[2]);
-            $ref_url = $uri . '?plugin=ref&page=' . urlencode($matches[1]) . '&src=' . $matches[2];
+            $ref_url = $uri . '?plugin=ref&amp;page=' . urlencode($matches[1]) . '&amp;src=' . $matches[2];
         }
         $thumb_src = file_exists($attachfile) ? $ref_url : $eyecatch;
     } else {
@@ -300,9 +304,10 @@ function plugin_card_get_thumbnail($uri, $pagename, $eyecatch, $match_thumb) {
  * @param string $pagename エンコード前のページ名
  * @param string $eyecatch refプラグインが使われていないページ用のサムネイル画像
  * @param array $match_thumb そのページで見つかった最初のrefプラグイン
+ * @param string $source ページのソース
  * @return string $thumb_cache | $thumb_path . $match_thumb[2] サムネイルのパス (キャッシュ)
  */
-function plugin_card_make_thumbnail($pagename, $eyecatch, $match_thumb)
+function plugin_card_make_thumbnail($pagename, $eyecatch, $match_thumb, $source)
 {
     if (!file_exists(CARD_THUMB_DIR)) {
         // ディレクトリの確認と作成
@@ -318,6 +323,8 @@ function plugin_card_make_thumbnail($pagename, $eyecatch, $match_thumb)
         rename($thumb_path . '.png', $thumb_cache);
     } elseif (file_exists($thumb_path . '.gif')) {
         rename($thumb_path . '.gif', $thumb_cache);
+    } elseif (file_exists($thumb_path . '.webp')) {
+        rename($thumb_path . '.webp', $thumb_cache);
     }
 
     //キャッシュがある場合、ページとキャッシュの更新日を確認する
@@ -326,35 +333,64 @@ function plugin_card_make_thumbnail($pagename, $eyecatch, $match_thumb)
         return $thumb_cache;
     } else {
         // キャッシュがないか古い場合は新たに取得する
-        if (isset($match_thumb[1])) {
-            // refプラグインが呼び出されている場合
-            if (strpos($match_thumb[1], '/') === false) {
-                // そのページに添付されている場合
-                $thumb_src = UPLOAD_DIR . encode($pagename) . '_' . encode($match_thumb[1]);
-            } else {
-                // 他のページに添付されている場合
-                preg_match('/(.+)\/(.+)/', $match_thumb[1], $matches);
-                $thumb_src = UPLOAD_DIR . encode($matches[1]) . '_' . encode($matches[2]);
+        if (isset($match_thumb[2])) {
+            switch ($match_thumb[1]) {
+                case 'ref(':
+                    // refプラグインが呼び出されている場合
+                    if (strpos($match_thumb[2], '/') === false) {
+                        // そのページに添付されている場合
+                        $thumb_src = UPLOAD_DIR . encode($pagename) . '_' . encode($match_thumb[2]);
+                    } else {
+                        // 他のページに添付されている場合
+                        preg_match('/(.+)\/(.+)/', $match_thumb[2], $matches);
+                        $thumb_src = UPLOAD_DIR . encode($matches[1]) . '_' . encode($matches[2]);
+                    }
+                    break;
+                case 'image=':
+                    // infoboxプラグインが呼び出されている場合
+                    if (strpos($match_thumb[2], '/') === false) {
+                        $info_image = UPLOAD_DIR . encode($pagename) . '_' . encode($match_thumb[2]);
+                    } else {
+                        preg_match('/(.+)\/(.+)/', $match_thumb[2], $matches);
+                        $info_image = UPLOAD_DIR . encode($matches[1]) . '_' . encode($matches[2]);
+                    }
+
+                    if (file_exists(($info_image))) {
+                        $thumb_src = $info_image;
+                    } else {
+                        // ページの記述だけではファイル名にならない場合、テンプレートを読み込みに行く
+                        preg_match('/#infobox\(([^,\)]+)/', $source, $template);
+                        $s_info = get_source(':config/plugin/infobox/' . $template[1], true, true);
+                        preg_match('/\&ref\(([^,\)]+)/', $s_info, $ref);
+                        $ref[1] = preg_replace('/{{{.+?}}}/', $match_thumb[2], $ref[1]);
+                        if (strpos($ref[1], '/') === false) {
+                            $thumb_src = UPLOAD_DIR . encode($pagename) . '_' . encode($ref[1]);
+                        } else {
+                            preg_match('/(.+)\/(.+)/', $ref[1], $matches);
+                            $thumb_src = UPLOAD_DIR . encode($matches[1]) . '_' . encode($matches[2]);
+                        }
+                    }
             }
         } else {
             // refプラグインが呼び出されてない場合
             $thumb_src = $eyecatch;
-            $match_thumb[2] = '.jpg';
+            $match_thumb[3] = '.jpg';
         }
-        if (filesize($thumb_src) == 0) {
+
+        if (! file_exists($thumb_src)) {
             // refプラグインは呼び出されているがファイルはない場合
             $thumb_src = $eyecatch;
-            $match_thumb[2] = '.jpg';
+            $match_thumb[3] = '.jpg';
         }
 
         // サムネイルフォルダにコピーを作成
         $thumb_data = file_get_contents($thumb_src);
-        $thumb_src = $thumb_path . $match_thumb[2];
+        $thumb_src = $thumb_path . $match_thumb[3];
         file_put_contents($thumb_src, $thumb_data);
 
         // コピーをリサイズして保存
         make_thumbnail($thumb_src, $thumb_src, 320, 180);
-        return $thumb_path . $match_thumb[2];
+        return $thumb_path . $match_thumb[3];
     }
 }
 
