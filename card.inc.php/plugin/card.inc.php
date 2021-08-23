@@ -44,9 +44,9 @@ define('CARD_HIDE_DESCRIPTION_THRESHOLD', 4);
 define('CARD_ALLOW_CHACHE_THUMBNAILS', true);
 define('CARD_THUMB_DIR', IMAGE_DIR . 'thumb/');
 // 短縮URLの使用/未使用
-define('CARD_USE_SHORT_URL', false);
+define('CARD_USE_SHORT_URL', true);
 // FontAwesomeの使用/未使用 (更新日のアイコン)
-define('CARD_USE_FONTAWESOME_ICON', false);
+define('CARD_USE_FONTAWESOME_ICON', true);
 // ベースネーム表示の強制
 define('CARD_FORCE_BASENAME', false);
 // 存在しないページが含まれている場合にエラーを出すかどうか
@@ -278,13 +278,13 @@ function plugin_card_get_thumbnail($uri, $pagename, $eyecatch, $match_thumb) {
         // refプラグインが呼び出されている場合
         if (strpos($match_thumb[1], '/') === false) {
             // そのページに添付されている場合
-            $attachfile = UPLOAD_DIR . strtoupper(bin2hex($pagename)) . '_' . strtoupper(bin2hex($match_thumb[1]));
+            $attachfile = UPLOAD_DIR . encode($pagename) . '_' . encode($match_thumb[1]);
             $ref_url = $uri . '?plugin=ref&page=' . urlencode($pagename) . '&src=' . $match_thumb[1];
         } else {
             // 他のページに添付されている場合
-            list($refer, $src) = explode('/', $match_thumb[1]);
-            $attachfile = UPLOAD_DIR . strtoupper(bin2hex($refer)) . '_' . strtoupper(bin2hex($src));
-            $ref_url = $uri . '?plugin=ref&page=' . urlencode($refer) . '&src=' . $src;
+            preg_match('/(.+)\/(.+)/', $match_thumb[1], $matches);
+            $attachfile = UPLOAD_DIR . encode($matches[1]) . '_' . encode($matches[2]);
+            $ref_url = $uri . '?plugin=ref&page=' . urlencode($matches[1]) . '&src=' . $matches[2];
         }
         $thumb_src = file_exists($attachfile) ? $ref_url : $eyecatch;
     } else {
@@ -310,7 +310,7 @@ function plugin_card_make_thumbnail($pagename, $eyecatch, $match_thumb)
         chmod(CARD_THUMB_DIR, 0755);
     }
 
-    $thumb_path = CARD_THUMB_DIR . strtoupper(bin2hex($pagename));
+    $thumb_path = CARD_THUMB_DIR . encode($pagename);
     $thumb_cache = $thumb_path . '.jpg';
 
     // 拡張子の違うキャッシュファイルを修正する
@@ -330,11 +330,11 @@ function plugin_card_make_thumbnail($pagename, $eyecatch, $match_thumb)
             // refプラグインが呼び出されている場合
             if (strpos($match_thumb[1], '/') === false) {
                 // そのページに添付されている場合
-                $thumb_src = UPLOAD_DIR . strtoupper(bin2hex($pagename)) . '_' . strtoupper(bin2hex($match_thumb[1]));
+                $thumb_src = UPLOAD_DIR . encode($pagename) . '_' . encode($match_thumb[1]);
             } else {
                 // 他のページに添付されている場合
                 preg_match('/(.+)\/(.+)/', $match_thumb[1], $matches);
-                $thumb_src = UPLOAD_DIR . strtoupper(bin2hex($matches[1])) . '_' . strtoupper(bin2hex($matches[2]));
+                $thumb_src = UPLOAD_DIR . encode($matches[1]) . '_' . encode($matches[2]);
             }
         } else {
             // refプラグインが呼び出されてない場合
