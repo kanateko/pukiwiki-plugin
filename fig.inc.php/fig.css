@@ -1,0 +1,79 @@
+.plugin-figure {
+  padding: 5px;
+  font-size: 12px;
+  margin: 0 auto 10px auto;
+  text-align: center;
+  position: relative;
+}
+.plugin-figure[data-theme=dark] {
+  background: #333;
+  color: #ececec;
+}
+.plugin-figure[data-theme=light] {
+  background: #fafafe;
+  color: dimgray;
+  border: 1px solid silver;
+}
+.plugin-figure[data-wrap=nowrap] {
+  background: none;
+  color: inherit;
+  border: none;
+}
+.plugin-figure[data-position=left] {
+  float: left;
+  margin-right: 20px;
+}
+.plugin-figure[data-position=right] {
+  float: right;
+  margin-left: 20px;
+}
+.plugin-figure figcaption {
+  padding: 0 5px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+.plugin-figure[data-style$=left] figcaption {
+  text-align: left;
+}
+.plugin-figure[data-style$=center] figcaption {
+  text-align: center;
+}
+.plugin-figure[data-style$=right] figcaption {
+  text-align: right;
+}
+.plugin-figure[data-style^=overlay] figcaption {
+  position: absolute;
+  bottom: 5px;
+  padding-top: 10px;
+  width: calc(100% - 20px);
+  max-height: 40%;
+  min-height: 18px;
+  color: #efefef;
+  background: -webkit-gradient(linear, left bottom, left top, color-stop(20%, rgba(0, 0, 0, 0.9)), to(transparent));
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 20%, transparent);
+  pointer-events: none;
+  text-shadow: 1px 1px 3px #333;
+}
+
+.plugin-figure-inline {
+  display: inline-block;
+  position: relative;
+  font-size: 12px;
+}
+.plugin-figure-inline[data-cap]::after {
+  content: attr(data-cap);
+  display: block;
+  position: absolute;
+  text-align: left;
+  bottom: 0;
+  padding: 10px 5px 0 5px;
+  width: calc(100% - 10px);
+  max-height: 40%;
+  min-height: 18px;
+  color: #efefef;
+  background: -webkit-gradient(linear, left bottom, left top, color-stop(20%, rgba(0, 0, 0, 0.9)), to(transparent));
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 20%, transparent);
+  pointer-events: none;
+  text-shadow: 1px 1px 3px #333;
+}
+/*# sourceMappingURL=fig.css.map */

@@ -1,0 +1,90 @@
+$plist: (left, center, right);
+
+// block
+.plugin-figure {
+    padding: 5px;
+    font-size: 12px;
+    margin: 0 auto 10px auto;
+    text-align: center;
+    position: relative;
+
+    // theme
+    &[data-theme="dark"] {
+        background: #333;
+        color: #ececec;
+    }
+    &[data-theme="light"] {
+        background: #fafafe;
+        color: dimgray;
+        border: 1px solid silver;
+    }
+
+    // wrap
+    &[data-wrap="nowrap"] {
+        background: none;
+        color: inherit;
+        border: none;
+    }
+
+    // position
+    @each $p in $plist {
+        @if $p != center {
+            $ip: right;
+            @if $p == right {
+                $ip: left;
+            }
+            &[data-position="#{$p}"] {
+                float: #{$p};
+                margin-#{$ip}: 20px;
+            }
+        }
+    }
+
+    // caption style
+    figcaption {
+        padding: 0 5px;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+    @each $p in $plist {
+        // caption alignment
+        &[data-style$="#{$p}"] figcaption {
+            text-align: #{$p};
+        }
+    }
+    &[data-style^="overlay"] figcaption {
+        // overlay caption
+        position: absolute;
+        bottom: 5px;
+        padding-top: 10px;
+        width: calc(100% - 20px);
+        max-height: 40%;
+        min-height: 18px;
+        color: #efefef;
+        background: linear-gradient(to top, rgba(0, 0, 0, .9) 20%, transparent);
+        pointer-events: none;
+        text-shadow: 1px 1px 3px #333;
+    }
+}
+
+// inline
+.plugin-figure-inline {
+    display: inline-block;
+    position: relative;
+    font-size: 12px;
+    &[data-cap]::after {
+        content: attr(data-cap);
+        display: block;
+        position: absolute;
+        text-align: left;
+        bottom: 0;
+        padding: 10px 5px 0 5px;
+        width: calc(100% - 10px);
+        max-height: 40%;
+        min-height: 18px;
+        color: #efefef;
+        background: linear-gradient(to top, rgba(0, 0, 0, .9) 20%, transparent);
+        pointer-events: none;
+        text-shadow: 1px 1px 3px #333;
+    }
+}
