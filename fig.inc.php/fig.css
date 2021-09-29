@@ -27,6 +27,15 @@
   float: right;
   margin-left: 20px;
 }
+.plugin-figure[data-float=nofloat] {
+  float: none;
+}
+.plugin-figure[data-float=nofloat][data-position=left] {
+  margin: 0 auto 10px 0;
+}
+.plugin-figure[data-float=nofloat][data-position=right] {
+  margin: 0 0 10px auto;
+}
 .plugin-figure figcaption {
   padding: 0 5px;
   word-wrap: break-word;

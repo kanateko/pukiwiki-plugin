@@ -40,6 +40,17 @@ $plist: (left, center, right);
         }
     }
 
+    // float
+    &[data-float="nofloat"] {
+        float: none;
+        &[data-position="left"] {
+            margin: 0 auto 10px 0;
+        }
+        &[data-position="right"] {
+            margin: 0 0 10px auto;
+        }
+    }
+
     // caption style
     figcaption {
         padding: 0 5px;

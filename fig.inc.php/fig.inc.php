@@ -2,11 +2,12 @@
 /**
 * キャプション付きの図表を表示するプラグイン
 *
-* @version 1.1
+* @version 1.2
 * @author kanateko
 * @link https://jpngamerswiki.com/?f51cd63681
 * @license http://www.gnu.org/licenses/gpl.ja.html GPL
 * -- Update --
+* 2021-09-30 v1.2 フローの有無を変更するオプションとプラグイン設定を追加
 * 2021-09-29 v1.1 インライン型を追加
 *            v1.0 初版作成
 */
@@ -25,6 +26,9 @@ define(FIG_DEFAULT_WRAP, 'wrap');
 
 // デフォルトのリンク有無 (link or nolink)
 define(FIG_DEFAULT_LINK, 'link');
+
+// デフォルトのフロー有無 (float or nofloat)
+define(FIG_DEFAULT_FLOAT, 'float');
 
 // キャプションのスタイル
 // bottom: 画像の下に表示
@@ -148,6 +152,7 @@ Class Figure
     public function init_options()
     {
         $this->options = array(
+            'float'    => FIG_DEFAULT_FLOAT,
             'link'     => FIG_DEFAULT_LINK,
             'wrap'     => FIG_DEFAULT_WRAP,
             'width'    => $this->imginfo[0],
@@ -208,8 +213,8 @@ Class Figure
             } else if (preg_match('/^(dark|light)$/', $arg)) {
                 // テーマ
                 $opt['theme'] = $arg;
-            } else if (preg_match('/^no(link|wrap)$/', $arg, $match)) {
-                // 非リンク, 縁取りなし
+            } else if (preg_match('/^(?:no)?(link|wrap|float)$/', $arg, $match)) {
+                // リンク, 縁取り, フロート
                 $opt[$match[1]] = $arg;
             } else if (preg_match('/^(bottom|overlay)-(left|center|right)$/', $arg)) {
                 // キャプションのスタイル
@@ -248,9 +253,10 @@ Class Figure
         }
 
         // data属性
+        $data = '';
         foreach ($opt as $key => $val) {
-            if (preg_match('/position|theme|wrap|style/', $key)) {
-                $$key = ' data-' . $key . '="' . $val . '"';
+            if (preg_match('/float|position|theme|wrap|style/', $key)) {
+                $data .= ' data-' . $key . '="' . $val . '"';
             }
         }
 
@@ -258,7 +264,7 @@ Class Figure
         $size = 'width:' . $opt['width'] . 'px;';
 
         $html = <<<EOD
-        <figure class="plugin-figure" style="$size"$position$theme$wrap$style>
+        <figure class="plugin-figure" style="$size"$data>
             $img
             $cap
         </figure>
