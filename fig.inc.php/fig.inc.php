@@ -2,12 +2,14 @@
 /**
 * キャプション付きの図表を表示するプラグイン
 *
-* @version 1.2
+* @version 1.3
 * @author kanateko
 * @link https://jpngamerswiki.com/?f51cd63681
 * @license http://www.gnu.org/licenses/gpl.ja.html GPL
 * -- Update --
-* 2021-09-30 v1.2 フローの有無を変更するオプションとプラグイン設定を追加
+* 2021-09-30 v1.3 クラスを追加する機能を追加
+*                 キャプションでPukiWiki構文が使えない問題を修正
+*            v1.2 フローの有無を変更するオプションとプラグイン設定を追加
 * 2021-09-29 v1.1 インライン型を追加
 *            v1.0 初版作成
 */
@@ -66,7 +68,6 @@ function plugin_fig($args, $num, $type)
     // オプション判別
     $fig->init_options();
     foreach ($args as $arg) {
-        $arg = htmlsc($arg);
         $fig->set_option($arg);
     }
 
@@ -152,14 +153,15 @@ Class Figure
     public function init_options()
     {
         $this->options = array(
+            'cap'      => '',
+            'class'    => '',
+            'width'    => $this->imginfo[0],
+            'height'   => $this->imginfo[1],
+            'alt'      => $this->image,
+            'title'    => $this->image,
             'float'    => FIG_DEFAULT_FLOAT,
             'link'     => FIG_DEFAULT_LINK,
             'wrap'     => FIG_DEFAULT_WRAP,
-            'width'    => $this->imginfo[0],
-            'height'   => $this->imginfo[1],
-            'cap'      => '',
-            'alt'      => $this->image,
-            'title'    => $this->image,
             'position' => FIG_DEFAULT_POSITION,
             'theme'    => FIG_DEFAULT_THEME,
             'style'    => FIG_CAPTION_STYLE,
@@ -178,9 +180,12 @@ Class Figure
         $height = $this->imginfo[1];
 
         if (! empty($arg)) {
-            if (preg_match('/.+=.+/', $arg) && strpos($arg, "~") !== 0) {
+            if (preg_match('/[^=]+=.+/', $arg) && strpos($arg, "~") !== 0) {
                 // キャプション, スタイル, その他
-                list($key, $val) = explode('=', $arg);
+                list($key, $val) = explode('=', $arg, 2);
+                if ($key != 'cap') {
+                    $val = htmlsc($val);
+                }
                 $opt[$key] = $val;
             } else if (preg_match('/(\d+)x(\d+)/', $arg, $match)) {
                 // サイズ指定 (幅x高さ)
@@ -221,7 +226,7 @@ Class Figure
                 $opt['style'] = $arg;
             } else {
                 // alt, title
-                $opt['alt'] = $opt['title'] = preg_replace('/^~/', '', $arg);
+                $opt['alt'] = $opt['title'] = preg_replace('/^~/', '', htmlsc($arg));
             }
         }
     }
@@ -237,6 +242,7 @@ Class Figure
         $img_attr = $this->get_image_attr();
         $href = get_base_uri() . '?plugin=attach&amp;refer=' . urlencode($this->page)
         . '&amp;openfile=' . urlencode($this->image);
+        $class = $opt['class'] ? ' ' . $opt['class'] : '';
 
         // 画像部分
         $img = '<img loading="lazy" class="figure-image" ' . $img_attr . '>';
@@ -245,11 +251,10 @@ Class Figure
         }
 
         // キャプション
+        $cap = '';
         if (! empty($opt['cap'])) {
             $cap = convert_html($opt['cap']);
             $cap = str_replace('p>', 'figcaption>', $cap);
-        } else {
-            $cap = '';
         }
 
         // data属性
@@ -264,7 +269,7 @@ Class Figure
         $size = 'width:' . $opt['width'] . 'px;';
 
         $html = <<<EOD
-        <figure class="plugin-figure" style="$size"$data>
+        <figure class="plugin-figure$class" style="$size"$data>
             $img
             $cap
         </figure>
@@ -284,7 +289,8 @@ Class Figure
         $img_attr = $this->get_image_attr();
         $href = get_base_uri() . '?plugin=attach&amp;refer=' . urlencode($this->page)
         . '&amp;openfile=' . urlencode($this->image);
-        $cap = $opt['cap'] ? ' data-cap="' . $opt['cap'] . '"' : '';
+        $cap = $opt['cap'] ? ' data-cap="' . htmlsc($opt['cap']) . '"' : '';
+        $class = $opt['class'] ? ' ' . $opt['class'] : '';
 
         // 画像部分
         $img = '<img loading="lazy" class="figure-image" ' . $img_attr . '>';
@@ -293,7 +299,7 @@ Class Figure
         }
 
         $html = <<<EOD
-        <span class="plugin-figure-inline"$cap>
+        <span class="plugin-figure-inline$class"$cap>
             $img
         </span>
         EOD;
