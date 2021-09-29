@@ -2,12 +2,13 @@
 /**
 * キャプション付きの図表を表示するプラグイン
 *
-* @version 1.0
+* @version 1.1
 * @author kanateko
 * @link https://jpngamerswiki.com/?f51cd63681
 * @license http://www.gnu.org/licenses/gpl.ja.html GPL
 * -- Update --
-* 2021-09-29 v1.0 初版作成
+* 2021-09-29 v1.1 インライン型を追加
+*            v1.0 初版作成
 */
 
 // 許可するmime-type
@@ -31,20 +32,24 @@ define(FIG_DEFAULT_LINK, 'link');
 // -left, -center, -right: 文字のアラインメント
 define(FIG_CAPTION_STYLE, 'bottom-center');
 
-/**
- * ブロック型
- *
- * @return string
- */
 function plugin_fig_convert()
+{
+    return plugin_fig(func_get_args(), func_num_args(), 'convert');
+}
+
+function plugin_fig_inline()
+{
+    return plugin_fig(func_get_args(), func_num_args(), 'inline');
+}
+
+function plugin_fig($args, $num, $type)
 {
     $msg = new Messages;
 
-    if (func_num_args() < 1) {
+    if ($num < 1) {
         return $msg->get_message('usage');
     }
 
-    $args = func_get_args();
     $fig = new Figure(array_shift($args));
 
     // ファイルを表示可能かチェック
@@ -62,7 +67,13 @@ function plugin_fig_convert()
     }
 
     // HTMLに変換して出力
-    return $fig->convert();
+    switch ($type) {
+        case 'convert':
+            return $fig->convert();
+            break;
+        case 'inline':
+            return $fig->inline();
+    }
 }
 
 Class Figure
@@ -165,10 +176,6 @@ Class Figure
             if (preg_match('/.+=.+/', $arg) && strpos($arg, "~") !== 0) {
                 // キャプション, スタイル, その他
                 list($key, $val) = explode('=', $arg);
-                if ($key == 'cap') {
-                    $val = convert_html($val);
-                    $val = str_replace('p>', 'figcaption>', $val);
-                }
                 $opt[$key] = $val;
             } else if (preg_match('/(\d+)x(\d+)/', $arg, $match)) {
                 // サイズ指定 (幅x高さ)
@@ -232,21 +239,57 @@ Class Figure
             $img = '<a class="figure-link" href="' . $href . '">' . $img . '</a>';
         }
 
-        // data
+        // キャプション
+        if (! empty($opt['cap'])) {
+            $cap = convert_html($opt['cap']);
+            $cap = str_replace('p>', 'figcaption>', $cap);
+        } else {
+            $cap = '';
+        }
+
+        // data属性
         foreach ($opt as $key => $val) {
             if (preg_match('/position|theme|wrap|style/', $key)) {
                 $$key = ' data-' . $key . '="' . $val . '"';
             }
         }
 
-        // style
+        // figure要素の幅
         $size = 'width:' . $opt['width'] . 'px;';
 
         $html = <<<EOD
         <figure class="plugin-figure" style="$size"$position$theme$wrap$style>
             $img
-            {$opt['cap']}
+            $cap
         </figure>
+        EOD;
+
+        return $html;
+    }
+
+    /**
+     * インライン型のHTMLに変換
+     *
+     * @return string
+     */
+    public function inline()
+    {
+        $opt = $this->options;
+        $img_attr = $this->get_image_attr();
+        $href = get_base_uri() . '?plugin=attach&amp;refer=' . urlencode($this->page)
+        . '&amp;openfile=' . urlencode($this->image);
+        $cap = $opt['cap'] ? ' data-cap="' . $opt['cap'] . '"' : '';
+
+        // 画像部分
+        $img = '<img loading="lazy" class="figure-image" ' . $img_attr . '>';
+        if ($opt['link'] == 'link') {
+            $img = '<a class="figure-link" href="' . $href . '">' . $img . '</a>';
+        }
+
+        $html = <<<EOD
+        <span class="plugin-figure-inline"$cap>
+            $img
+        </span>
         EOD;
 
         return $html;
