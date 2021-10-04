@@ -2,11 +2,12 @@
 /**
  * ブログカード風にページを並べるプラグイン
  *
- * @version 2.2
+ * @version 2.3
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
  * -- Updates --
+ * 2021-10-04 v2.3 figプラグインに対応
  * 2021-08-23 v2.2 ページ名からファイル名への変換で使用する関数を変更 (strtoupper, bix2hex -> encode)
  *                 キャッシュを生成しない場合の階層化されたページにある画像の取得方法を修正
  *                 キャッシュを生成する場合、ページにinfoboxプラグインが使われていた場合の対応を強化
@@ -159,7 +160,7 @@ function plugin_card_convert()
         // サムネイルの取得 (ページでrefプラグインが使われている必要あり)
         $eyecatch = IMAGE_DIR . 'eyecatch.jpg';
         $source = get_source($pagename,true,true);
-        preg_match('/(ref\(|image=)([^,]+?(\.(?:jpg|png|gif|webp)))/', $source, $match_thumb);
+        preg_match('/((?:ref|fig)\(|image=)([^,]+?(\.(?:jpg|png|gif|webp)))/', $source, $match_thumb);
         if (CARD_ALLOW_CHACHE_THUMBNAILS) {
             $thumb = plugin_card_make_thumbnail($pagename, $eyecatch, $match_thumb, $source);
         } else {
@@ -309,6 +310,8 @@ function plugin_card_get_thumbnail($uri, $pagename, $eyecatch, $match_thumb) {
  */
 function plugin_card_make_thumbnail($pagename, $eyecatch, $match_thumb, $source)
 {
+    global $vars;
+
     if (!file_exists(CARD_THUMB_DIR)) {
         // ディレクトリの確認と作成
         mkdir(CARD_THUMB_DIR, 0755);
@@ -335,6 +338,7 @@ function plugin_card_make_thumbnail($pagename, $eyecatch, $match_thumb, $source)
         // キャッシュがないか古い場合は新たに取得する
         if (isset($match_thumb[2])) {
             switch ($match_thumb[1]) {
+                case 'fig(':
                 case 'ref(':
                     // refプラグインが呼び出されている場合
                     if (strpos($match_thumb[2], '/') === false) {
@@ -342,6 +346,10 @@ function plugin_card_make_thumbnail($pagename, $eyecatch, $match_thumb, $source)
                         $thumb_src = UPLOAD_DIR . encode($pagename) . '_' . encode($match_thumb[2]);
                     } else {
                         // 他のページに添付されている場合
+                        if (strpos($match_thumb[2], './') !== false) {
+                            // 相対パスを絶対パスに変換
+                            $match_thumb[2] = get_fullname($match_thumb[2], $vars['page']);
+                        }
                         preg_match('/(.+)\/(.+)/', $match_thumb[2], $matches);
                         $thumb_src = UPLOAD_DIR . encode($matches[1]) . '_' . encode($matches[2]);
                     }
