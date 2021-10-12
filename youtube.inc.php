@@ -6,6 +6,8 @@
 * @author kanateko
 * @link https://jpngamerswiki.com/?82f1460fdb
 * @license http://www.gnu.org/licenses/gpl.ja.html GPL
+* 2021-10-12 (ver 1.5)
+*   iframeにloading属性を追加
 * 2021-07-07 (ver 1.4)
 *	埋め込み用のURLを更新
 * 2020-02-12 (ver 1.3)
@@ -132,7 +134,7 @@ function plugin_youtube_convert() {
 	$url = $url_base . $video . $params;
 
 	// フレーム部分を作成
-	$frame = '<iframe style="position:absolute;width:100%;height:100%;" src="' . $url . '"
+	$frame = '<iframe loading="lazy" style="position:absolute;width:100%;height:100%;" src="' . $url . '"
 	frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
 	allowfullscreen></iframe>';
 
