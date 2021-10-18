@@ -331,7 +331,7 @@ Class Figure
     }
 }
 
-Class Messages
+Class FigMessages
 {
     private $msg = array (
         'usage'  => '#fig(filename[,options])',
