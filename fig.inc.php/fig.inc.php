@@ -50,7 +50,7 @@ function plugin_fig_inline()
 
 function plugin_fig($args, $num, $type)
 {
-    $msg = new Messages;
+    $msg = new FigMessages;
 
     if ($num < 1) {
         return $msg->get_message('usage');
