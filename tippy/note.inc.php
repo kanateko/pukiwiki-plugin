@@ -2,12 +2,13 @@
 /**
  * ホバーorタップで注釈を表示するプラグイン
  *
- * @version 0.1
+ * @version 0.2
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
  * -- Update --
- * 2021-11-24 v0.1 初版作成
+ * 2021-11-24 v0.2 脚注から本文に戻るリンクを追加
+ *            v0.1 初版作成
  */
 
 // tippy.js関連クラスの読み込み
@@ -127,7 +128,7 @@ class PluginNote extends Tippy
             self::$loaded[$tag] = true;
 
             //フッタに脚注を追加
-            $foot_explain[$fcount_base + $note_no] = '<li id="note_foot_' . $note_no . '">' . $this->comment . '</li>';
+            $foot_explain[$fcount_base + $note_no] = '<li id="note_foot_' . $note_no . '"><a href="#note_text_' . self::$id . '">^</a>' . $this->comment . '</li>';
         }
 
         $html = '<a href="#" class="note_super plugin-note note-' . $tag . '"
