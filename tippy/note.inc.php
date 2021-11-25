@@ -121,7 +121,7 @@ class PluginNote extends Tippy
             $script = <<<EOD
                 document.addEventListener('DOMContentLoaded', () => {
                     tippy('.note-$tag', {
-                        content: '$this->comment<div class="note-link"><a href="#note_foot_$note_no">脚注{$note_index}へ</a></div>',
+                        content: '<p>$this->comment</p><div class="note-link"><a href="#note_foot_$note_no">脚注{$note_index}へ</a></div>',
                         $cfg
                     });
                 });
