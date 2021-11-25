@@ -2,11 +2,12 @@
 /**
  * ホバーorタップで注釈を表示するプラグイン
  *
- * @version 0.2
+ * @version 0.3
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
  * -- Update --
+ * 2021-11-25 v0.3 脚注/注釈のアンカーに飛んだ際、上に余白ができるよう調整
  * 2021-11-24 v0.2 脚注から本文に戻るリンクを追加
  *            v0.1 初版作成
  */
@@ -131,8 +132,7 @@ class PluginNote extends Tippy
             $foot_explain[$fcount_base + $note_no] = '<li id="note_foot_' . $note_no . '"><a href="#note_text_' . self::$id . '">^</a>' . $this->comment . '</li>';
         }
 
-        $html = '<a href="#" class="note_super plugin-note note-' . $tag . '"
-         id="note_text_' . self::$id++ . '">' .  $note_index . '</a>';
+        $html = '<span class="note-anchor" id="note_text_' . self::$id++ . '"></span><a href="#" class="note_super plugin-note note-' . $tag . '">' .  $note_index . '</a>';
         if ($script) {
             $html .= '<script>' . preg_replace('/\s{2,}/', ' ', preg_replace('/\r|\n|\r\n/', ' ', $script)) .'</script>';
         }
