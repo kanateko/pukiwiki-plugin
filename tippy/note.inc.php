@@ -142,4 +142,3 @@ class PluginNote extends Tippy
 }
 
 ?>
-
