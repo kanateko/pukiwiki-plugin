@@ -2,11 +2,12 @@
 /**
  * ホバーorタップで注釈を表示するプラグイン
  *
- * @version 0.3
+ * @version 0.4
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
  * -- Update --
+ * 2021-11-26 v0.4 設定ページを使って参照番号のフォーマットを変更する機能を追加
  * 2021-11-25 v0.3 脚注/注釈のアンカーに飛んだ際、上に余白ができるよう調整
  * 2021-11-24 v0.2 脚注から本文に戻るリンクを追加
  *            v0.1 初版作成
@@ -15,7 +16,9 @@
 // tippy.js関連クラスの読み込み
 require_once('tippy.php');
 
-// 番号のフォーマット
+// 設定ページ
+define('NOTE_SETTING_PAGE', ':config/plugin/note');
+// デフォルトの参照番号のフォーマット
 define('NOTE_INDEX_FORMAT', '*%d');
 // キーワードと注釈のセパレータ
 define('NOTE_KEYWORD_SEPARATOR', ':');
@@ -42,6 +45,7 @@ function plugin_note_inline()
  */
 class PluginNote extends Tippy
 {
+    private $settings;
     private $note;
     private $keyword;
     private $comment;
@@ -65,6 +69,8 @@ class PluginNote extends Tippy
         $this->search_keywords($this->note);
         // オプション判別
         if ($args) $this->set_tippy_options($args);
+        //　設定ページの読み込み
+        if (is_page(NOTE_SETTING_PAGE)) $this->load_settings(NOTE_SETTING_PAGE);
     }
 
     /**
@@ -101,6 +107,21 @@ class PluginNote extends Tippy
     }
 
     /**
+     * 設定ページの読み込み
+     */
+    private function load_settings($spage)
+    {
+        $source = get_source($spage, true, true);
+        preg_match_all("/:(.+?)\|(.+?)\n/", $source, $matches);
+
+        foreach ($matches[1] as $i => $key) {
+            $key = htmlsc($key);
+            $val = htmlsc($matches[2][$i]);
+            $this->settings[$key] = $val;
+        }
+    }
+
+    /**
      * ツールチップの作成
      */
     public function convert_note_to_tooltip()
@@ -109,7 +130,8 @@ class PluginNote extends Tippy
 
         $fcount_base = 10000;  // PukiWikiの脚注が$foot_explainで使う分を予約
         $note_no = $this->note_no;
-        $note_index = str_replace('%d', $this->note_no, NOTE_INDEX_FORMAT);
+        $index_format = $this->settings['format'] ?: NOTE_INDEX_FORMAT;
+        $note_index = str_replace('%d', $this->note_no, $index_format);
         $tag = substr(md5($this->keyword), 0, 10);
         $cfg = self::const_tippy_props($this->options['props']);
 
@@ -121,7 +143,7 @@ class PluginNote extends Tippy
             $script = <<<EOD
                 document.addEventListener('DOMContentLoaded', () => {
                     tippy('.note-$tag', {
-                        content: '<p>$this->comment</p><div class="note-link"><a href="#note_foot_$note_no">脚注{$note_index}へ</a></div>',
+                        content: '<p>$this->comment</p><div class="note-link"><a href="#note_foot_$note_no">脚注{$note_no}へ</a></div>',
                         $cfg
                     });
                 });
