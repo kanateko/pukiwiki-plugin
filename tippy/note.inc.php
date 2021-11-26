@@ -45,11 +45,11 @@ function plugin_note_inline()
  */
 class PluginNote extends Tippy
 {
-    private $settings;
     private $note;
     private $keyword;
     private $comment;
     private $note_no;
+    private static $settings;
     private static $notes = array();
     private static $note_count = 0;
     private static $id = 0;
@@ -70,7 +70,8 @@ class PluginNote extends Tippy
         // オプション判別
         if ($args) $this->set_tippy_options($args);
         //　設定ページの読み込み
-        if (is_page(NOTE_SETTING_PAGE)) $this->load_settings(NOTE_SETTING_PAGE);
+        if (empty(self::$settings) && is_page(NOTE_SETTING_PAGE))
+            $this->load_settings(NOTE_SETTING_PAGE);
     }
 
     /**
@@ -117,7 +118,7 @@ class PluginNote extends Tippy
         foreach ($matches[1] as $i => $key) {
             $key = htmlsc($key);
             $val = htmlsc($matches[2][$i]);
-            $this->settings[$key] = $val;
+            self::$settings[$key] = $val;
         }
     }
 
@@ -130,7 +131,7 @@ class PluginNote extends Tippy
 
         $fcount_base = 10000;  // PukiWikiの脚注が$foot_explainで使う分を予約
         $note_no = $this->note_no;
-        $index_format = $this->settings['format'] ?: NOTE_INDEX_FORMAT;
+        $index_format = self::$settings['format'] ?: NOTE_INDEX_FORMAT;
         $note_index = str_replace('%d', $this->note_no, $index_format);
         $tag = substr(md5($this->keyword), 0, 10);
         $cfg = self::const_tippy_props($this->options['props']);
