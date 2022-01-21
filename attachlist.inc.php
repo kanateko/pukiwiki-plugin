@@ -10,6 +10,7 @@
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
  * -- Update --
  * 2022-01-21 v0.4 添付ファイルの一括削除機能を追加
+ *                 添付ファイルのリンクを修正
  *            v0.3 キャッシュの削除機能を追加
  *            v0.2 キャッシュ機能を追加
  * 2022-01-20 v0.1 初版作成
@@ -87,13 +88,14 @@ function attachlist_update_cache($page, $dir, $cache)
     // 添付ファイルの情報をテーブルに整形
     $uri = get_base_uri(PKWK_URI_ABSOLUTE);
     $e_page = urlencode(decode($page));
-    $ref = '[[%name%>' . $uri . '?cmd=attach&pcmd=open&file=%name%&refer=' . $e_page . ']]';
-    $info = '&size(12){&#91;[[詳細:' . $uri . '?cmd=attach&pcmd=info&file=%name%&refer=' . $e_page . ']]&#93;};';
+    $ref = '[[%name%:' . $uri . '?cmd=attach&pcmd=open&file=%ename%&refer=' . $e_page . ']]';
+    $info = '&size(12){&#91;[[詳細:' . $uri . '?cmd=attach&pcmd=info&file=%ename%&refer=' . $e_page . ']]&#93;};';
 
     $body = '|~ファイル名|~ファイルサイズ|~アップロード日時|h' . "\n";
     $body .= '|380|SIZE(14):RIGHT:200|SIZE(14):CENTER:200|c' . "\n";
     foreach ($files as $file) {
-        $body .= '|' . str_replace('%name%', $file['name'], $ref . ' ' . $info) . '|' . $file['size'] . '|' . $file['time'] . '|' . "\n";
+        $e_name = urlencode($file['name']);
+        $body .= '|' . str_replace('%name%', $file['name'], str_replace('%ename%', $e_name, $ref)) . ' ' . str_replace('%ename%', $e_name, $info) . '|' . $file['size'] . '|' . $file['time'] . '|' . "\n";
     }
     $ctrl = 'RIGHT:&#91;[[ファイルの一括操作>' . $uri . '?cmd=attachlist&page=' . $e_page . ']]&#93;';
     $body = convert_html('ファイル数：' . count($files) . "\n" . $body . "\n" . $ctrl);
@@ -217,7 +219,7 @@ function attachlist_listup_files($page)
         $body .=
             '<li><input type="checkbox" name="param[]" value="file=' . urlencode($file['name']) .
             '&refer=' . urlencode($page) . '"><a href="' . get_base_uri() . '?cmd=attach&pcmd=open&file='
-            . urlencode($file['name']) . '&page=' . urlencode($page) . '">' . $file['name'] . '</a></li>' . "\n";
+            . urlencode($file['name']) . '&refer=' . urlencode($page) . '">' . $file['name'] . '</a></li>' . "\n";
     }
     $body = '<ul>' . "\n" . $body . "\n" . '</ul>';
 
