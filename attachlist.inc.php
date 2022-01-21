@@ -322,7 +322,7 @@ function attachlist_delete_files($page)
         $body .= '<li>' . $name . '</li>' . "\n";
     }
     $body = '<ul>' . "\n" . $body . "\n" . '</ul>';
-    $body = '<p>以下のファイルを削除しました。</p>' . "\n" . $body . "\n" ;
+    $body = '<p>以下のファイルを削除しました</p>' . "\n" . $body . "\n" ;
     $body .= '<p><a href="' . get_base_uri() . '?' . urlencode($page) . '">ページに戻る</a></p>';
 
     // 添付ファイル一覧のキャッシュをクリア
