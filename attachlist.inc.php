@@ -4,11 +4,14 @@
  *
  * attach.inc.phpを改造してアップロード・削除・名前変更時にキャッシュを更新させるようにする必要あり
  *
- * @version 0.4
+ * @version 0.5
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license http://www.gnu.org/licenses/gpl.ja.html GPL
  * -- Update --
+ * 2022-01-23 v0.5 全てのキャッシュを削除する機能を追加
+ *                 添付ファイルの削除に失敗した場合の処理を追加
+ *                 一括操作画面に全選択/解除ボタンを追加
  * 2022-01-21 v0.4 添付ファイルの一括削除機能を追加
  *                 添付ファイルのリンクを修正
  *            v0.3 キャッシュの削除機能を追加
@@ -53,7 +56,7 @@ function plugin_attachlist_action()
 {
     global $vars;
 
-    if (! isset($vars['page'])) return;
+    if (empty($vars['page'])) return attachlist_clear_all_cache();
     $msg = 'ファイルの一括操作';
     if (isset($vars['mode'])) {
         switch($vars['mode']) {
@@ -170,24 +173,27 @@ function attachlist_delete_cache($refer)
  *
  * @param  string $msg  タブに表示する文章
  * @param  string $page 対象のページ名
- * @return array       各種フォーム
+ * @return array        各種フォーム
  */
 function attachlist_authentification($msg, $page)
 {
     global $vars;
 
     // ページ名のチェック
-    if (! is_page($page)) return array('msg' => $msg, 'body' => '<p>ページが存在しません</p>');
+    if (! is_page($page)) {
+        $body = '<p>ページ "' . $page . '" は存在しません</p>';
+        return array('msg' => $msg, 'body' => $body);
+    }
 
     // 認証用フォームの作成
     $auth_failed = '<p>パスワードが違います</p>' . "\n";
     $body = <<<EOD
-    <form method="post" action="./">
-        <input type="hidden" name="cmd" value="attachlist">
-        <input type="hidden" name="page" value="$page">
-        <input type="password" name="pass">
-        <input type="submit" value="認証">
-    </form>
+<form method="post" action="./">
+    <input type="hidden" name="cmd" value="attachlist">
+    <input type="hidden" name="page" value="$page">
+    <input type="password" name="pass">
+    <input type="submit" value="認証">
+</form>
 EOD;
 
     // パスワードのチェック
@@ -217,21 +223,52 @@ function attachlist_listup_files($page)
     foreach ($files as $i => $file) {
         // チェックボックス付きのリストを作成
         $body .=
-            '<li><input type="checkbox" name="param[]" value="file=' . urlencode($file['name']) .
+            '<li><input type="checkbox" class="check_list" name="param[]" value="file=' . urlencode($file['name']) .
             '&refer=' . urlencode($page) . '"><a href="' . get_base_uri() . '?cmd=attach&pcmd=open&file='
             . urlencode($file['name']) . '&refer=' . urlencode($page) . '">' . $file['name'] . '</a></li>' . "\n";
     }
     $body = '<ul>' . "\n" . $body . "\n" . '</ul>';
 
+    // 全選択/解除用スクリプト
+    $js = <<<EOD
+<script>
+    let check_all = document.querySelector("#check_all");
+    let check_list = document.querySelectorAll(".check_list");
+
+    check_all.addEventListener('change', change_all);
+
+    function change_all() {
+        if (check_all.checked) {
+            for (let i in check_list) {
+                if (check_list.hasOwnProperty(i)) {
+                    check_list[i].checked = true;
+                }
+            }
+        } else {
+            for (let i in check_list) {
+                if (check_list.hasOwnProperty(i)) {
+                    check_list[i].checked = false;
+                }
+            }
+        }
+    };
+</script>
+EOD;
+
     // 選択用フォームの作成
     $body = <<<EOD
-    <form method="post" action="./">
-        $body
-        <input type="hidden" name="cmd" value="attachlist">
-        <input type="hidden" name="mode" value="confirm">
-        <input type="hidden" name="page" value="$page">
-        <input type="submit" name="delete" value="削除">
-    </form>
+<p style="user-select:none">
+    <input type="checkbox" id="check_all">
+    <label for="check_all">全て選択 / 解除</label>
+</p>
+<form method="post" action="./">
+    $body
+    <input type="hidden" name="cmd" value="attachlist">
+    <input type="hidden" name="mode" value="confirm">
+    <input type="hidden" name="page" value="$page">
+    <input type="submit" name="delete" value="削除">
+</form>
+$js
 EOD;
 
     return $body;
@@ -269,15 +306,15 @@ function attachlist_confirmation($msg, $page)
     // 最終確認用フォームの作成
     $auth_failed = '<p>パスワードが違います</p>' . "\n";
     $body = <<<EOD
-    <p>以下のファイルを削除します</p>
-    <form method="post" action="./">
-        <input type="hidden" name="cmd" value="attachlist">
-        <input type="hidden" name="mode" value="confirm">
-        <input type="hidden" name="page" value="$page">
-        $del_list
-        <input type="password" name="pass">
-        <input type="submit" value="実行">
-    </form>
+<p>以下のファイルを削除します</p>
+<form method="post" action="./">
+    <input type="hidden" name="cmd" value="attachlist">
+    <input type="hidden" name="mode" value="confirm">
+    <input type="hidden" name="page" value="$page">
+    $del_list
+    <input type="password" name="pass">
+    <input type="submit" value="実行">
+</form>
 EOD;
 
     // パスワードのチェック
@@ -306,19 +343,25 @@ function attachlist_delete_files($page)
     $dir = UPLOAD_DIR;
     $file = $vars['file_al'];
     $refer = $vars['refer_al'];
+    $deleted = array();
 
     // 選択された添付ファイルとログファイルを削除
     foreach ($vars['param'] as $i => $param) {
         if (empty($param[$i])) continue;
         $t_file = $dir . encode($refer[$i]) . '_' . encode($file[$i]);
         $t_log = $t_file . '.log';
-        unlink($t_file);
-        unlink($t_log);
+        if (unlink($t_file) && unlink($t_log)) {
+            $deleted[$i] = $file[$i];
+        } else {
+            $body = '<p>"' . $file[$i] . '" が削除できませんでした</p>';
+            attachlist_delete_cache($page);
+            return $body;
+        }
     }
 
     // 削除したファイルの一覧を作成
     $body = '';
-    foreach ($file as $i => $name) {
+    foreach ($deleted as $i => $name) {
         $body .= '<li>' . $name . '</li>' . "\n";
     }
     $body = '<ul>' . "\n" . $body . "\n" . '</ul>';
@@ -329,6 +372,65 @@ function attachlist_delete_files($page)
     attachlist_delete_cache($page);
 
     return $body;
+}
+
+/**
+ * キャッシュファイルの一括削除
+ *
+ * @return array キャッシュクリアの確認・完了画面
+ */
+function attachlist_clear_all_cache()
+{
+    global $vars;
+
+    $msg = 'キャッシュのクリア';
+    $pattern = ATTACHLIST_CACHE_DIR . '*.dat';
+
+    // 認証用フォームの作成
+    $auth_failed = '<p>パスワードが違います</p>' . "\n";
+    $body = <<<EOD
+<p>添付ファイル一覧のキャッシュをクリアします</p>
+<form method="post" action="./">
+    <input type="hidden" name="cmd" value="attachlist">
+    <input type="password" name="pass">
+    <input type="submit" value="実行">
+</form>
+EOD;
+
+    // パスワードのチェック
+    if ($vars['pass']) {
+        if (pkwk_login($vars['pass'])) {
+            // 認証できたらキャッシュの検索開始
+            $caches = glob($pattern);
+            if (empty($caches)) {
+                // datファイルがなければ終了
+                $body = '<p>キャッシュが見つかりませんでした</p>';
+            } else {
+                // datファイルがあればそれらを削除
+                $body = '<p>以下のページのキャッシュを削除しました<p>' . "\n";
+                foreach ($caches as $i => $cache) {
+                    preg_match('/.+\/(.+).dat/', $cache, $matches);
+                    $page = decode($matches[1]);
+                    $attrs = get_page_link_a_attrs($page);
+                    if (unlink($cache)) {
+                        // 削除に成功したページをリストアップ
+                        $body .= '<li><a href="' . get_page_uri($page) . '" class="' .
+                        $attrs['class'] . '" data-mtime="' . $attrs['data_mtime'] .
+                        '">' . $page . '</a></li>' . "\n";
+                    } else {
+                        // 削除に失敗したら処理を終了
+                        $body = '<p>"' . decode($matches[1]) . '" のキャッシュが削除できませんでした</p>';
+                        break;
+                    }
+                }
+            }
+            return array('msg' => $msg, 'body' => $body);
+        } else {
+            return array('msg' => $msg, 'body' => $auth_failed . $body);
+        }
+    } else {
+        return array('msg' => $msg, 'body' => $body);
+    }
 }
 
 ?>
