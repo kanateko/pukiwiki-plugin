@@ -189,7 +189,7 @@ function attachlist_authentification($msg, $page)
 
     // ページ名のチェック
     if (! is_page($page)) {
-        $body = '<p>ページ "' . $page . '" は存在しません</p>';
+        $body = '<p>ページ "' . htmlsc($page) . '" は存在しません</p>';
         return array('msg' => $msg, 'body' => $body);
     }
 
@@ -292,7 +292,7 @@ function attachlist_confirmation($msg, $page)
     global $vars;
 
     // モード選択
-    $mode = isset($vars['mode']) ? $vars['mode'] : '';
+    $mode = isset($vars['mode']) ? htmlsc($vars['mode']) : '';
 
     // 選択した添付ファイルのリストを作成
     $targets = '';
