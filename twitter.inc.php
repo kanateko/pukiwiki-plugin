@@ -75,4 +75,3 @@ function plugin_twitter_convert()
 	return $html;
 }
 
-?>

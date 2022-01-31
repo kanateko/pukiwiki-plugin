@@ -149,4 +149,3 @@ EOD;
 
 	return $body;
 }
-?>

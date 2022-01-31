@@ -415,4 +415,3 @@ function plugin_card_check_updates($page, $cache) {
     return $is_new;
 }
 
-?>

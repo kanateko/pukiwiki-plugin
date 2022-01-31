@@ -70,4 +70,3 @@ function insert_format($conds, $s_table)
     $lines = implode("\n", $lines);
     return convert_html($lines);
 }
-?>

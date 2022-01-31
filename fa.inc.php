@@ -175,4 +175,3 @@ function icon_in_list($html)
     return $html;
 
 }
-?>

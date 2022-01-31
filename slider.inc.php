@@ -208,4 +208,3 @@ EOD;
     return $slider_body;
 }
 
-?>

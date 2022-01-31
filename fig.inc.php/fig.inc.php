@@ -345,4 +345,3 @@ Class FigMessages
     }
 }
 
-?>

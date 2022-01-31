@@ -321,4 +321,3 @@ Class PluginAc
     }
 }
 
-?>

@@ -258,4 +258,3 @@ function plugin_gallery_check_file($file, $max_size)
 
     return false;
 }
-?>
