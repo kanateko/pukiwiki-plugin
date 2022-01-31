@@ -5,7 +5,7 @@
 * @version 0.8.3
 * @author kanateko
 * @link https://jpngamerswiki.com/?ff7d0a095a
-* @license http://www.gnu.org/licenses/gpl.ja.html GPL
+* @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
 * 
 * 2020-03-10 ループ処理のバグを修正 (ver 0.83)
 * 2020-02-10 コードの微調整 & 整理 (ver 0.82)

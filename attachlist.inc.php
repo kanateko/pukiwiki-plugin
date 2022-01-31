@@ -5,7 +5,7 @@
  * @version 1.0
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
- * @license http://www.gnu.org/licenses/gpl.ja.html GPL
+ * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Update --
  * 2022-01-26 v1.0 attachプラグインを改造しなくても動作するように仕様を変更
  *                 設定のキャッシュ利用の許可をデフォルトでtrueに変更

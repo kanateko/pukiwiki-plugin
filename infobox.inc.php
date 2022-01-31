@@ -5,7 +5,7 @@
  * @version 0.4
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
- * @license http://www.gnu.org/licenses/gpl.ja.html GPL
+ * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Update --
  * 2021-08-04 テンプレートの読み込みがループする場合はエラーを表示する機能を追加
  *            テンプレートページの凍結が必要かどうかを設定できる機能を追加

@@ -5,7 +5,7 @@
  * @version 2.3
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
- * @license http://www.gnu.org/licenses/gpl.ja.html GPL
+ * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Updates --
  * 2021-10-04 v2.3 figプラグインに対応
  * 2021-08-23 v2.2 ページ名からファイル名への変換で使用する関数を変更 (strtoupper, bix2hex -> encode)

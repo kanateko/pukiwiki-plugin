@@ -5,7 +5,7 @@
  * @version 1.6
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
- * @license http://www.gnu.org/licenses/gpl.ja.html GPL
+ * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Updates --
  * 2021-07-26 プラグインの呼び出し毎に挿入されていたスクリプトを大幅に削減
  *            h使用時に元々ある疑似要素と開閉アイコンが干渉しないよう、アイコン表示用の要素を追加

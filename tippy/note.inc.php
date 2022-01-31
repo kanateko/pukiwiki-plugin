@@ -5,7 +5,7 @@
  * @version 0.4
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
- * @license http://www.gnu.org/licenses/gpl.ja.html GPL
+ * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Update --
  * 2021-11-26 v0.4 設定ページを使って参照番号のフォーマットを変更する機能を追加
  * 2021-11-25 v0.3 脚注/注釈のアンカーに飛んだ際、上に余白ができるよう調整

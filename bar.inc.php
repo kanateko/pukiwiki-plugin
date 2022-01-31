@@ -5,7 +5,7 @@
 * @version 0.8.0
 * @author kanateko
 * @link https://jpngamerswiki.com/?f51cd63681
-* @license http://www.gnu.org/licenses/gpl.ja.html GPL
+* @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
 * -- Update --
 * 2020-03-09 初版公開
 */

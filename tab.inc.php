@@ -5,7 +5,7 @@
 * @version 1.2.0
 * @author kanateko
 * @link https://jpngamerswiki.com/?f51cd63681
-* @license http://www.gnu.org/licenses/gpl.ja.html GPL
+* @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
 * 
 * 2020-10-16 タブの最大数を3つ -> 無制限に変更、全体的に作り直し (ver 1.2.0)
 * 2019-06-30 初版作成、タブは3つに限定
@@ -46,7 +46,7 @@ EOD;
     {$content}
 </div>
 
-EOD;  
+EOD;
         }
     }
 

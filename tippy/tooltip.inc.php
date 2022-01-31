@@ -5,7 +5,7 @@
  * @version 0.5
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
- * @license http://www.gnu.org/licenses/gpl.ja.html GPL
+ * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Update --
  * 2021-11-24 v0.5 noteプラグインと併用できるようtippy.js関連部分を分離
  * 2021-08-21 v0.4 デフォルト設定の出力が1回で済むよう修正

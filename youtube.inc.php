@@ -5,7 +5,7 @@
 * @version 1.4
 * @author kanateko
 * @link https://jpngamerswiki.com/?82f1460fdb
-* @license http://www.gnu.org/licenses/gpl.ja.html GPL
+* @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
 * 2021-10-12 (ver 1.5)
 *   iframeにloading属性を追加
 * 2021-07-07 (ver 1.4)

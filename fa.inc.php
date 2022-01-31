@@ -7,7 +7,7 @@
  * @version 1.4
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
- * @license http://www.gnu.org/licenses/gpl.ja.html GPL
+ * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Update --
  * 2021-07-26 リスト用のスクリプトを少し変更
  * 2021-07-11 アニメーションやサイズ変更といったのFAのクラスを引数で追加する機能を追加

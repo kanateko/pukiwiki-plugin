@@ -5,7 +5,7 @@
 * @version 1.1.0
 * @author kanateko
 * @link https://jpngamerswiki.com/?0f5ec903b8
-* @license http://www.gnu.org/licenses/gpl.ja.html GPL
+* @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
 * -- Update --
 * 2020-03-10 単一ツイートの埋め込み機能を追加 (ver 1.1)
 * 2018-09-17 初版作成

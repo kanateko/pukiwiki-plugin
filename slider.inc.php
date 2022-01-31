@@ -5,7 +5,7 @@
 * @version 1.2
 * @author kanateko
 * @link https://jpngamerswiki.com/?f51cd63681
-* @license http://www.gnu.org/licenses/gpl.ja.html GPL
+* @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
 * -- Updates --
 * 2021-06-29 card, galleryプラグインとの連携機能を追加
 *            クラス追加機能を実装

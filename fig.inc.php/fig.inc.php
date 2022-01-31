@@ -5,7 +5,7 @@
 * @version 1.3
 * @author kanateko
 * @link https://jpngamerswiki.com/?f51cd63681
-* @license http://www.gnu.org/licenses/gpl.ja.html GPL
+* @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
 * -- Update --
 * 2021-09-30 v1.3 クラスを追加する機能を追加
 *                 キャプションでPukiWiki構文が使えない問題を修正

@@ -5,7 +5,7 @@
  * @version 1.7
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
- * @license http://www.gnu.org/licenses/gpl.ja.html GPL
+ * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Updates --
  * 2021-09-29 v1.7 ファイルとキャプションのセパレータを変更するための設定を追加
  * 2021-07-26 v1.6 対応する拡張子にwebpを追加 (一覧表示のみ)
