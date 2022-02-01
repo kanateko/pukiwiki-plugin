@@ -43,9 +43,9 @@ function plugin_gallery_init()
 {
     global $head_tags;
     //jsとcssを読み込む
-    $head_tags[] = '<script src="' . SKIN_DIR . 'pswp/photoswipe.min.js" charset="utf-8"></script>';
-    $head_tags[] = '<script src="' . SKIN_DIR . 'pswp/photoswipe-ui-default.min.js" charset="utf-8"></script>';
-    $head_tags[] = '<script src="' . SKIN_DIR . 'pswp/photoswipe-simplify.min.js" charset="utf-8"></script>';
+    $head_tags[] = '<script src="' . SKIN_DIR . 'pswp/photoswipe.min.js"></script>';
+    $head_tags[] = '<script src="' . SKIN_DIR . 'pswp/photoswipe-ui-default.min.js"></script>';
+    $head_tags[] = '<script src="' . SKIN_DIR . 'pswp/photoswipe-simplify.min.js"></script>';
     $head_tags[] = '<link rel="stylesheet" href="' . SKIN_DIR . 'pswp/photoswipe.css" />';
     $head_tags[] = '<link rel="stylesheet" href="' . SKIN_DIR . 'pswp/default-skin/default-skin.css" />';
 }
@@ -149,7 +149,7 @@ function plugin_gallery_convert()
     if ($gallery_counts === 0) {
         $js = <<<EOD
         <script>
-            document.addEventListener("DOMContentLoaded", function() {
+            document.addEventListener("DOMContentLoaded", () => {
                 photoswipeSimplify.init();
             });
         </script>

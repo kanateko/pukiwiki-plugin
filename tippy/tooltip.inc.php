@@ -98,7 +98,7 @@ class PluginTooltip extends Tippy
         }
 
         // 識別用文字列が含まれているかチェック
-        if (strpos($term, ':') !== false) {
+        if (strpos($term, TOOLTIP_TERM_SEPARATOR) !== false) {
             $term = explode(TOOLTIP_TERM_SEPARATOR, $term, 2)[0];
         }
 
