@@ -55,7 +55,7 @@ function plugin_datatable_convert()
     $args = func_get_args();
     $table = preg_replace("/\r|\r\n/", "\n", array_pop($args));
     $table = convert_html($table);
-    if (strpos($table, '<table' === false)) return '<p>' . $_datatable_messages['msg_no_table'] . '</p>';
+    if (strpos($table, '<table') === false) return '<p>' . $_datatable_messages['msg_no_table'] . '</p>';
 
     $dt = new PluginDatatable($table);
     $dt->args_to_options($args);
