@@ -36,12 +36,12 @@ function plugin_datatable_init()
 
     array_push($head_tags, DATATABLE_CDN_CSS, DATATABLE_CDN_JS);
     $_datatable_messages = [
-            'msg_unknown'   => '#datatable Error: Unknown argument -> ',
-            'msg_no_table'  => '#datatable Error: Could not find any tables.',
-            'label_search'  => 'キーワード',
-            'label_perpage' => '{select}件を表示',
-            'label_norows'  => 'データがありません',
-            'label_info'    => '{rows}件中{start}-{end}件を表示'
+        'msg_unknown'   => '#datatable Error: Unknown argument -> ',
+        'msg_no_table'  => '#datatable Error: Could not find any tables.',
+        'label_search'  => 'キーワード',
+        'label_perpage' => '{select}件を表示',
+        'label_norows'  => 'データがありません',
+        'label_info'    => '{rows}件中{start}-{end}件を表示'
     ];
 }
 
