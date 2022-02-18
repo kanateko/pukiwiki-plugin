@@ -2,11 +2,13 @@
 /**
  * 縦型ステップフロー作成プラグイン
  *
- * @version 0.5
+ * @version 0.6
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Update --
+ * 2022-02-19 v0.6 マーカー関連オプションの処理を最適化
+ *                 マーカーのスタイル指定のエラー処理を厳格化
  * 2022-02-18 v0.5 マルチライン部分が無い場合のエラーを追加
  *                 同じタイトルがある場合に表示がおかしくなる問題を修正
  *            v0.4 タイトルの非表示機能を追加
@@ -112,6 +114,9 @@ function get_options($args)
     foreach ($args as $arg) {
         $arg = htmlsc($arg);
         if (preg_match('/^(label|pre|marker|mcolor)=(.+)$/', $arg, $matches)) {
+            if ($matches[1] == 'marker' && ! preg_match('/^(?:border|double|solid)$/', $matches[2])) {
+                return '<p>' . $_step_messages['msg_unknown'] . $arg . '</p>';
+            }
             $options[$matches[1]] = $matches[2];
         } else {
             return '<p>' . $_step_messages['msg_unknown'] . $arg . '</p>';
@@ -139,14 +144,8 @@ function convert_stepflow($titles, $contents, $options)
     $label = $options['label'] ?: STEP_LABEL_STRING;
     $pre = $options['pre'] ? $options['pre'] . '-' : '';
     // マーカー
-    $options['marker'] = $options['marker'] ?? STEP_MARKER_DEFAULT;
-    $marker = ' data-marker-style="' . $options['marker'] . '"';
-    if ($options['mcolor']) {
-        $mcolor = ' style="border-color:' . $options['mcolor'];
-        $mcolor .= $options['marker'] == 'border' ? '"' : ';background-color:' . $options['mcolor'] . '"';
-    } else {
-        $mcolor='';
-    }
+    $marker = $options['marker'] ?: STEP_MARKER_DEFAULT;
+    $mcolor = $options['mcolor'] ? ' style="--main-color:' . $options['mcolor'] . '"' : '';
 
     $body = '';
     foreach ($titles as $i => $title) {
@@ -154,7 +153,7 @@ function convert_stepflow($titles, $contents, $options)
         $body .= <<<EOD
 <$child class="step-flow">
     <div class="step-label">
-        <span class="step-marker"$mcolor$marker></span>
+        <span class="step-marker"$mcolor data-marker-style="$marker"></span>
         <span class="step-label-str">$label</span><span class="step-label-num">$pre$step_counts</span>
     </div>
     $title
