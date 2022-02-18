@@ -2,12 +2,13 @@
 /**
  * 縦型ステップフロー作成プラグイン
  *
- * @version 0.2
+ * @version 0.3
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Update --
- * 2022-02-18 v0.2 ラベルを変更する機能を追加
+ * 2022-02-18 v0.3 マーカーのスタイルを変更する機能を追加
+ *            v0.2 ラベルを変更する機能を追加
  * 2022-02-17 v0.1 初版作成
  */
 
@@ -15,6 +16,8 @@
 define('STEP_LABEL_STRING', 'STEP');
 // ステップフローのコンテナのタグ
 define('STEP_LIST_TAG', 'ol');
+// マーカーのデフォルトスタイル
+define('STEP_MARKER_DEFAULT', 'border');
 
 /**
  * 初期化
@@ -103,10 +106,10 @@ function get_options($args)
 
     foreach ($args as $arg) {
         $arg = htmlsc($arg);
-        if (preg_match('/^(label|pre)=(.+)$/', $arg, $matches)) {
+        if (preg_match('/^(label|pre|marker|mcolor)=(.+)$/', $arg, $matches)) {
             $options[$matches[1]] = $matches[2];
         } else {
-            return '<p>' . $_step_messages['msg_unknown'] . '</p>';
+            return '<p>' . $_step_messages['msg_unknown'] . $arg . '</p>';
         }
     }
 
@@ -124,16 +127,28 @@ function get_options($args)
 function convert_stepflow($titles, $contents, $options)
 {
     $step_counts = 1;
-    $label = $options['label'] ?: STEP_LABEL_STRING;
-    $pre = $options['pre'] ? $options['pre'] . '-' : '';
+    // タグ
     $tag = STEP_LIST_TAG;
     $child = preg_match('/ul|ol/', $tag) ? 'li' : 'div';
+    // ラベル
+    $label = $options['label'] ?: STEP_LABEL_STRING;
+    $pre = $options['pre'] ? $options['pre'] . '-' : '';
+    // マーカー
+    $options['marker'] = $options['marker'] ?? STEP_MARKER_DEFAULT;
+    $marker = ' data-marker-style="' . $options['marker'] . '"';
+    if ($options['mcolor']) {
+        $mcolor = ' style="border-color:' . $options['mcolor'];
+        $mcolor .= $options['marker'] == 'border' ? '"' : ';background-color:' . $options['mcolor'] . '"';
+    } else {
+        $mcolor='';
+    }
 
     $body = '';
     foreach ($titles as $i => $title) {
         $body .= <<<EOD
 <$child class="step-flow">
     <div class="step-label">
+        <span class="step-marker"$mcolor$marker></span>
         <span class="step-label-str">$label</span><span class="step-label-num">$pre$step_counts</span>
     </div>
     <div class="step-title">$title</div>
