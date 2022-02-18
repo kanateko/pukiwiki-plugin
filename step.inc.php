@@ -2,12 +2,13 @@
 /**
  * 縦型ステップフロー作成プラグイン
  *
- * @version 0.3
+ * @version 0.4
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Update --
- * 2022-02-18 v0.3 マーカーのスタイルを変更する機能を追加
+ * 2022-02-18 v0.4 タイトルの非表示機能を追加
+ *            v0.3 マーカーのスタイルを変更する機能を追加
  *            v0.2 ラベルを変更する機能を追加
  * 2022-02-17 v0.1 初版作成
  */
@@ -77,7 +78,7 @@ function get_stepflow_parts($source)
     }
 
     // 各フローのタイトルを取得
-    preg_match_all("/#:(.+?)\n/", $source, $matches);
+    preg_match_all("/#:(.*?)\n/", $source, $matches);
     foreach ($matches[1] as $i => $title) {
         $parts['titles'][] = make_link($title);
         $replace = $i == 0 ? '' : '%title%';
@@ -145,13 +146,14 @@ function convert_stepflow($titles, $contents, $options)
 
     $body = '';
     foreach ($titles as $i => $title) {
+        $title = empty($title) ? '' : '<div class="step-title">' . $title . '</div>';
         $body .= <<<EOD
 <$child class="step-flow">
     <div class="step-label">
         <span class="step-marker"$mcolor$marker></span>
         <span class="step-label-str">$label</span><span class="step-label-num">$pre$step_counts</span>
     </div>
-    <div class="step-title">$title</div>
+    $title
     <div class="step-content">
         $contents[$i]
     </div>
