@@ -2,12 +2,14 @@
 /**
  * 縦型ステップフロー作成プラグイン
  *
- * @version 0.4
+ * @version 0.5
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Update --
- * 2022-02-18 v0.4 タイトルの非表示機能を追加
+ * 2022-02-18 v0.5 マルチライン部分が無い場合のエラーを追加
+ *                 同じタイトルがある場合に表示がおかしくなる問題を修正
+ *            v0.4 タイトルの非表示機能を追加
  *            v0.3 マーカーのスタイルを変更する機能を追加
  *            v0.2 ラベルを変更する機能を追加
  * 2022-02-17 v0.1 初版作成
@@ -29,7 +31,8 @@ function plugin_step_init()
 
     $_step_messages = [
         'msg_usage'   => '<p>#step{{<br>#:&lt;title&gt;<br>&lt;content&gt;<br>...<br>}}<p>',
-        'msg_unknown' => '#step Error: Unknown argument -> '
+        'msg_unknown' => '#step Error: Unknown argument -> ',
+        'msg_empty'   => '<p>#step Error: Could not find any contents.</p>'
     ];
 }
 
@@ -44,6 +47,7 @@ function plugin_step_convert()
     if (count($args) == 0) return $_step_messages['msg_usage'];
 
     $source = preg_replace("/\r|\r\n/", "\n", array_pop($args));
+    if (strpos($source, "\n") === false) return $_step_messages['msg_empty'];
     $parts = get_stepflow_parts($source);
 
     if (! empty($args)) {
@@ -82,7 +86,7 @@ function get_stepflow_parts($source)
     foreach ($matches[1] as $i => $title) {
         $parts['titles'][] = make_link($title);
         $replace = $i == 0 ? '' : '%title%';
-        $source = str_replace($matches[0][$i], $replace, $source);
+        $source = preg_replace('/' . preg_quote($matches[0][$i]) . '/', $replace, $source, 1);
     }
 
     // 一時的に置換していた部分をもとに戻してからコンテンツ部分を取得
