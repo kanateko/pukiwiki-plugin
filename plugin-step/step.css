@@ -1,0 +1,64 @@
+/* step.inc.php */
+.plugin-step {
+    --main-color: #5c5c5c;
+    --light-color: #8f8f8f;
+    --lighter-color: #c2c2c2;
+    --bg-color: #ffffff;
+    position: relative;
+    margin: 16px 8px;
+    padding: 0 8px 0 16px;
+    border-left: 4px solid var(--lighter-color);
+  }
+  .plugin-step::after {
+    content: "";
+    display: block;
+    position: absolute;
+    bottom: 0;
+    left: -8px;
+    border: 6px solid var(--lighter-color);
+    border-radius: 100%;
+  }
+
+  .step-flow {
+    list-style: none;
+  }
+  .step-flow:not(:last-of-type) {
+    border-bottom: 2px dotted var(--light-color);
+  }
+
+  .step-marker[data-marker-style] {
+    content: "";
+    display: block;
+    position: absolute;
+    left: -26px;
+    top: 0;
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--main-color);
+    border-radius: 100%;
+    box-shadow: 0 0 0 4px var(--bg-color);
+  }
+  .step-marker[data-marker-style=border] {
+    background-color: var(--bg-color);
+  }
+  .step-marker[data-marker-style=double] {
+    background-color: var(--main-color);
+    box-shadow: 0 0 0 4px var(--bg-color), inset 0 0 0 3px var(--bg-color);
+  }
+  .step-marker[data-marker-style=solid] {
+    background-color: var(--main-color);
+  }
+
+  .step-label {
+    position: relative;
+    font-weight: bold;
+    color: var(--light-color);
+  }
+  .step-label .step-label-num {
+    padding-left: 4px;
+  }
+
+  .step-title {
+    font-weight: bold;
+    font-size: 1.2em;
+  }
