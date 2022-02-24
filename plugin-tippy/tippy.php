@@ -1,11 +1,13 @@
 <?php
 /**
  * tippy.jsを使用するプラグイン向けのクラス
- * @version 0.1
+ *
+ * @version 0.2
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
- * @license http://www.gnu.org/licenses/gpl.ja.html GPL
+ * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Update --
+ * 2022-02-25 v0.2 デフォルト設定を変更する機能を追加
  * 2021-11-24 v0.1 初版作成
  */
 
@@ -16,22 +18,23 @@ define('TIPPY_ADD_DEFAULT_SETTINGS', array(
     'interactive' => 'true',
 ));
 
-$tippy_loaded = false;
-
-function tippy_init() {
+function tippy_init($arr = null) {
     global $head_tags, $tippy_loaded;
+
+    $default = $arr ?? TIPPY_ADD_DEFAULT_SETTINGS;
+
     if (! $tippy_loaded) {
         // 必要なライブラリの読み込み
         $head_tags[] = '<script src="https://unpkg.com/@popperjs/core@2"></script>';
         $head_tags[] = '<script src="https://unpkg.com/tippy.js@6"></script>';
-        if (isset(TIPPY_ADD_DEFAULT_SETTINGS['animation'])) {
+        if (isset($default['animation'])) {
             $head_tags[] = '<link rel="stylesheet" href="https://unpkg.com/tippy.js@6/animations/' . TIPPY_ADD_DEFAULT_SETTINGS['animation'] . '.css">';
         }
-        if (isset(TIPPY_ADD_DEFAULT_SETTINGS['theme'])) {
+        if (isset($default['theme'])) {
             $head_tags[] = '<link rel="stylesheet" href="https://unpkg.com/tippy.js@6/themes/' . TIPPY_ADD_DEFAULT_SETTINGS['theme'] . '.css">';
         }
         // tippy.jsのデフォルト設定を出力
-        $cfg = Tippy::const_tippy_props(TIPPY_ADD_DEFAULT_SETTINGS);
+        $cfg = Tippy::const_tippy_props($default);
         $head_tags[] = <<<EOD
         <script>
             tippy.setDefaultProps({
@@ -50,9 +53,7 @@ function tippy_init() {
 class Tippy
 {
     public $error;
-    public $options = array(
-        'props'   => array(),
-    );
+    public $options;
 
     /**
      * オプション判別
