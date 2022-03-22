@@ -2,13 +2,16 @@
 /**
 * 連動可能なプルダウンを設置するプラグイン (配布版)
 *
-* @version 1.0
+* @version 1.1
 * @author kanateko
 * @link https://jpngamerswiki.com/?f51cd63681
 * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
 * -- Update --
-* 2022-03-23 v1.0 初版作成
+* 2022-03-23 v1.1 テーブル内でも使用できるように代替のセパレータの追加
+*            v1.0 初版作成
 */
+
+define('SELECT_ALT_SEPARATOR', '~');
 
 /**
  * 初期化
@@ -70,7 +73,11 @@ class PluginSelect
      */
     public function __construct($list)
     {
-        $this->list = explode('|', $list);
+        if (strpos($list, '|') !== false) {
+            $this->list = explode('|', $list);
+        } else {
+            $this->list = explode(SELECT_ALT_SEPARATOR, $list);
+        }
     }
 
     /**
