@@ -2,12 +2,13 @@
 /**
 * 連動可能なプルダウンを設置するプラグイン (配布版)
 *
-* @version 1.1
+* @version 1.2
 * @author kanateko
 * @link https://jpngamerswiki.com/?f51cd63681
 * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
 * -- Update --
-* 2022-03-23 v1.1 テーブル内でも使用できるように代替のセパレータの追加
+* 2022-03-23 v1.2 スクリプトを改善
+*            v1.1 テーブル内でも使用できるように代替のセパレータの追加
 *            v1.0 初版作成
 */
 
@@ -131,13 +132,13 @@ class PluginSelect
         }
 
         // グループワードが初出の場合は連動用のスクリプトを挿入
-        if (! empty($this->group) && ! isset(self::$loaded[$this->group])) {
-            self::$loaded[$this->group] = true;
-            $selector = preg_replace('/^\s/', '', $group);
+        if (self::$loaded == false && ! empty($this->group)) {
+            self::$loaded= true;
+            $selector = '.plugin-select[data-group]';
             $script = <<<EOD
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const pulldowns = document.querySelectorAll('[$selector]');
+    const pulldowns = document.querySelectorAll('$selector');
 
     for (const pulldown of pulldowns) {
         pulldown.addEventListener('change', (e) => {
