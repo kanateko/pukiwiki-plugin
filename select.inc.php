@@ -106,6 +106,8 @@ class PluginSelect
                 // とりあえず"="を挟んであればオプションとして格納
                 list($key, $val) = explode('=', $arg);
                 $this->options[$key] = $val;
+            } else if ($arg == 'transparent') {
+                $this->options[$arg] = true;
             } else {
                 // 明らかに既定のオプションにマッチしていない場合はエラー
                 $this->err = str_replace('%a', $arg, $_select_messages['err_unknown']);
@@ -124,7 +126,7 @@ class PluginSelect
 
         $name = $this->options['name'] ?? 'select' . self::$counts++;
         $group = isset($this->group) ? ' data-group="' . $this->group . '"' : '';
-        $style = isset($this->options['size']) ? 'font-size:' . $this->options['size'] . ';' : '';
+        $style = $this->merge_style();
 
         $pulldown = '';
         foreach ($this->list as $i => $item) {
@@ -168,5 +170,38 @@ $script
 EOD;
 
         return $html;
+    }
+
+    /**
+     * オプションからスタイルを作成
+     *
+     * @return string スタイル
+     */
+    private function merge_style()
+    {
+        $op = $this->options;
+        $style = '';
+
+        foreach ($op as $key => $val) {
+            switch ($key) {
+                case 'size':
+                    $style .= 'font-size:' . $op['size'] . ';';
+                    break;
+                case 'color':
+                case 'border':
+                    $style .= $key . ':' . $val . ';';
+                    break;
+                case 'bg':
+                    $style .= 'background-color:' . $val . ';';
+                    break;
+                case 'transparent':
+                    $style .= 'background-color:transparent;border:none;outline:none;';
+                    break;
+                default:
+                    continue;
+            }
+        }
+
+        return $style;
     }
 }
