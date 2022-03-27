@@ -2,38 +2,59 @@
 /**
 * table内でリスト表示するためのプラグイン
 *
-* @version 0.1.0
+* @version 0.2
 * @author kanateko
 * @link https://jpngamerswiki.com/?54760078c9
 * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
-*
-* 2021-03-25 初版作成
+* -- Updates --
+* 2022-03-27 v0.2 リストを横並びにする機能を追加
+* 2021-03-25 v0.1 初版作成
 */
 
-function plugin_ul_convert() {
+// デフォルトスタイル
+define('UL_DEFAULT_STYLE', 'ul');
+// デフォルト整列方向 v = 縦, h = 横
+define('UL_DEFAULT_DIRECTION', 'v');
+
+function plugin_ul_convert()
+{
     if (func_num_args() < 1) return;
     $args = func_get_args();
-    $option = array (
-	    'style' => 'ul', // スタイル (ul or ol)
+    $options = array (
+	    'style'     => UL_DEFAULT_STYLE,
+        'direction' => UL_DEFAULT_DIRECTION,
 	);
+    $items = [];
     $li = '';
 
+    // オプションの判別
     foreach ($args as $arg) {
-        // olオプション判別
-        if (preg_match('/^ol$/', $arg)) {
-            $option['style'] = 'ol';
+        if (preg_match('/^(ul|ol)$/', $arg, $m_style)) {
+            // スタイル変更
+            $options['style'] = $m_style[1];
+        } elseif (preg_match('/^(h|v)$/', $arg, $m_direction)) {
+            // 整列方向変更
+            $options['direction'] = $m_direction[1];
         } else {
-            // HTML化
-            $arg = str_replace('p>', 'li>', convert_html($arg));
-            $li .= $arg;
+            // リストアイテム
+            $items[] = $arg;
         }
     }
 
+    // リストを整形
+    foreach ($items as $item) {
+        $item = preg_replace('/^~/', '', $item);
+        $item = str_replace('p>', 'li>', convert_html($item));
+        $li .= $item . "\n";
+    }
+
+    $direction = $options['direction'] == 'h' ? ' data-direction="' . $options['direction'] . '"' : '';
+
     // リスト作成
     $body = <<<EOD
-<{$option['style']} class="list1 list-indent1 list-plugin">
+<{$options['style']} class="list1 list-indent1 list-plugin"$direction>
     $li
-</{$option['style']}>
+</{$options['style']}>
 EOD;
     return $body;
 }
