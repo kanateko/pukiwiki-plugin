@@ -22,8 +22,8 @@ define('SELECT_ALT_SEPARATOR', '~');
  */
 function plugin_select_init()
 {
-    $messages['_select_messages'] = [
-        'msg_usage'   => '<p><i>&amp;select ( &lt; list 1 | list 2 | list 3... &gt; [ , name= , size= ] ) { &lt; group &gt; };',
+    $messages['_wlparts_messages'] = [
+        'msg_usage'   => '<p><i>&amp;select( &lt;list 1 | list 2 | list 3... &gt; [, name= , size= ] ) { [ group ] };</i></p>',
         'err_unknown' => '<p>&amp;select Error: The argument does not match any options. (%a)<p>',
         'err_empty'   => '<p>&amp;select Error: Could not find any contents.</p>',
     ];
