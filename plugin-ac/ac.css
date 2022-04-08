@@ -1,4 +1,3 @@
-@charset "UTF-8";
 .plugin-ac-header {
   position: relative;
   padding-left: calc(1em + 5px) !important;
@@ -9,8 +8,7 @@
   cursor: pointer;
 }
 .plugin-ac-header:hover {
-  -webkit-filter: brightness(1.2);
-          filter: brightness(1.2);
+  filter: brightness(1.2);
 }
 .plugin-ac-header .ac-icon {
   font-style: normal;
@@ -20,16 +18,15 @@
   position: absolute;
   left: 5px;
   top: 50%;
-  -webkit-transform: translateY(-50%);
-          transform: translateY(-50%);
+  transform: translateY(-50%);
 }
 .plugin-ac-header .ac-icon::before {
   opacity: 1;
-  content: "";
+  content: "\f0fe";
 }
 .plugin-ac-header .ac-icon::after {
   opacity: 0;
-  content: "";
+  content: "\f146";
 }
 .plugin-ac-header.open .ac-icon::before {
   opacity: 0;
