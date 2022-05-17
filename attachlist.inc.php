@@ -2,11 +2,12 @@
 /**
  * 添付ファイル一覧表示用プラグイン 配布版
  *
- * @version 1.0
+ * @version 1.1
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Update --
+ * 2022-05-18 v1.1 1.5.4のURLカスタマイズに対応
  * 2022-01-26 v1.0 attachプラグインを改造しなくても動作するように仕様を変更
  *                 設定のキャッシュ利用の許可をデフォルトでtrueに変更
  *                 一括操作に凍結・解凍を追加
@@ -395,7 +396,7 @@ function attachlist_manage_files($mode, $page)
     }
     $body = '<ul>' . "\n" . $body . "\n" . '</ul>';
     $body = '<p>以下のファイルを' . $mode . 'しました</p>' . "\n" . $body . "\n" ;
-    $body .= '<p><a href="' . get_base_uri() . '?' . urlencode($page) . '">ページに戻る</a></p>';
+    $body .= '<p><a href="' . get_page_uri($page) . '">ページに戻る</a></p>';
 
     return $body;
 }
