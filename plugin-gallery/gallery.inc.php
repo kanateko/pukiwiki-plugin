@@ -2,11 +2,13 @@
 /**
  * photoswipe版 画像のギャラリー表示プラグイン
  *
- * @version 1.7
+ * @version 1.8
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Updates --
+ * 2022-05-18 v1.8 1.5.4のURLカスタマイズに対応
+ *                 v1.7以前に使用していたURL短縮プラグインへの対応を終了
  * 2021-09-29 v1.7 ファイルとキャプションのセパレータを変更するための設定を追加
  * 2021-07-26 v1.6 対応する拡張子にwebpを追加 (一覧表示のみ)
  *                 初期化用コードの挿入部分を少し変更
@@ -34,8 +36,6 @@
 
 // アップロード可能なファイルの最大サイズ
 define('PLUGIN_GALLERY_MAX_FILESIZE', (1024 * 1024)); // default: 1MB
-// URL短縮機能を導入してあるか
-define('PLUGIN_GALLERY_USE_SHORT_URL', false);
 // ファイルとキャプションのセパレータ
 define('PLUGIN_GALLERY_SEPARATOR', '>');
 
@@ -227,8 +227,7 @@ function plugin_gallery_action()
         page_write($page, $postdata, false);
 
         // 処理が終わったら元のページに戻る
-        $pagename = PLUGIN_GALLERY_USE_SHORT_URL ? get_short_url_from_pagename($page) : '?' . $page;
-        $uri = get_base_uri() . $pagename;
+        $uri = get_page_uri($page);
         header("Location: " . $uri);
     }
 
