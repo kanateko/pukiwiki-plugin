@@ -2,11 +2,13 @@
 /**
 * キャプション付きの図表を表示するプラグイン
 *
-* @version 1.3
+* @version 1.4
 * @author kanateko
 * @link https://jpngamerswiki.com/?f51cd63681
 * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
 * -- Update --
+* 2022-05-20 v1.4 定数のフォーマットを修正
+*                 エラー関連の処理を変更
 * 2021-09-30 v1.3 クラスを追加する機能を追加
 *                 キャプションでPukiWiki構文が使えない問題を修正
 *            v1.2 フローの有無を変更するオプションとプラグイン設定を追加
@@ -15,28 +17,38 @@
 */
 
 // 許可するmime-type
-define(FIG_FORMAT_REGEXP, '/image\/(jpeg|png|gif|webp)/i');
+define('FIG_FORMAT_REGEXP', '/image\/(jpeg|png|gif|webp)/i');
 
 // デフォルトの表示位置 (left, center, right)
-define(FIG_DEFAULT_POSITION, 'right');
+define('FIG_DEFAULT_POSITION', 'right');
 
 // デフォルトテーマ (dark or light)
-define(FIG_DEFAULT_THEME, 'dark');
+define('FIG_DEFAULT_THEME', 'dark');
 
 // デフォルトの縁取り有無 (wrap or nowrap)
-define(FIG_DEFAULT_WRAP, 'wrap');
+define('FIG_DEFAULT_WRAP', 'wrap');
 
 // デフォルトのリンク有無 (link or nolink)
-define(FIG_DEFAULT_LINK, 'link');
+define('FIG_DEFAULT_LINK', 'link');
 
 // デフォルトのフロー有無 (float or nofloat)
-define(FIG_DEFAULT_FLOAT, 'float');
+define('FIG_DEFAULT_FLOAT', 'float');
 
 // キャプションのスタイル
 // bottom: 画像の下に表示
 // overlay: オーバーレイ
 // -left, -center, -right: 文字のアラインメント
-define(FIG_CAPTION_STYLE, 'bottom-center');
+define('FIG_CAPTION_STYLE', 'bottom-center');
+
+function plugin_fig_init()
+{
+    $msg['_fig_messages'] = [
+        'msg_usage'  => '#fig(filename[,options])',
+        'err_exist'  => '#fig Error: The file does not exist.',
+        'err_format' => '#fig Error: The file format is not supported.'
+    ];
+    set_plugin_messages($msg);
+}
 
 function plugin_fig_convert()
 {
@@ -50,19 +62,19 @@ function plugin_fig_inline()
 
 function plugin_fig($args, $num, $type)
 {
-    $msg = new FigMessages;
+    global $_fig_messages;
 
     if ($num < 1) {
-        return $msg->get_message('usage');
+        return $_fig_messages['msg_usage'];
     }
 
-    $fig = new Figure(array_shift($args));
+    $fig = new PluginFigure(array_shift($args));
 
     // ファイルを表示可能かチェック
     if (! $fig->get_file_existence()) {
-        return $msg->get_message('exist');
+        return $_fig_messages['err_exist'];
     } else if (! $fig->get_file_format()) {
-        return $msg->get_message('format');
+        return $_fig_messages['err_format'];
     }
 
     // オプション判別
@@ -81,7 +93,7 @@ function plugin_fig($args, $num, $type)
     }
 }
 
-Class Figure
+Class PluginFigure
 {
     private $source;
     private $page;
@@ -330,18 +342,3 @@ Class Figure
         return 'src="' . $img_src . '"' . $alt . $title . $width . $height;
     }
 }
-
-Class FigMessages
-{
-    private $msg = array (
-        'usage'  => '#fig(filename[,options])',
-        'exist'  => '#fig Error: The file does not exist.',
-        'format' => '#fig Error: The file format is not supported.'
-    );
-
-    public function get_message($ex)
-    {
-        return $this->msg[$ex];
-    }
-}
-
