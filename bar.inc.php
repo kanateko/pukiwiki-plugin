@@ -53,7 +53,7 @@ function plugin_bar_convert() {
                 list($key, $val) = explode('=', $arg);
                 if (array_search($key, $keys) !== false) {
                     // オプションの指定が正しいか判断
-                    if ($key == 'lsize'|'width'|'height' && !is_numeric($val)|$val < 1) {
+                    if (preg_match('/lsize|width|height/', $key) && (! is_numeric($val) || $val < 1)) {
                         return $err_msg['value'] . " (" . $arg . ")";
                     } else {
                         $option[$key] = $val;
