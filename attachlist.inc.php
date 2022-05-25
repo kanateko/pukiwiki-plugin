@@ -8,6 +8,7 @@
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Update --
  * 2022-05-18 v1.1 1.5.4のURLカスタマイズに対応
+ *                 一括管理画面のフォームの配置を若干変更
  * 2022-01-26 v1.0 attachプラグインを改造しなくても動作するように仕様を変更
  *                 設定のキャッシュ利用の許可をデフォルトでtrueに変更
  *                 一括操作に凍結・解凍を追加
@@ -312,15 +313,15 @@ function attachlist_confirmation($msg, $page)
     $body = <<<EOD
 <p>以下のファイルを{$mode}します</p>
 <form method="post" action="./">
+    <input type="password" name="pass">
+    <input type="submit" value="実行">
+    $targets
     <input type="hidden" name="cmd" value="attachlist">
     <input type="hidden" name="pcmd" value="confirm">
     <input type="hidden" name="mode" value="$mode">
     <input type="hidden" name="page" value="$page">
     <input type="hidden" name="refer" value="$page">
     <input type="hidden" name="age" value="0">
-    $targets
-    <input type="password" name="pass">
-    <input type="submit" value="実行">
 </form>
 EOD;
 
