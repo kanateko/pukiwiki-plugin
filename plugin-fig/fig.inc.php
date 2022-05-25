@@ -252,8 +252,8 @@ Class PluginFigure
     {
         $opt = $this->options;
         $img_attr = $this->get_image_attr();
-        $href = get_base_uri() . '?plugin=attach&amp;refer=' . urlencode($this->page)
-        . '&amp;openfile=' . urlencode($this->image);
+        $href = get_base_uri() . '?plugin=attach&amp;refer=' . rawurlencode($this->page)
+        . '&amp;openfile=' . rawurlencode($this->image);
         $class = $opt['class'] ? ' ' . $opt['class'] : '';
 
         // 画像部分
@@ -299,8 +299,8 @@ Class PluginFigure
     {
         $opt = $this->options;
         $img_attr = $this->get_image_attr();
-        $href = get_base_uri() . '?plugin=attach&amp;refer=' . urlencode($this->page)
-        . '&amp;openfile=' . urlencode($this->image);
+        $href = get_base_uri() . '?plugin=attach&amp;refer=' . rawurlencode($this->page)
+        . '&amp;openfile=' . rawurlencode($this->image);
         $cap = $opt['cap'] ? ' data-cap="' . htmlsc($opt['cap']) . '"' : '';
         $class = $opt['class'] ? ' ' . $opt['class'] : '';
 
@@ -327,8 +327,8 @@ Class PluginFigure
     private function get_image_attr()
     {
         $opt = $this->options;
-        $img_src = get_base_uri() . '?plugin=ref&amp;page=' . urlencode($this->page)
-         . '&amp;src=' . urlencode($this->image);
+        $img_src = get_base_uri() . '?plugin=ref&amp;page=' . rawurlencode($this->page)
+         . '&amp;src=' . rawurlencode($this->image);
 
         $attrs = array('alt', 'title', 'width', 'height');
         foreach ($attrs as $attr) {

@@ -115,14 +115,14 @@ function attachlist_update_cache($page, $dir, $cache)
 
     // 添付ファイルの情報をテーブルに整形
     $uri = get_base_uri(PKWK_URI_ABSOLUTE);
-    $e_page = urlencode($page);
+    $e_page = rawurlencode($page);
     $ref = '[[%name%:' . $uri . '?cmd=attach&pcmd=open&file=%ename%&refer=' . $e_page . ']]';
     $info = '&size(12){&#91;[[詳細:' . $uri . '?cmd=attach&pcmd=info&file=%ename%&refer=' . $e_page . ']]&#93;};';
 
     $body = '|~ファイル名|~ファイルサイズ|~アップロード日時|h' . "\n";
     $body .= '|380|SIZE(14):RIGHT:200|SIZE(14):CENTER:200|c' . "\n";
     foreach ($files as $file) {
-        $e_name = urlencode($file['name']);
+        $e_name = rawurlencode($file['name']);
         $body .= '|' . str_replace('%name%', $file['name'], str_replace('%ename%', $e_name, $ref)) . ' ' . str_replace('%ename%', $e_name, $info) . '|' . $file['size'] . '|' . $file['time'] . '|' . "\n";
     }
     $ctrl = 'ファイル数：' . count($files) . ' &#91;[[ファイルの一括操作>' . $uri . '?cmd=attachlist&page=' . $e_page . ']]&#93;';
@@ -238,7 +238,7 @@ function attachlist_listup_files($page)
         $body .=
             '<li><input type="checkbox" class="check_list" name="file[]" value="' . $file['name'] .
             '"><a href="' . get_base_uri() . '?cmd=attach&pcmd=open&file='
-            . urlencode($file['name']) . '&refer=' . urlencode($page) . '">'
+            . rawurlencode($file['name']) . '&refer=' . rawurlencode($page) . '">'
             . $file['name'] . '</a>' . $freezed . '</li>' . "\n";
     }
     $body = '<ul>' . "\n" . $body . "\n" . '</ul>';

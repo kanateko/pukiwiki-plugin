@@ -46,12 +46,12 @@ function plugin_slideshow_convert()
 			// 画像指定
 			if (strpos($arg, '/') === false) {
 				// 現在のページにある画像
-				$page = urlencode($vars['page']);
+				$page = rawurlencode($vars['page']);
 				$file = $arg;
 			} else {
 				// 別ページにある画像
 				list($page, $file) = explode('/', $arg);
-				$page = urlencode($page);
+				$page = rawurlencode($page);
 			}
 			// URL作成
 			$url = $url_base . $page . '&amp;src=' . $file;
