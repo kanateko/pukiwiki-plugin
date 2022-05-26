@@ -58,7 +58,6 @@
   max-height: 40%;
   min-height: 18px;
   color: #efefef;
-  background: -webkit-gradient(linear, left bottom, left top, color-stop(20%, rgba(0, 0, 0, 0.9)), to(transparent));
   background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 20%, transparent);
   pointer-events: none;
   text-shadow: 1px 1px 3px #333;
@@ -80,9 +79,7 @@
   max-height: 40%;
   min-height: 18px;
   color: #efefef;
-  background: -webkit-gradient(linear, left bottom, left top, color-stop(20%, rgba(0, 0, 0, 0.9)), to(transparent));
   background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 20%, transparent);
   pointer-events: none;
   text-shadow: 1px 1px 3px #333;
 }
-/*# sourceMappingURL=fig.css.map */
