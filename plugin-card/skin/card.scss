@@ -1,142 +1,223 @@
 @use 'sass:math';
 
-// variables
-$col-gap: 10px;
-$container-width: 720px;
-$grid-area: image, title, description, date;
-$square-size: 150px;
+$container-width: 720px; // カード幅の基準
+$col-gap: 8px;
+$justify: (
+    flex-start,
+    flex-end,
+    start,
+    end,
+    left,
+    center,
+    right,
+    space-between,
+    space-around,
+    space-evenly,
+    stretch,
+);
 
-// columns setting
-@for $col from 1 through 6 {
-    $width: #{math.div($container-width - $col-gap * ($col - 1), $col)};
-    .card-cols-#{$col} {
-        grid-template-columns: repeat(auto-fill, minmax(auto, $width));
-        .card-box {width: $width;}
-        @if $col >= 4 {
-            .card-description {
-                height: 2.5em;
-                -webkit-line-clamp: 2;
-            }
-            .card-date.long {display: none;}
-            .card-date {display: block;}
-        }
-    }
-}
-
-// card container (and settings for each additional classes)
-.plugin-card {
-    display: grid;
-    column-gap: $col-gap;
-    row-gap: 20px;
-    max-width: $container-width;
-    margin: 0 auto;
-    &.minimal {
-        .card-description {display: none;}
-        .card-title {
-            -webkit-line-clamp: 2;
-            height: 2.3em;
-        }
-    }
-    &:not(.vertical) {
-        .card-box {
-            display: grid;
-            grid-template:
-            'image title      ' auto
-            'image description' auto
-            'image date       ' auto /
-            $square-size 1fr;
-             height: $square-size;
-        }
-        @each $area in $grid-area {
-            .card-#{$area} {
-                grid-area: #{$area};
-                align-self: center;
-            }
-        }
-    }
-    &.vertical {
-        .card-image {
-            &::before {
-                content: '';
-                display: block;
-                padding-top: 56.25%;
-            }
-        }
-    }
-}
-
-// card body
-.card-box {
-    position: relative;
-    max-width: 100%;
-    border: 1px solid rgba(155, 155, 155, 0.5);
-    border-radius: 4px;
-    overflow: hidden;
-    transition: .3s;
-    &:hover {
-        transform: translate(2px, -5px);
-        box-shadow: 0 5px 10px -5px rgba(0, 0, 0, 0.5);
-     }
-}
-
-// title (and description)
-.card-title, .card-description {
+@mixin line-clamp($n) {
     display: -webkit-box;
+    -webkit-line-clamp: $n;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
 
-.card-title {
-    -webkit-line-clamp: 1;
-    font-size: 1.2em;
-    padding: 5px 5px 0 5px;
+/* card.inc.php */
+
+// リセット用
+.plugin-card * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    img {
+        max-width: 100%!important;
+    }
 }
 
-// description
-.card-description {
-    font-size: .9em;
-    height: 4.3em;
-    opacity: .9;
-    -webkit-line-clamp: 3;
-    padding: 5px 5px 0 5px;
+// カードのレイアウトとサイズ
+.plugin-card {
+    --opacity-details: 0.8;
+    display: grid;
+    gap: 16px $col-gap;
+    max-width: 100%;
+    min-width: 300px;
+    &[data-layout="horizontal"] {
+        .card-item {
+            height: 120px;
+        }
+        .card-body {
+            column-gap: 10px;
+            grid-template:
+            "image title  " 1fr
+            "image snippet" 3fr
+            "image lastmod" 1fr /
+             100px 1fr;
+        }
+        .card-thumbnail {
+            width: 100px;
+            height: 100px;
+        }
+    }
+    &[data-layout="vertical"] {
+        .card-body {
+            grid-template:
+            "image"
+            "title"
+            "snippet"
+            "lastmod";
+            row-gap: 8px;
+        }
+        .card-thumbnail {
+            width: 100%;
+            height: auto;
+            aspect-ratio: 16 / 9;
+        }
+    }
+    &[data-cols="1"] {
+        grid-template-columns: repeat(auto-fit, minmax(auto, 640px));
+        .card-item {
+            max-width: 640px;
+        }
+    }
+    @for $col from 2 through 6 {
+        $width: #{math.div($container-width - $col-gap * ($col - 1), $col)};
+        &[data-cols="#{$col}"] {
+            grid-template-columns: repeat(auto-fit, minmax(auto, $width));
+            .card-item {
+                max-width: $width;
+            }
+        }
+    }
+    @each $key in $justify {
+        &[data-justify="#{$key}"] {
+            @if ($key == flex-start or $key == start or $key == left) {
+                margin: 24px auto 24px 0;
+            } @else if ($key == flex-end or $key == end or $key == right) {
+                margin: 24px 0 24px auto;
+            } @else {
+                margin: 24px auto;
+            }
+            justify-content: $key;
+        }
+    }
 }
 
-// date
-.card-date {
-    display: none;
-    text-align: right;
-    font-size: .9em;
-    padding: 5px;
+// 個別カードのコンテナ
+.card-item {
+    border: 1px solid rgb(155 155 155 / 50%);
+    border-radius: 4px;
+    max-width: 100%;
+    transition: transform 0.3s, box-shadow 0.3s;
+    box-shadow: 0 0 rgb(0 0 0 / 50%);
+    &:hover {
+        transform: translate(2px, -5px);
+        box-shadow: 0 5px 10px -5px rgb(0 0 0 / 50%);
+    }
 }
-.card-date.long {display: block;}
 
-// image
-.card-image {
-    position: relative;
-    overflow: hidden;
-    display: block;
+// リンクの装飾を制御
+a.card-overwrap {
+    color: unset;
+    text-decoration: none;
+}
+
+// 個別のカードのレイアウト
+.card-body {
+    display: grid;
+    align-items: center;
     width: 100%;
     height: 100%;
-    &.img-tall {
-        img {object-position: top;}
-    }
-    img {
-        position: absolute;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
+    padding: 10px;
+    > * {
+        margin: 0;
+        padding: 0;
     }
 }
 
-// disable link decoration
-.card-link {
-    &:link, &:visited, &:hover {
-        text-decoration: unset;
-        color: unset;
-        background-color: unset;
+// サムネイル
+.card-thumbnail {
+    grid-area: image;
+    overflow: hidden;
+    border-radius: 8px;
+    background-color: rgb(0 0 0);
+}
+
+// サムネイルの画像
+.card-image {
+    width: 100%!important;
+    height: 100%!important;
+    object-fit: cover;
+}
+
+// タイトル
+.card-title {
+    grid-area: title;
+    @include line-clamp(1);
+    background-color: transparent;
+}
+
+// スニペット
+.card-snippet {
+    grid-area: snippet;
+    @include line-clamp(3);
+    opacity: var(--opacity-details);
+    height: 4em;
+}
+
+// 最終更新
+.card-lastmod {
+    grid-area: lastmod;
+    justify-self: flex-end;
+    opacity: var(--opacity-details);
+    &[data-length=short] {
+        display: none;
+    }
+    // 時計アイコン (要：Font Awesome)
+    /*
+    &::before {
+        font-family: "Font Awesome 5 Free";
+        font-weight: 700;
+        margin-right: 4px;
+        content: "\f1da";
+    }
+    */
+}
+
+.bold {
+    font-weight: 700;
+}
+
+@media (min-width: 768px) {
+    .plugin-card[data-compact="true"] {
+        .card-title {
+            -webkit-line-clamp: 2;
+            height: 3.5rem;
+        }
+        .card-snippet {
+            display: none;
+        }
+        .card-lastmod {
+            &[data-length=full] {
+                display: none;
+            }
+            &[data-length=short] {
+                display: initial;
+            }
+        }
     }
 }
 
-// font-weight
-.bold {font-weight: bold;}
+@media (max-width:767px) {
+    .plugin-card{
+        &[data-justify] {
+            justify-content: center;
+        }
+        &[data-cols][data-layout="vertical"] {
+            grid-template-columns: repeat(auto-fit,minmax(auto,300px));
+            .card-item {
+                max-width: 300px;
+            }
+        }
+    }
+}
