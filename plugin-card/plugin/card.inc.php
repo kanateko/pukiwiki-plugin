@@ -9,6 +9,8 @@
  * -- Updates --
  * 2022-05-28 v3.1 tocオプションとhオプションを統合
  *                 見出しの取得方法を変更
+ *                 キャッシュの詳細に情報を追加
+ *                 キャッシュ保存時間の表示を修正
  * 2022-05-27 v3.0 コードを整理して全体的に作り直し
  *                 1.5.4のURLカスタマイズに対応
  *                 サムネイル画像やスニペット、見出しの取得方法を変更
@@ -1043,11 +1045,12 @@ Class CardCacheManager
             $body = '<p>' . $_card_messages['err_notfound'] . '</p>';
             return array('msg' => $msg, 'body' => $body);
         }
-        $cachetime = filemtime($cache);
+        $cachetime = filemtime($cache) - LOCALZONE;
         $f_cachetime = format_date($cachetime);
         $data = json_decode(file_get_contents($cache), true);
         $pagelink = '<a href="' . $data['link'] . '" title="' . $page . '">' . $page . '</a>';
         $f_date = format_date($data['lastmod']);
+        $filesize = number_format(filesize($data['image']) / 1024, 1);
         $size = getimagesize($data['image']);
         if ($size[1] > PLUGIN_CARD_THUMB_HEIGHT) {
             $w = $size[0] * PLUGIN_CARD_THUMB_HEIGHT / $size[1];
@@ -1093,7 +1096,7 @@ Class CardCacheManager
                     </tr>
                     <tr>
                         <th class="style_th">{$_card_messages['label_image']}</th>
-                        <td class="style_td">$image<br>{$data['image']}<br>($size[0] x $size[1], {$size['mime']})</td>
+                        <td class="style_td">$image<br>{$data['image']}<br>({$size['mime']}, {$size[0]}x{$size[1]}, {$filesize}KB)</td>
                     </tr>
                     <tr>
                         <th class="style_th">{$_card_messages['label_snippet']}</th>
