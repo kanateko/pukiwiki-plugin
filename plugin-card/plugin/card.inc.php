@@ -2,11 +2,13 @@
 /**
  * 内部リンクをブログカード風に表示するプラグイン
  *
- * @version 3.0
+ * @version 3.1
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Updates --
+ * 2022-05-28 v3.1 tocオプションとhオプションを統合
+ *                 見出しの取得方法を変更
  * 2022-05-27 v3.0 コードを整理して全体的に作り直し
  *                 1.5.4のURLカスタマイズに対応
  *                 サムネイル画像やスニペット、見出しの取得方法を変更
@@ -283,13 +285,10 @@ class PluginCard
                         }
                     } elseif (preg_match('/^(\*{1,3})=(\d+)$/', $arg, $matches)) {
                         // 指定した見出しを表示 (旧指定法)
-                        $opt['head'] = strlen($matches[1]) . '-' . $matches[2];
-                    } elseif (preg_match('/^h=(\d+(?:-\d+)?)$/', $arg, $matches)) {
+                        $opt['toc'] = strlen($matches[1]) . '|' . $matches[2];
+                    } elseif (preg_match('/^toc(=([:\d\-\|]+))?$/', $arg, $matches)) {
                         // 指定した見出しを表示
-                        $opt['head'] = $matches[1];
-                    } elseif (preg_match('/^toc(=(\d+(:\d+)?))?$/', $arg, $matches)) {
-                        // 目次を表示
-                        if (! isset($matches[2])) $opt['toc'] = -1;
+                        if (! isset($matches[2])) $opt['toc'] = '';
                         else $opt['toc'] = $matches[2];
                     } elseif (preg_match('/^width=(\d+(px|%|em|rem|vw|vh)$)/', $arg, $matches)) {
                         // コンテナの幅
@@ -306,10 +305,6 @@ class PluginCard
                         return false;
                     }
             }
-        }
-        if (isset($opt['head']) && isset($opt['toc'])) {
-            $this->err = 'err_conflict';
-            return false;
         }
 
         return true;
@@ -544,9 +539,7 @@ class CardElement
      */
     public function snippet($opt)
     {
-        if (isset($opt['head'])) {
-            $snippet = $this->head($opt['head']);
-        } elseif (isset($opt['toc'])) {
+        if (isset($opt['toc'])) {
             $snippet = $this->toc($opt['toc']);
         } else {
             $snippet = $this->data['snippet'];
@@ -573,55 +566,66 @@ class CardElement
     }
 
     /**
-     * スニペットに指定した見出しを表示する
+     * スニペットに見出しを表示する
      *
-     * @param  string $index 見出しの指定
-     * @return string $head 見出しor空白
+     * @param  int    $ref 見出しの指定
+     * @return string $snippet 見出しスニペット
      */
-    private function head($index)
+    private function toc($ref)
     {
-        $hlist = $this->data['heads'];
-        if (strpos($index, '-') === false) {
-            // 上からn番目
-            $head = current(array_slice($hlist, $index - 1, 1));
-            if (empty($head)) $head = '';
-        } else {
-            // n番目のh[2-4]
-            $head = array_key_exists($index, $hlist) ? $hlist[$index] : '';
-        }
+        $toc = $this->data['toc'];
+        if (empty($toc)) return '';
 
-        return $head;
-    }
+        $hlist = [];
+        $depth = null;
+        $offset = 0;
+        $length = null;
 
-    /**
-     * スニペットに目次を表示する
-     *
-     * @param  int    $num 見出し数の指定
-     * @return string $toc 目次
-     */
-    private function toc($num)
-    {
-        if (strpos($num, ':') === false) {
-            $hlist = $this->data['heads'];
-        } else {
-            // 階層指定
-            list($depth, $num) = explode(':', $num);
-            $hlist = [];
-            foreach ($this->data['heads'] as $key => $val) {
-                if (strpos($key, $depth . '-') !== false) $hlist[] = $val;
+        // 指定オプション
+        if ($ref !== '') {
+            if (preg_match('/^-?\d+$/', $ref)) {
+                // オフセット
+                $offset = $ref;
+                $length = 1;
+            } else {
+                if (strpos($ref, '|') !== false) {
+                    // 深度
+                    list($depth, $ref) = explode('|', $ref, 2);
+                }
+                if (preg_match('/([\-\d]*):([\-\d]*)/', $ref, $matches)) {
+                    // オフセットと範囲
+                    $offset = $matches[1] ? (int)$matches[1] : 0;
+                    if ($matches[2]) {
+                        if ($matches[2] > 0) {
+                            $length = (int)$matches[2] - $offset;
+                        } else {
+                            $length = (int)$matches[2];
+                        }
+                        $length++;
+                    }
+                } elseif (preg_match('/^-?\d+$/', $ref)) {
+                    // オフセット
+                    $offset = $ref;
+                    $length = 1;
+                }
             }
         }
-
-        $i = 0;
-        $toc = '';
-        foreach ($hlist as $head) {
-            if ($i == $num) break;
-            $toc .= $head . '、';
-            $i++;
+        // 最終的な指定
+        if ($depth !== null) {
+            foreach ($toc as $key => $val) {
+                if (strpos($key, $depth . '-') !== false) $hlist[] = $val;
+            }
+        } else  {
+            $hlist = $toc;
         }
-        $toc = preg_replace('/、$/', '。', $toc);
+        if ($offset > 0) $offset--;
+        if ($length == 0) $length = null;
 
-        return $toc;
+        // 見出しの切り出し
+        $hlist = array_slice($hlist, $offset, $length);
+        $snippet = implode('、', $hlist);
+
+        return $snippet;
     }
 }
 
@@ -749,7 +753,7 @@ class CardPageData
         // スニペット
         $this->data['snippet'] = $this->get_snippet($body);
         // 見出しリスト
-        $this->data['heads'] = $this->get_heads($page);
+        $this->data['toc'] = $this->get_headings($body);
     }
 
     /**
@@ -846,27 +850,31 @@ class CardPageData
     /**
      * 見出し一覧を取得
      *
-     * @param  string $page ページ名
-     * @return array  $heads 見出し一覧
+     * @param  string $body ページのソース
+     * @return array  $toc 見出し一覧
      */
-    public function get_heads($page)
+    public function get_headings($body)
     {
-        $source = get_source($page);
-        $heads= [];
+        $toc = [];
         $h_count = [];
 
-        foreach ($source as $line) {
-            if (preg_match('/^(\*{1,3})\s*?(.+?)\s\[#/', $line, $matches)) {
-                $depth = strlen($matches[1]);
-                if (! isset($h_count[$depth])) $h_count[$depth] = 0;
+        if (preg_match_all('/<h([2-4])[^>]*?>(.*?)<\/h\1>/', $body, $matches)) {
+            foreach ($matches[2] as $i => $h) {
+                $depth = intval($matches[1][$i]) - 1;
+                if (! isset($h_count[$depth])) {
+                    $h_count[$depth] = 0;
+                }
                 $num = ++$h_count[$depth];
                 $key = $depth . '-' . $num;
-                $head = strip_tags(make_link($matches[2]));
-                $heads[$key] = $head;
+                // 不要部分を削除
+                $h = preg_replace('/<a\sclass="anchor_super.*?<\/a>/', '', $h);
+                $h = preg_replace('/<span\sclass="editsection.*?<\/span>/', '', $h);
+                $h = strip_tags($h);
+                $toc[$key] = $h;
             }
         }
 
-        return $heads;
+        return $toc;
     }
 
     /**
@@ -1051,7 +1059,7 @@ Class CardCacheManager
         $image = '<img loading="lazy" src="' . $data['image'] . '" alt="' . $page .
                   '" width="' . $w . '" height="' . $h . '">';
         $image = '<a href="' . $data['image'] . '" title="' . $page . '">' . $image . '</a>';
-        $toc = $this->make_toc($data['heads']);
+        $toc = $this->make_toc($data['toc']);
 
         // データ表示
         $body = <<<EOD
@@ -1223,7 +1231,7 @@ Class CardCacheManager
      */
     private function make_toc($hlist) {
         if (empty($hlist)) return '';
-        else $heads = '<ul>';
+        else $toc = '<ul>';
         $prev = 1;
         $i = 0;
         foreach($hlist as $key => $val) {
@@ -1231,27 +1239,27 @@ Class CardCacheManager
             if ($i != 0) {
                 switch ($prev - $depth) {
                     case -2:
-                        $heads .= '<ul>' . '<li>' . '<ul>';
+                        $toc .= '<ul>' . '<li>' . '<ul>';
                         break;
                     case -1:
-                        $heads .= '<ul>';
+                        $toc .= '<ul>';
                         break;
                     case 1:
-                        $heads .= '</li>' . '</ul>' . '</li>';
+                        $toc .= '</li>' . '</ul>' . '</li>';
                         break;
                     default:
-                        $heads .= '</li>';
+                        $toc .= '</li>';
                 }
             }
-            $heads .= '<li>' . $key . ': ' . $val;
+            $toc .= '<li>' . $key . ': ' . $val;
             $prev = $depth;
             $i++;
         }
         for ($i = 0; $i < $prev; $i++) {
-            $heads .= '</li>' . '</ul>';
+            $toc .= '</li>' . '</ul>';
         }
 
-        return $heads;
+        return $toc;
     }
 
     /**
