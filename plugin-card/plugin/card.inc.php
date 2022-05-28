@@ -2,12 +2,13 @@
 /**
  * 内部リンクをブログカード風に表示するプラグイン
  *
- * @version 3.1
+ * @version 3.2
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Updates --
- * 2022-05-28 v3.1 tocオプションとhオプションを統合
+ * 2022-05-28 v3.2 対象が1ページの場合はブラケット無しでページを検出できるように改善
+ *            v3.1 tocオプションとhオプションを統合
  *                 見出しの取得方法を変更
  *                 キャッシュの詳細に情報を追加
  *                 キャッシュ保存時間の表示を修正
@@ -324,6 +325,7 @@ class PluginCard
 
         // HTMLに変換
         if (strpos($src, "\n") !== false) $src = convert_html($src);
+        elseif (is_page($src)) $src = make_link('[[' . $src . ']]');
         else $src = make_link($src);
 
         // 内部リンクの抽出
