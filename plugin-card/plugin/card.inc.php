@@ -94,7 +94,7 @@ define('PLUGIN_CARD_SHOW_SNIPPET', true);
 // デフォルトで更新日を表示する
 define('PLUGIN_CARD_SHOW_DATE', true);
 // デフォルトでベースネーム表示
-define('PLUGIN_CARD_FORCE_BASENAME', false);
+define('PLUGIN_CARD_SHOW_BASENAME', false);
 // 存在しないページが含まれている場合にエラーを出す
 define('PLUGIN_CARD_ERROR_IF_NOT_EXISTS', false);
 // カード配置のデフォルト (justify-content)
@@ -233,7 +233,7 @@ class PluginCard
         $this->options['lastmod'] = PLUGIN_CARD_SHOW_DATE;
         $this->options['snippet'] = PLUGIN_CARD_SHOW_SNIPPET;
         $this->options['cols'] = PLUGIN_CARD_DEFAULT_COLUMN;
-        $this->options['base'] = PLUGIN_CARD_FORCE_BASENAME;
+        $this->options['base'] = PLUGIN_CARD_SHOW_BASENAME;
         $this->options['justify'] = PLUGIN_CARD_DEFAULT_JUSTIFY;
         $this->options['width'] = PLUGIN_CARD_CONTAINER_WIDTH;
         $this->options['class'] = 'plugin-card';
