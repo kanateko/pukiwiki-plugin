@@ -8,6 +8,7 @@
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Updates --
  * 2022-05-28 v3.2 対象が1ページの場合はブラケット無しでページを検出できるように改善
+ *                 nosnippetオプションの不具合を修正
  *            v3.1 tocオプションとhオプションを統合
  *                 見出しの取得方法を変更
  *                 キャッシュの詳細に情報を追加
@@ -258,6 +259,7 @@ class PluginCard
                 case 'nosnippet':
                     // スニペットの非表示
                     $opt['snippet'] = false;
+                    break;
                 case 'flex-start':
                 case 'flex-end':
                 case 'start':
