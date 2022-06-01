@@ -2,11 +2,12 @@
 /**
  * 内部リンクをブログカード風に表示するプラグイン
  *
- * @version 3.2
+ * @version 3.3
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Updates --
+ * 2022-06-01 v3.3 キャッシュに閲覧制限を設ける機能を追加
  * 2022-05-28 v3.2 対象が1ページの場合はブラケット無しでページを検出できるように改善
  *                 nosnippetオプションの不具合を修正
  *            v3.1 tocオプションとhオプションを統合
@@ -68,6 +69,8 @@ define('PLUGIN_CARD_HIDE_SNIPPET_THRESHOLD', 4);
 define('PLUGIN_CARD_CONTAINER_WIDTH', '768px');
 // 各ページの情報をキャッシュする
 define('PLUGIN_CARD_USE_CACHE', true);
+// キャッシュの閲覧を管理者のみに許可する
+define('PLUGIN_CARD_CACHE_ADMIN_ONLY', false);
 // キャッシュを読みやすい形で保存する
 define('PLUGIN_CARD_CACHE_PRETTY', false);
 // キャッシュのディレクトリ
@@ -136,6 +139,8 @@ function plugin_card_init()
         'msg_delete'       =>    '"$1" のキャッシュを削除します。',
         'msg_result'       =>    '以下のキャッシュを削除しました。',
         'msg_checkall'     =>    'すべて選択 / 解除',
+        'msg_auth'         =>    'キャッシュの閲覧は管理者のみが行なえます。',
+        'btn_auth'         =>    '認証',
         'btn_delete'       =>    '削除',
         'btn_confirm'      =>    '確認',
         'btn_details'      =>    '詳細',
@@ -953,8 +958,31 @@ Class CardCacheManager
         } elseif ($vars['pcmd'] == 'confirm') {
             return $this->confirmation();
         } else {
-            return $this->make_list();
+            if (PLUGIN_CARD_CACHE_ADMIN_ONLY) return $this->auth();
+            else return $this->make_list();
         }
+    }
+
+    /**
+     * 閲覧制限時の認証画面
+     *
+     * @return array 認証画面 or キャッシュ管理画面
+     */
+    private function auth()
+    {
+        global $_card_messages;
+
+        $msg = $_card_messages['title_select'];
+        $body = <<<EOD
+        <p>{$_card_messages['msg_auth']}</p>
+        <form method="post" action="./">
+            <input type="password" name="pass" placeholder="{$_card_messages['label_pass']}">
+            <input type="submit" value="{$_card_messages['btn_auth']}">
+            <input type="hidden" name="cmd" value="card">
+        </form>
+        EOD;
+
+        return $this->check_password($msg, $body, 'make_list');
     }
 
     /**
@@ -982,7 +1010,8 @@ Class CardCacheManager
             $page = $this->decode_cache_name($cache);
             $e_page = rawurlencode($page);
             $title = str_replace('$1', $page, $_card_messages['title_details']);
-            $url = $home . '?cmd=card&pcmd=info&page=' . $e_page;
+            $hash = PLUGIN_CARD_CACHE_ADMIN_ONLY ? '&hash=' . $this->get_hash($page) : '';
+            $url = $home . '?cmd=card&pcmd=info&page=' . $e_page . $hash;
             $body .= <<<EOD
             <li>
                 <input type="checkbox" id="chk$i" class="check_list" name="cache[$i]" value="$cache">
@@ -1037,6 +1066,12 @@ Class CardCacheManager
     private function show_info()
     {
         global $vars, $_card_messages;
+
+        if (PLUGIN_CARD_CACHE_ADMIN_ONLY) {
+            $hash = $this->get_hash($vars['page']);
+            if (empty($vars['hash']) || $vars['hash'] !== $hash)
+                return array('msg' => $_card_messages['title_auth'], 'body' => $_card_messages['msg_auth']);
+        }
 
         $page =$vars['page'];
         $msg = str_replace('$1', $vars['page'], $_card_messages['title_details']);
@@ -1154,11 +1189,10 @@ Class CardCacheManager
             $targets = '<ul>' . $targets . '</ul>';
         } else {
             // ファイルが一つも選択されていなかった場合はエラー
-            return array('msg' => $msg, 'body' => '<p>' . $_card_messages['err_notselect'] . '</p>');
+            return array('msg' => $msg, 'body' => '<p>' . $_card_messages['err_noselect'] . '</p>');
         }
 
         // 認証用フォームの作成
-        $auth_failed = '<p>' . $_card_messages['err_pass'] . '</p>' . "\n";
         $body = <<<EOD
         <form method="post" action="./">
             <p>{$_card_messages['msg_confirm']}</p>
@@ -1171,27 +1205,19 @@ Class CardCacheManager
         EOD;
 
         // パスワードのチェック
-        if ($vars['pass']) {
-            if (pkwk_login($vars['pass'])) {
-                $body = $this->delete();
-                return array('msg' => $msg, 'body' => $body);
-            } else {
-                return array('msg' => $msg, 'body' => $auth_failed . $body);
-            }
-        } else {
-            return array('msg' => $msg, 'body' => $body);
-        }
+        return $this->check_password($msg, $body, 'delete');
     }
 
     /**
      * リストされたキャッシュを削除する
      *
-     * @return string $body 結果表示
+     * @return array 結果表示
      */
     private function delete()
     {
         global $vars, $_card_messages;
 
+        $msg = $_card_messages['title_result'];
         $caches = $vars['cache'];
         $pages = $vars['pagename'];
         $toppage = get_base_uri();
@@ -1199,7 +1225,6 @@ Class CardCacheManager
         if (empty($caches)) {
             // キャッシュがなければ終了
             $body = '<p>' . $_card_messages['err_notfound'] . '</p>';
-            return $body;
         } else {
             // キャッシュがあればそれらを削除
             $body = '';
@@ -1216,7 +1241,7 @@ Class CardCacheManager
                 } else {
                     // 削除に失敗したら処理を終了
                     $body = '<p>' . str_replace('$1', $cache, $_card_messages['err_failed']) . '</p>';
-                    return $body;
+                    return array('msg' => $msg, 'body' => $body);
                 }
             }
             $body = <<<EOD
@@ -1227,7 +1252,31 @@ Class CardCacheManager
             </ul>
             EOD;
         }
-        return $body;
+        return array('msg' => $msg, 'body' => $body);
+    }
+
+    /**
+     * 管理者パスワードのチェック
+     *
+     * @param  string $msg タイトル
+     * @param  string $body フォーム
+     * @param  string $func 次の処理
+     * @return array  次の操作画面
+     */
+    private function check_password($msg, $body, $func)
+    {
+        global $vars, $_card_messages;
+
+        $auth_failed = '<p>' . $_card_messages['err_pass'] . '</p>' . "\n";
+        if ($vars['pass']) {
+            if (pkwk_login($vars['pass'])) {
+                return $this->$func();
+            } else {
+                return array('msg' => $msg, 'body' => $auth_failed . $body);
+            }
+        } else {
+            return array('msg' => $msg, 'body' => $body);
+        }
     }
 
     /**
@@ -1267,6 +1316,19 @@ Class CardCacheManager
         }
 
         return $toc;
+    }
+
+    /**
+     * 認証用の文字列を取得する
+     *
+     * @param  string $page ページ名
+     * @return string ハッシュ値の最初の10文字
+     */
+    private function get_hash($page)
+    {
+        global $adminpass;
+
+        return substr(md5($adminpass . $page), 0, 10);
     }
 
     /**
