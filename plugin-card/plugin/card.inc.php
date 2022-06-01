@@ -8,6 +8,7 @@
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Updates --
  * 2022-06-01 v3.3 キャッシュに閲覧制限を設ける機能を追加
+ *                 キャッシュ詳細画面における見出し一覧の構造を修正
  * 2022-05-28 v3.2 対象が1ページの場合はブラケット無しでページを検出できるように改善
  *                 nosnippetオプションの不具合を修正
  *            v3.1 tocオプションとhオプションを統合
@@ -1302,6 +1303,9 @@ Class CardCacheManager
                         break;
                     case 1:
                         $toc .= '</li>' . '</ul>' . '</li>';
+                        break;
+                    case 2:
+                        $toc .= '</li>' . '</ul>' . '</li>' . '</ul>' . '</li>';
                         break;
                     default:
                         $toc .= '</li>';
