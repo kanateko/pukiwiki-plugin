@@ -90,8 +90,8 @@
   display: flex;
   flex-direction: column;
 }
-.mailform-post input[type=text],
-.mailform-post input[type=email],
+.mailform-post input[type=text], .mailform-post input[type=email], .mailform-post input[type=number],
+.mailform-post input[type=date], .mailform-post input[type=time], .mailform-post input[type=datetime-local],
 .mailform-post select {
   width: 80%;
   height: 32px;

@@ -86,8 +86,8 @@
 .mailform-post {
     display: flex;
     flex-direction: column;
-    input[type=text],
-    input[type=email],
+    input[type=text], input[type=email], input[type=number],
+    input[type=date], input[type=time], input[type=datetime-local],
     select {
         width: 80%;
         height: 32px;
