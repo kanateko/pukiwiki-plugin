@@ -1,0 +1,2 @@
+<textarea class="mailform-input" name="{$name}" onInput="lengthObserver(this)"{if "holder"} placeholder="{$holder}"{/if}{if "required"} {$required}{/if} data-max="{$max}">{if "value"}{$value}{/if}</textarea>
+<i class="mailform-limit">{$max}</i>

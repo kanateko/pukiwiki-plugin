@@ -1,0 +1,1 @@
+<input type="datetime-local" class="mailform-input" name="{$name}" step="any"{if "value"} value="{$value}"{/if}{if "start"} min="{$start}"{/if}{if "end"} max="{$end}"{/if}{if "required"} {$required}{/if}>

@@ -1,0 +1,239 @@
+@charset "UTF-8";
+:root {
+  --color-input-bg: #fafafd;
+  --color-input-border: #d4dce4;
+  --color-required: #dc143c;
+  --color-optional: #939393;
+  --color-focus: #60a5ff;
+}
+
+.plugin-mailform {
+  max-width: 768px;
+  margin: 0 auto 24px auto;
+}
+.plugin-mailform *, .plugin-mailform *::before, .plugin-mailform *::after {
+  padding: 0;
+  margin: 0;
+  border: none;
+  outline: none;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+.plugin-mailform div {
+  margin-bottom: 12px;
+}
+.plugin-mailform label,
+.plugin-mailform select,
+.plugin-mailform button {
+  cursor: pointer;
+}
+.plugin-mailform label {
+  min-width: 200px;
+  width: -webkit-fit-content;
+  width: -moz-fit-content;
+  width: fit-content;
+  padding: 8px 16px 8px 32px;
+  margin-bottom: 4px;
+  border-radius: 0 8px 8px 0;
+  transition: background-color 0.3s;
+}
+.plugin-mailform label:hover {
+  background-color: var(--color-input-bg);
+}
+
+.mailform-message {
+  margin: 24px 0;
+}
+
+.mailform-fields {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 4px 0;
+  box-shadow: 0 2px 10px -2px #cfcfcf;
+}
+
+.mailform-item {
+  position: relative;
+  padding: 0 12px 12px 12px;
+  margin: 0 12px;
+  border-top: 1px solid var(--color-input-border);
+}
+.mailform-item:first-of-type {
+  margin-top: 24px;
+}
+.mailform-item[data-need=required] .mailform-title::after {
+  content: "必須";
+  background-color: var(--color-required);
+}
+.mailform-item[data-need=optional] .mailform-title::after {
+  content: "任意";
+  background-color: var(--color-optional);
+}
+
+.mailform-title {
+  display: flex;
+  align-items: center;
+  font-size: 1.2em;
+  padding: 8px;
+}
+.mailform-title::after {
+  display: inline-block;
+  font-size: 12px;
+  line-height: 1;
+  padding: 2px 4px;
+  margin-left: 4px;
+  border-radius: 4px;
+  color: #ffffff;
+}
+
+.mailform-post {
+  display: flex;
+  flex-direction: column;
+}
+.mailform-post input[type=text],
+.mailform-post input[type=email],
+.mailform-post select {
+  width: 80%;
+  height: 32px;
+}
+.mailform-post textarea {
+  width: 100%;
+  height: 10em;
+  resize: vertical;
+}
+
+.mailform-input {
+  border: 1px solid var(--color-input-border);
+  border-radius: 4px;
+  background-color: var(--color-input-bg);
+  padding: 8px;
+  outline: 2px solid transparent;
+  transition: outline 0.3s;
+}
+.mailform-input[data-invalid=true] {
+  outline: 2px solid var(--color-required);
+}
+.mailform-input[data-over=true] {
+  background-color: #ffe4e1;
+}
+.mailform-input:focus {
+  outline: 2px solid var(--color-focus);
+}
+
+.mailform-radio,
+.mailform-checkbox {
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  left: 22px;
+  top: 12px;
+}
+.mailform-radio + label,
+.mailform-checkbox + label {
+  position: relative;
+  align-items: center;
+  display: flex;
+}
+.mailform-radio + label::before, .mailform-radio + label::after,
+.mailform-checkbox + label::before,
+.mailform-checkbox + label::after {
+  content: "";
+  display: block;
+  position: absolute;
+  left: 8px;
+}
+.mailform-radio + label::before,
+.mailform-checkbox + label::before {
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--color-input-border);
+  background-color: var(--color-input-bg);
+}
+
+.mailform-radio + label::before, .mailform-radio + label::after {
+  border-radius: 100%;
+}
+.mailform-radio + label::after {
+  left: 10px;
+  width: 12px;
+  height: 12px;
+  background-color: var(--color-focus);
+  transform: scale(0);
+  transition: transform 0.3s;
+}
+.mailform-radio:checked + label::after {
+  transform: scale(1);
+}
+
+.mailform-checkbox + label::after {
+  top: 4px;
+  left: 16px;
+  width: 8px;
+  height: 20px;
+  border-width: 8px 4px 2px 2px;
+  border-color: transparent var(--color-focus) var(--color-focus) transparent;
+  border-style: solid;
+  opacity: 0;
+  transform: rotate(45deg);
+  transition: opacity 0.3s;
+}
+.mailform-checkbox:checked + label::after {
+  opacity: 1;
+}
+
+.mailform-button {
+  text-align: center;
+}
+.mailform-button button {
+  font-size: 1.2em;
+  color: #fff;
+  width: 120px;
+  padding: 8px 16px;
+  margin: 0 12px;
+  border-radius: 8px;
+  background-color: var(--color-focus);
+}
+.mailform-button button:disabled {
+  filter: saturate(0.5);
+  cursor: not-allowed;
+}
+.mailform-button .mailform-back {
+  background-color: var(--color-optional);
+}
+
+.mailform-limit {
+  font-size: 12px;
+}
+
+.mailform-posted {
+  display: block;
+  background-color: var(--color-input-bg);
+  border: 1px solid var(--color-input-border);
+  padding: 4px 16px;
+  border-radius: 4px;
+}
+
+.mailform-autoreply {
+  position: relative;
+}
+
+.mailform-progress {
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  font-size: 32px;
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
+  color: #ffffff;
+  background-color: #00000080;
+  -webkit-backdrop-filter: blur(5px);
+          backdrop-filter: blur(5px);
+  opacity: 0;
+  pointer-events: none;
+  cursor: wait;
+  transition: opacity 0.3s;
+}
