@@ -1,58 +1,65 @@
 <?php
 /**
-* summaryとdetailタグを使った折りたたみプラグイン
-* 
-* @version 0.8.0
+* detailsタグを使ったシンプルな折りたたみプラグイン
+*
+* @version 1.1
 * @author kanateko
 * @link https://jpngamerswiki.com/?56478a40a9
 * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
-* -- Update --
-* 2020-02-10 コードの微調整&整理 (ver 1.01)
-* 2019-09-22 初版作成
+* -- Updates --
+* 2022-06-17 v1.1 サマリ部分にPukiWiki記法を使用できるよう拡張
+* 2020-02-10 v1.0 コードの微調整&整理
+* 2019-09-22 v0.8 初版作成
 */
 
-function plugin_expand_convert()
+function plugin_expand_init()
 {
-  if (func_num_args() < 1) return;
+    $msg['_expand_messages'] = [
+        'label_summary' => '詳細を表示'
+    ];
+    set_plugin_messages($msg);
+}
 
-  $option = array (
-		'color'		=> 'inherit',		// 文字色
-    'size'		=> 'inherit',		// 文字サイズ
-	);
-  $args = func_get_args();
-  $details = array_pop($args);
-  $details = str_replace("\r", "\n", str_replace("\r\n", "\n", $details));
+function plugin_expand_convert(...$args)
+{
+    global $_expand_messages;
 
-  // オプション振り分け
-  foreach ($args as $arg) {
-    $arg = htmlspecialchars($arg);
-    // 展開して表示
-    if (preg_match('/^open$/',$arg)) {
-      $tag = '<details  class="plugin_expand" open>';
+    if (count($args) < 1) return;
+
+    $details = array_pop($args);
+    $details = preg_replace("/\r|\r\n/", "\n", $details);
+
+    // オプション振り分け
+    foreach ($args as $arg) {
+        if (preg_match('/^open$/',$arg)) {
+            // 展開して表示
+            $tag = ' open';
+        } elseif (preg_match('/^(color|size)=(.+)$/',$arg, $m)) {
+            // summaryのスタイル
+            $options[$m[1]] = htmlsc($m[2]);
+        } else {
+            // その他はsummaryとする
+            $summary = make_link($arg);
+        }
     }
-    // summaryのスタイル
-    else if (preg_match('/^(color|size)=.+/',$arg)) {
-      list($key, $val) = explode('=',$arg);
-      $option[$key] = $val;
-    }
-    // その他はsummaryとする
-    else {
-      $summary = $arg;
-    }
-  }
 
-  // 表示内容の最終調整
-  if (empty($tag)) $tag = '<details  class="plugin_expand">';
-  if (empty($summary)) $summary = '詳細を表示';
-  $details = convert_html($details);
+    // 表示内容の最終調整
+    $tag = $tag ?: '';
+    $summary = $summary ?: $_expand_messages['label_summary'];
+    $size = isset($options['size']) ? ' style="font-size:' . $options['size'] . ';"' : '';
+    if ($options['color']) {
+        $summary = '<span style="color:' . $options['color'] . ';">' . $summary . '</span>';
+    }
+    $details = convert_html($details);
 
-  // 実際に表示する内容
-  $body = <<<EOD
-  $tag
-	<summary style="color:{$option['color']};font-size:{$option['size']};">$summary</summary>
-  $details
-  </details>
-EOD;
-  return $body;
+    // 実際に表示する内容
+    $body = <<<EOD
+    <details class="plugin-expand"$tag>
+        <summary$size>$summary</summary>
+        $details
+    </details>
+    EOD;
+
+    return $body;
 }
 
