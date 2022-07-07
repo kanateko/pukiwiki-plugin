@@ -2,14 +2,16 @@
 /**
 * slickを利用したスライダー作成プラグイン
 *
-* @version 1.2
+* @version 1.2.2
 * @author kanateko
 * @link https://jpngamerswiki.com/?f51cd63681
 * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
 * -- Updates --
-* 2021-06-29 card, galleryプラグインとの連携機能を追加
-*            クラス追加機能を実装
-* 2021-06-28 初版作成
+* 2022-07-07 v1.2.2 galleryプラグインのバージョンアップに対応
+* 2021-07-28 v1.2.1 cardプラグインのバージョンアップに対応
+* 2021-06-29 v1.2.0 card, galleryプラグインとの連携機能を追加
+*            v1.1.0 クラス追加機能を実装
+* 2021-06-28 v1.0.0 初版作成
 */
 
 // スライドアイテム分割用タグ
@@ -169,7 +171,7 @@ function plugin_slider_convert()
         }
         if ($p_link['card'] || $p_link['gallery']) {
             // 他のプラグインと連携している場合はターゲットを書き換える
-            preg_match('/id="((?:cardContainer|gallery-)\d+)/', $item, $match);
+            preg_match('/id="((cardContainer|gallery-?)\d+)/', $item, $match);
             $slider_target = $match[1];
             // オプションを書き換える
             $list_slick_options['lazyLoad'] = 'progressive';
