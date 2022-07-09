@@ -2,12 +2,16 @@
 /**
  * photoswipe版 画像のギャラリー表示プラグイン (配布版)
  *
- * @version 2.1
+ * @version 2.2
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Updates --
- * 2022-07-09 v2.1 nobreakオプションを追加
+ * 2022-07-09 v2.2 画像の挿入位置を変更するオプションを追加
+ *                 アクション型の脆弱性を修正
+ *                 各オプションの初期値と初期化のタイミングを変更
+ *                 画像サイズ計算時の0の扱いを変更
+ *            v2.1 サムネイルの折り返しの有無を指定するオプションを追加
  * 2022-07-08 v2.0 Photoswipeのバージョンアップに対応
  *                 全体的にコードを改良
  *                 画像追加時、ページ上に全く同じギャラリーがあるとその全てが書き換えの対象になる問題を修正
@@ -97,13 +101,6 @@ function plugin_gallery_action(): ?array
 /**
  * 画像ギャラリーの表示
  *
- * @var bool DEFALUT_ADD 追加ボタンの表示/非表示
- * @var bool DEFALUT_CAP キャプションの表示/非表示
- * @var string DEFALUT_BREAK 折り返しの有無
- * @var string DEFALUT_WRAP 画像の縁の有無
- * @var string DEFALUT_HEIGHT 画像サイズ (高さ)
- * @var string DEFALUT_UNIT サイズ指定の単位
- * @var string DEFALUT_PLACEMENT 画像の配置 (justify-content)
  * @property string $err エラー内容
  * @property bool $is_empty マルチライン部分が空か
  * @property string $page 現在のページ名
@@ -114,14 +111,6 @@ function plugin_gallery_action(): ?array
  */
 class PluginGallery
 {
-    private const DEFAULT_ADD = true;
-    private const DEFAULT_CAP = true;
-    private const DEFAULT_BREAK = 'true';
-    private const DEFAULT_WRAP = 'true';
-    private const DEFAULT_HEIGHT = '180';
-    private const DEFAULT_UNIT = 'px';
-    private const DEFAULT_PLACEMENT = 'center';
-
     public $err;
     private $is_empty;
     private $page;
@@ -149,12 +138,17 @@ class PluginGallery
             if (! empty($args)) $this->array_options($args);
         }
 
-        $this->options['add'] ??= self::DEFAULT_ADD;
-        $this->options['break'] ??= self::DEFAULT_BREAK;
-        $this->options['cap'] ??= self::DEFAULT_CAP;
-        $this->options['placement'] ??= self::DEFAULT_PLACEMENT;
-        $this->options['unit'] ??= self::DEFAULT_UNIT;
-        $this->options['wrap'] ??= self::DEFAULT_WRAP;
+        // デフォルト設定
+        $this->options['add']       ??= true;
+        $this->options['break']     ??= true;
+        $this->options['cap']       ??= true;
+        $this->options['wrap']      ??= true;
+        $this->options['insert_to'] ??= 'bottom';
+        $this->options['placement'] ??= 'center';
+        $this->options['unit']      ??= 'px';
+        if (! $this->options['width'] && ! $this->options['height']) {
+            $this->options['height'] = 180;
+        }
     }
 
     /**
@@ -181,7 +175,7 @@ class PluginGallery
                     $cap = $cap_attr = '';
                 }
 
-                $href = get_base_uri() . '?plugin=attach&pcmd=open&file=' . $image['src'] . '&refer=' . rawurlencode($image['page']);
+                $href = get_base_uri() . '?cmd=attach&pcmd=open&refer=' . rawurlencode($image['page']) . '&file=' . $image['src'];
                 $items .= <<<EOD
                 <div class="gallery-item" id="galleryItem{$id}_$i"$cap_attr>
                     <a href="$href"data-pswp-width="{$image['width']}"
@@ -242,20 +236,20 @@ class PluginGallery
         }
 
         // 最終的な表示
-        $add = $this->options['add'] ? '<a class="gallery-add" href="'
-        . get_base_uri() . '?cmd=gallery&mode=add&page=' . $this->page . '&id=' . $id . '">'
-        . $_gallery_messages['label_add'] . '</a>' : '';
-        $placement = $this->options['break'] === 'false' ? 'left' : $this->options['placement'];
-        $break = ' data-break="' . $this->options['break'] . '"';
+        $add_button = $this->options['add'] ? '<a class="gallery-add" href="'
+        . get_base_uri() . '?cmd=gallery&mode=add&page=' . $this->page . '&id=' . $id
+        . '&insert_to=' . $this->options['insert_to'] . '">' . $_gallery_messages['label_add'] . '</a>' : '';
+        $placement = ! $this->options['break'] ? 'left' : $this->options['placement'];
+        $break = ' data-break="' . var_export($this->options['break'], true) . '"';
         $crop = $this->options['crop'] ? ' data-crop="' . $this->options['crop'] . '"' : '';
-        $wrap = ' data-wrap="' . $this->options['wrap'] . '"';
+        $wrap = ' data-wrap="' . var_export($this->options['wrap'], true) . '"';
 
         $html = <<<EOD
         <div class="plugin-gallery">
             <div class="gallery-items" id="gallery$id" style="justify-content:$placement"$break$crop$wrap>
             $items
             </div>
-            $add
+            $add_button
         </div>
         $script
         EOD;
@@ -310,18 +304,18 @@ class PluginGallery
             if (preg_match('/^(left|center|right|space-(around|between|evenly)|(flex-)?(start|end))$/', $arg)) {
                 // サムネイルの配置
                 $this->options['placement'] = $arg;
+            } elseif (preg_match('/^(top|bottom)$/', $arg)) {
+                // 画像の挿入位置
+                $this->options['insert_to'] = $arg;
             } elseif (preg_match('/^(circle|square)$/', $arg)) {
                 // サムネイルの切り取り
                 $this->options['crop'] = $arg;
             } elseif (preg_match('/^(width|height)=(\d+)(.+)?$/', $arg, $m)) {
                 // サムネイルのサイズ
-                $this->options[$m[1]] = $m[2];
+                $this->options[$m[1]] = (int)$m[2];
                 $this->options['unit'] = $m[3];
-            } elseif (preg_match('/^(no)?(break|wrap)$/', $arg, $m)) {
-                // 縁、折り返しの有無
-                $this->options[$m[2]] = $m[1] ? 'false' : 'true';
-            } elseif (preg_match('/^(no)?(add|cap)$/', $arg, $m)) {
-                // キャプション、追加ボタンの有無
+            } elseif (preg_match('/^(no)?(add|break|cap|wrap)$/', $arg, $m)) {
+                // 追加ボタン、折り返し、キャプション、縁の有無
                 $this->options[$m[2]] = $m[1] ? false : true;
             } else {
                 $this->err = str_replace('$1', $arg, $_gallery_messages['err_invalid']);
@@ -341,9 +335,6 @@ class PluginGallery
         $width = $this->options['width'];
         $height = $this->options['height'];
         $unit = $this->options['unit'];
-        if (! $width && ! $height) {
-            $height = self::DEFAULT_HEIGHT;
-        }
 
         if ($this->options['crop']) {
             // 切り抜き
@@ -355,8 +346,8 @@ class PluginGallery
                 if ($width && $height) {
                     $width = $height;
                 } else {
-                    $width ??= $height;
-                    $height ??= $width;
+                    $width = $width ?: $height;
+                    $height = $height ?: $width;
                 }
             }
         } elseif ($unit == '%') {
@@ -459,6 +450,9 @@ class GalleryAction
         check_editable($vars['page']);
 
         $max_kb = number_format(self::MAX_FILESIZE);
+        $page = htmlsc($vars['page']);
+        $id = htmlsc($vars['id']);
+        $insert_to = htmlsc($vars['insert_to']);
         $file = $_FILES['attach_file'];
 
         // 画像追加用フォーム
@@ -468,8 +462,9 @@ class GalleryAction
             <form enctype="multipart/form-data" method="post">
                 <input type="hidden" name="cmd" value="gallery">
                 <input type="hidden" name="mode" value="add">
-                <input type="hidden" name="page" value="{$vars['page']}">
-                <input type="hidden" name="id" value="{$vars['id']}">
+                <input type="hidden" name="page" value="$page">
+                <input type="hidden" name="id" value="$id">
+                <input type="hidden" name="insert_to" value="$insert_to">
                 <input type="file" name="attach_file"  accept="image/jpeg, image/png, image/gif, image/webp">&nbsp;
                 <label>{$_gallery_messages['label_cap']}：<input type="text" name="caption"></label>
                 <button name="upload">{$_gallery_messages['label_upload']}</button>
@@ -544,12 +539,20 @@ class GalleryAction
         preg_match_all("/\n#gallery(\(.*?\))?({{[\s\S]+?}})?/", $source, $m, PREG_OFFSET_CAPTURE);
 
         // 書き換え
-        $replace = $m[0][$vars['id']][0];
-        if ($replace) {
-            if (! $m[2][$vars['id']][0]) $replace .= "{{\n}}";
-            $replace = str_replace("\n}}", "\n$new_line\n}}", $replace);
+        $target = $m[0][$vars['id']][0];
+        if ($target) {
+            if (! $m[2][$vars['id']][0]) $target .= "{{\n}}";
+            if ($vars['insert_to'] == 'bottom') {
+                $search = "\n}}";
+                $new_line = "\n$new_line" . $search;
+            } else {
+                $search = "{{\n";
+                $new_line = $search . "$new_line\n";
+            }
+            $replace = str_replace($search, $new_line, $target);
             $postdata = substr_replace($source, $replace, $m[0][$vars['id']][1], strlen($m[0][$vars['id']][0]));
             page_write($vars['page'], $postdata, false);
         }
     }
+
 }
