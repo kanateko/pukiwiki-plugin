@@ -1,0 +1,29 @@
+.plugin-flex {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 8px;
+    justify-content: center;
+    margin-bottom: 24px;
+    max-width: 100%;
+}
+
+.flex-box {
+    max-width: 100%;
+}
+
+.flex-box > * {
+    margin: 0;
+}
+
+.flex-nogap {
+    gap: 0;
+}
+
+.flex-nowrap {
+    flex-wrap: nowrap;
+}
+
+.flex-border > .flex-box {
+    border: 1px solid rgb(40 40 40 / 60%);
+    border-radius: 3px;
+}
