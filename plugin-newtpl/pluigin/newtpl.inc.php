@@ -2,12 +2,14 @@
 /**
  * フォーム形式のページテンプレートプラグイン 配布版
  *
- * @version 1.0.0
+ * @version 1.0.5
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * @todo プレビュー、ファイル添付
  * -- Updates --
+ * 2022-10-12 v1.0.5 ページ名の相対指定に対応
+ *                   rangeのスライダーに数値の表記を追加
  * 2022-10-11 v1.0.0 初版作成
  */
 
@@ -60,7 +62,7 @@ function plugin_newtpl_init(): void
  */
 function plugin_newtpl_convert(): string
 {
-    $list = new newtplList;
+    $list = new NewtplList;
     return $list->list_templates();
 }
 
@@ -73,23 +75,23 @@ function plugin_newtpl_action(): array
 {
     global $vars, $_msg_newpage;
 
-    if (PKWK_READONLY) return ['msg' => $_msg_newpage, 'body' => newtpl::get_message('err_readonly')];
+    if (PKWK_READONLY) return ['msg' => $_msg_newpage, 'body' => Newtpl::get_message('err_readonly')];
 
     session_start();
 
     if ($vars['_submit']) {
         // ページの作成
-        $cmd = new newtplPage;
+        $cmd = new NewtplPage;
         if ($cmd->validation()) return $cmd->create_page();
         else return $cmd->show_form();
     } elseif ($vars['tpl']) {
         // フォームの表示
         $tplname = htmlsc(rawurldecode($vars['tpl']));
-        $cmd = new newtplForm($tplname);
+        $cmd = new NewtplForm($tplname);
         return $cmd->show_form();
     } else {
         // テンプレート一覧
-        $cmd = new newtplList;
+        $cmd = new NewtplList;
         $body = plugin_newpage_convert() . "\n<br>\n" . $cmd->list_templates();
         return ['msg' => $_msg_newpage, 'body' => $body];
     }
@@ -98,7 +100,7 @@ function plugin_newtpl_action(): array
 /**
  * テンプレート一覧の表示
  */
-class newtplList
+class NewtplList
 {
     /**
      * テンプレートの一覧を表示する
@@ -107,8 +109,11 @@ class newtplList
      */
     public function list_templates(): string
     {
+        global $vars;
+
+        $refer = $vars['page'] ?: $vars['refer'];
         $templates = $this->get_templates();
-        $body = newtpl::get_message('msg_template') . "\n";
+        $body = Newtpl::get_message('msg_template') . "\n";
 
         $list = '';
         foreach ($templates as $tpl) {
@@ -118,12 +123,12 @@ class newtplList
             if ($m[1] !== null) {
                 $base_uri = get_base_uri();
                 $e_tplname = rawurlencode($m[1]);
-                $list .= '<li><a href="' . $base_uri . '?cmd=newtpl&tpl=' . $e_tplname . '">' . $m[1] . '</a></li>' . "\n";
+                $list .= '<li><a href="' . $base_uri . '?cmd=newtpl&tpl=' . $e_tplname . '&refer=' . $refer . '">' . $m[1] . '</a></li>' . "\n";
             }
         }
 
         if (! empty($list)) return "$body<ul class=\"list1 list-indent1\">\n$list\n</ul>\n";
-        else return newtpl::get_message('msg_notpl');
+        else return Newtpl::get_message('msg_notpl');
     }
 
     /**
@@ -156,7 +161,7 @@ class newtplList
  * @property string $tplpage テンプレにするページ
  * @property string $notification 通知メッセージ
  */
-class newtplForm
+class NewtplForm
 {
     private $msg;
     private $tplname;
@@ -173,14 +178,14 @@ class newtplForm
     public function __construct($tplname, $notification = null)
     {
         $esc = htmlsc($tplname);
-        $this->msg = newtpl::get_message('msg_tplform', $esc, false);
+        $this->msg = Newtpl::get_message('msg_tplform', $esc, false);
         $this->tplname = $esc;
         $this->tplcfg = PLUGIN_NEWTPL_ROOT . $tplname;
         $this->tplpage = $this->tplcfg . '/page';
         $this->notification = $notification;
 
         if (! (is_page($this->tplcfg) && is_page($this->tplpage)))
-            die_message(newtpl::get_message('err_noexist', $this->tplname, false));
+            die_message(Newtpl::get_message('err_noexist', $this->tplname, false));
     }
 
     /**
@@ -192,8 +197,9 @@ class newtplForm
     {
         global $_newtpl_messages, $edit_auth, $vars;
 
-        $items = newtpl::parse_config($this->tplcfg);
-        $token = $_SESSION['token'] = newtpl::token(16);
+        $refer = htmlsc($vars['refer']);
+        $items = Newtpl::parse_config($this->tplcfg);
+        $token = $_SESSION['token'] = Newtpl::token(16);
         $names = ['page' => true, '_date' => true];
         $fields = '';
         foreach ($items as $item => $cfg) {
@@ -264,6 +270,7 @@ class newtplForm
             <div class="newtpl-fields">
                 <input type="hidden" name="token" value="$token">
                 <input type="hidden" name="cmd" value="newtpl">
+                <input type="hidden" name="refer" value="$refer">
                 <input type="hidden" name="_tplname" value="{$this->tplname}">
                 $auth
                 <fieldset class="newtpl-item" data-require="true">
@@ -351,6 +358,31 @@ class newtplForm
 
         $field = "<input type=\"$type\" name=\"$name\"$default$min$max$step$require>\n";
 
+        if ($type === 'range') {
+            $field .= "<i class=\"$name-val\"></i>\n";
+            // rangeの数値表示用スクリプト
+            if (! self::$script['range']) {
+                self::$script['range'] = true;
+                $field .= <<<EOD
+                <script>
+                    document.addEventListener('DOMContentLoaded', () => {
+                        const rngs = document.querySelectorAll('.newtpl-post input[type="range"]');
+                        for (const rng of rngs) {
+                            showRangeValue(rng);
+                            rng.addEventListener('input', () => {
+                                showRangeValue(rng);
+                            });
+                        }
+                    });
+                    function showRangeValue(rng) {
+                        const rngval = rng.value;
+                        const display = rng.nextElementSibling;
+                        display.innerText = rngval;
+                    }
+                </script>
+                EOD;
+            }
+        }
         return $field;
     }
 
@@ -462,7 +494,7 @@ class newtplForm
  * @property string $tplpage テンプレにするページ
  * @property array $items テンプレの項目と設定
  */
-class newtplPage
+class NewtplPage
 {
     public $err;
     private $pass;
@@ -481,13 +513,17 @@ class newtplPage
         $this->tplname = htmlsc($vars['_tplname']);
         $tplcfg = PLUGIN_NEWTPL_ROOT . $this->tplname;
         $this->tplpage = $tplcfg . '/page';
-
         $this->pass = $vars['_password'];
-        $this->pagename = htmlsc($vars['page']);
-        if (! (is_page($tplcfg) && is_page($this->tplpage))) {
-            die_message(newtpl::get_message('err_noexist', $this->tplname, false));
+        if (strpos($vars['page'], './') !== false) {
+            // 相対パスを絶対パスに変換
+            $this->pagename = get_fullname($vars['page'], $vars['refer']);
         } else {
-            $this->items = newtpl::parse_config($tplcfg, true);
+            $this->pagename = $vars['page'];
+        }
+        if (! (is_page($tplcfg) && is_page($this->tplpage))) {
+            die_message(Newtpl::get_message('err_noexist', $this->tplname, false));
+        } else {
+            $this->items = Newtpl::parse_config($tplcfg, true);
         }
     }
 
@@ -503,7 +539,7 @@ class newtplPage
         // トークンの確認
         if (! isset($_SESSION['token']) || $_SESSION['token'] !== $vars['token']) {
             header('refresh:5');
-            die_message(newtpl::get_message('err_token', get_base_uri() . '?cmd=newtpl&tpl=' . $this->tplname, false));
+            die_message(Newtpl::get_message('err_token', get_base_uri() . '?cmd=newtpl&tpl=' . $this->tplname, false));
         } else {
             $_SESSION['token'] = null;
         }
@@ -511,19 +547,19 @@ class newtplPage
         // 入力内容の確認
         if (($edit_auth || PLUGIN_NEWTPL_ADMINONLY) && ! pkwk_login($this->pass)) {
             // 編集制限時のパスワード確認
-            $this->err = newtpl::get_message('warn_wrongpass');
+            $this->err = Newtpl::get_message('warn_wrongpass');
             return false;
         } elseif (is_page($this->pagename)) {
             // ページ名の重複を確認
-            $this->err = newtpl::get_message('warn_used', $this->pagename);
+            $this->err = Newtpl::get_message('warn_used', $this->pagename);
             return false;
         } elseif (! is_pagename($this->pagename)) {
             // ページ名が不正でないか確認
-            $this->err = newtpl::get_message('warn_character');
+            $this->err = Newtpl::get_message('warn_character');
             return false;
         } elseif (! is_pagename_bytes_within_soft_limit($this->pagename)) {
             // ページ名の長さを確認
-            $this->err = newtpl::get_message('warn_pagename', PKWK_PAGENAME_BYTES_SOFT_LIMIT);
+            $this->err = Newtpl::get_message('warn_pagename', PKWK_PAGENAME_BYTES_SOFT_LIMIT);
             return false;
         } else {
             // 個別の設定を確認
@@ -532,7 +568,7 @@ class newtplPage
                 $name = $cfg['name'];
                 if ($cfg['required'] === 'true' && empty($vars[$name])) {
                     // 必須項目
-                    $this->err = newtpl::get_message('warn_required', $item);
+                    $this->err = Newtpl::get_message('warn_required', $item);
                     return false;
                 } elseif (isset($cfg['max']) || isset($cfg['min'])) {
                     // 最大・最小
@@ -541,14 +577,14 @@ class newtplPage
                         case 'textarea':
                             $length = strlen($vars[$name]);
                             if ($length > $cfg['max'] || $length < $cfg['min']) {
-                                $this->err = newtpl::get_message('warn_length', $item);
+                                $this->err = Newtpl::get_message('warn_length', $item);
                                 return false;
                             }
                             break;
                         case 'number':
                         case 'range':
                             if (! is_numeric($vars[$name]) || ($vars[$name] > $cfg['max'] || $vars[$name] < $cfg['min'])) {
-                                $this->err = newtpl::get_message('warn_range', $item);
+                                $this->err = Newtpl::get_message('warn_range', $item);
                                 return false;
                             }
                             break;
@@ -571,7 +607,7 @@ class newtplPage
     {
         global $vars;
 
-        $form = new newtplForm($vars['_tplname'], $this->err);
+        $form = new NewtplForm($vars['_tplname'], $this->err);
         return $form->show_form();
     }
 
@@ -585,7 +621,7 @@ class newtplPage
         global $vars;
 
         $tpl = get_source($this->tplpage);
-        if (empty($tpl)) die_message(newtpl::get_message('err_noexist', null, false));
+        if (empty($tpl)) die_message(Newtpl::get_message('err_noexist', null, false));
         foreach ($tpl as $i => $line) {
             if (preg_match('/^#(freeze|author)/', $line)) unset($tpl[$i]);
         }
@@ -665,7 +701,7 @@ class newtplPage
 /**
  * 汎用
  */
-class newtpl
+class Newtpl
 {
     /**
      * メッセージの取得

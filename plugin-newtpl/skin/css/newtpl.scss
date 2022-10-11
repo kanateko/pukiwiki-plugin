@@ -78,7 +78,7 @@
 .newtpl-post {
     display: flex;
     flex-direction: column;
-    input,
+    input:not([type=range]),
     select,
     textarea {
         background-color: var(--color-input-bg);
