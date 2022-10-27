@@ -2,12 +2,15 @@
 /**
  * フォーム形式のページテンプレートプラグイン 配布版
  *
- * @version 1.0.5
+ * @version 1.1.0
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
- * @todo プレビュー、ファイル添付
+ * @todo 非同期バリデーション + プレビュー
  * -- Updates --
+ * 2022-10-27 v1.1.0 ファイル添付機能を追加
+ *                   設定ページの凍結の要/不要を切り替える機能を追加
+ *                   細かいバグを修正
  * 2022-10-12 v1.0.5 ページ名の相対指定に対応
  *                   rangeのスライダーに数値の表記を追加
  * 2022-10-11 v1.0.0 初版作成
@@ -19,7 +22,14 @@ define('PLUGIN_NEWTPL_CSS', SKIN_DIR . 'css/newtpl.css');
 define('PLUGIN_NEWTPL_ROOT', ':config/plugin/newtpl/');
 // 管理者のみ
 define('PLUGIN_NEWTPL_ADMINONLY', false);
-// newpageプラグインの読み込み
+// 設定ページの凍結の要/不要
+define('PLUGIN_NEWTPL_RESTRICT', false);
+// 添付可能なファイルのmime-type (カンマ区切り)
+define('PLUGIN_NEWTPL_AVAILABLE_FORMAT', 'image/jpeg,image/png,image/gif,image/webp');
+// 添付可能なファイルの最大サイズ (キロバイト)
+define('PLUGIN_NEWTPL_MAX_FILESIZE', 1024);
+
+// 連携プラグインの読み込み
 require_once(PLUGIN_DIR . 'newpage.inc.php');
 
 /**
@@ -37,6 +47,7 @@ function plugin_newtpl_init(): void
         'msg_tplform'    => 'テンプレート：$1',
         'label_pagename' => 'ページ名',
         'label_auth'     => '管理者パスワード',
+        'label_maxsize'  => '最大サイズ：$1 KB',
         'warn_used'      => 'ページ名 "$1" は既に使用されています。',
         'warn_wrongpass' => 'パスワードが間違っています。',
         'warn_pagename'  => 'ページ名が長すぎます。 (max: $1 bytes)',
@@ -44,11 +55,14 @@ function plugin_newtpl_init(): void
         'warn_length'    => '文字数制限を超えています。 ($1)',
         'warn_range'     => '文字数制限、あるいは値の制限範囲を超えています。($1)',
         'warn_required'  => '必須項目を記入してください。($1)',
+        'warn_size'      => 'ファイルが最大サイズを超えています。($1)',
+        'warn_format'    => 'ファイル形式が不正です。($1)',
         'btn_submit'     => 'ページを作成',
         'btn_back'       => '戻る',
         'err_noexist'    => '#newtpl Error: Failed to load the template. ($1)',
         'err_readonly'   => '#newtpl Error: PKWK_READONLY Enabled.',
-        'err_token'      => '#newtpl Error: Invalid token. click <a href="$1">here</a> for refresh manually.'
+        'err_token'      => '#newtpl Error: Invalid token. click <a href="$1">here</a> for refresh manually.',
+        'err_freeze'     => '#newtpl Error: Restrict mode enabled. Need to freeze config pages before load them.'
     ];
     set_plugin_messages($msg);
 
@@ -186,6 +200,8 @@ class NewtplForm
 
         if (! (is_page($this->tplcfg) && is_page($this->tplpage)))
             die_message(Newtpl::get_message('err_noexist', $this->tplname, false));
+        elseif (PLUGIN_NEWTPL_RESTRICT && ! is_freeze($this->tplcfg) && is_freeze($this->tplpage))
+            die_message(Newtpl::get_message('err_freeze'));
     }
 
     /**
@@ -230,6 +246,8 @@ class NewtplForm
                         if (empty($cfg['option'])) break;
                         $field = $this->select($cfg);
                         break;
+                    case 'file':
+                        $field = $this->file($cfg);
                     default:
                         continue;
                 }
@@ -293,7 +311,7 @@ class NewtplForm
     /**
      * テキスト入力
      *
-     * オプション：placeholder, default, max, null, link
+     * オプション：placeholder, default, max, required, desc, null, link
      *
      * @param array $cfg 項目の設定
      * @return string $field 項目のHTML
@@ -334,7 +352,7 @@ class NewtplForm
     /**
      * 数値系
      *
-     * オプション：default, min, max, step, null, link
+     * オプション：default, min, max, step, required, desc, null(, link)
      *
      * @param array $cfg 項目の設定
      * @return string $field 項目のHTML
@@ -389,7 +407,7 @@ class NewtplForm
     /**
      * 選択項目
      *
-     * オプション：default, option, null, link, separator
+     * オプション：default, option, required, desc, null, separator, link
      *
      * @param array $cfg 項目の設定
      * @return string $field 項目のHTML
@@ -456,7 +474,7 @@ class NewtplForm
     /**
      * プルダウン
      *
-     * オプション：default, option, null, link
+     * オプション：default, option, required, desc, null, link
      *
      * @param array $cfg 項目の設定
      * @return string $field 項目のHTML
@@ -482,6 +500,26 @@ class NewtplForm
 
         return $field;
     }
+
+     /**
+     * ファイル添付
+     *
+     * オプション：required, desc, null(, link)
+     *
+     * @param array $cfg 項目の設定
+     * @return string $field 項目のHTML
+     */
+    private function file($cfg): string
+    {
+        $name = $cfg['name'];
+        $size = Newtpl::get_message('label_maxsize', number_format(PLUGIN_NEWTPL_MAX_FILESIZE), false);
+        $format = PLUGIN_NEWTPL_AVAILABLE_FORMAT;
+        $require = $cfg['required'] === 'true' ? ' required' : '';
+
+        $field = "<i class=\"small\">$size</i><br><input type=\"file\" name=\"$name\" accept=\"$format\"$require>\n";
+
+        return $field;
+    }
 }
 
 /**
@@ -500,6 +538,7 @@ class NewtplPage
     private $pass;
     private $pagename;
     private $tplname;
+    private $tplcfg;
     private $tplpage;
     private $items;
 
@@ -511,8 +550,8 @@ class NewtplPage
         global $vars;
 
         $this->tplname = htmlsc($vars['_tplname']);
-        $tplcfg = PLUGIN_NEWTPL_ROOT . $this->tplname;
-        $this->tplpage = $tplcfg . '/page';
+        $this->tplcfg = PLUGIN_NEWTPL_ROOT . $this->tplname;
+        $this->tplpage = $this->tplcfg . '/page';
         $this->pass = $vars['_password'];
         if (strpos($vars['page'], './') !== false) {
             // 相対パスを絶対パスに変換
@@ -520,10 +559,10 @@ class NewtplPage
         } else {
             $this->pagename = $vars['page'];
         }
-        if (! (is_page($tplcfg) && is_page($this->tplpage))) {
+        if (! (is_page($this->tplcfg) && is_page($this->tplpage))) {
             die_message(Newtpl::get_message('err_noexist', $this->tplname, false));
         } else {
-            $this->items = Newtpl::parse_config($tplcfg, true);
+            $this->items = Newtpl::parse_config($this->tplcfg, true);
         }
     }
 
@@ -566,12 +605,13 @@ class NewtplPage
             foreach ($this->items as $item => $cfg) {
                 $type = $cfg['type'];
                 $name = $cfg['name'];
+                // 必須項目
                 if ($cfg['required'] === 'true' && empty($vars[$name])) {
-                    // 必須項目
                     $this->err = Newtpl::get_message('warn_required', $item);
                     return false;
-                } elseif (isset($cfg['max']) || isset($cfg['min'])) {
-                    // 最大・最小
+                }
+                // 最大・最小
+                if (isset($cfg['max']) || isset($cfg['min'])) {
                     switch ($type) {
                         case 'text':
                         case 'textarea':
@@ -590,6 +630,26 @@ class NewtplPage
                             break;
                         default:
                             break;
+                    }
+                }
+                // 添付ファイル
+                if ($type === 'file' && isset($_FILES[$name])) {
+                    $file = $_FILES[$name];
+                    if (is_uploaded_file($file['tmp_name'])) {
+                        if ($file['size'] > PLUGIN_NEWTPL_MAX_FILESIZE * 1000) {
+                            // 最大ファイルサイズ
+                            $this->err = Newtpl::get_message('warn_size', $item);
+                            return false;
+                        } else {
+                            // ファイル形式
+                            $availables = str_replace(',', '|', preg_quote(PLUGIN_NEWTPL_AVAILABLE_FORMAT, '/'));
+                            $availables = '/' . $availables . '/i';
+                            $mime = getimagesize($file['tmp_name'])['mime'];
+                            if (! preg_match ($availables, $mime)) {
+                                $this->err = Newtpl::get_message('warn_format', $item);
+                                return false;
+                            }
+                        }
                     }
                 }
             }
@@ -630,9 +690,10 @@ class NewtplPage
 
         // 予約済み
         $postdata = $this->replace('_page', $this->pagename, $tpl);
+        $postdata = $this->replace('_pagelink', '[[' . $this->pagename . ']]', $postdata);
         $postdata = $this->replace('_base', $basename, $postdata);
-        $postdata = $this->replace('_tpl', $this->tplpage, $postdata);
-        $postdata = $this->replace('_tplpage', '[[' . $this->tplpage . ']]', $postdata);
+        $postdata = $this->replace('_tpl', $this->tplcfg, $postdata);
+        $postdata = $this->replace('_tpllink', '[[' . $this->tplcfg . ']]', $postdata);
         $postdata = $this->replace('_date', format_date(UTIME), $postdata);
 
         // 受け取った内容でテンプレートを置換
@@ -640,34 +701,45 @@ class NewtplPage
             $name = $cfg['name'];
             $type = $cfg['type'];
 
-            if (empty($vars[$name])) {
+            if (($type === 'file' && empty($_FILES[$name]['name'])) || ($type !== 'file' && empty($vars[$name]))) {
                 // 未入力の場合に表示する内容
                 if (isset($cfg['null'])) $postdata = $this->replace($name, htmlspecialchars_decode($cfg['null']), $postdata);
                 else $postdata = $this->replace($name, '', $postdata);
             } else {
                 switch ($type) {
+                    case 'file':
+                        // 添付ファイル
+                        $file = $_FILES[$name];
+                        $attach_name = encode($this->pagename) . '_' . encode($file['name']);
+                        if (! file_exists(UPLOAD_DIR . $attach_name)) {
+                            move_uploaded_file($file['tmp_name'], UPLOAD_DIR . $attach_name);
+                        }
+                        $postdata = $this->replace($name, $file['name'], $postdata);
+                        break;
                     case 'checkbox':
-                        if ($cfg['link']) {
+                        // チェックボックス
+                        if ($cfg['link'] === 'true') {
+                            // 項目ごとにリンク化
                             foreach ($vars[$name] as $i => $val) {
-                                // 項目ごとにリンク化
                                 if (is_page($val)) $vars[$name][$i] = '[[' . $vars[$name][$i] . ']]';
                             }
                         }
                         if (isset($cfg['separator'])) {
                             // 複数項目を表示する際のセパレータを変更
                             $separator = str_replace('\\s', ' ', htmlspecialchars_decode($cfg['separator']));
-                            $separator = str_replace('\\n', "\r\n", htmlspecialchars_decode($cfg['separator']));
+                            $separator = str_replace('\\n', "\r\n", $separator);
                             $vars[$name] = implode($separator, $vars[$name]);
                         } else {
                             $vars[$name] = implode(',', $vars[$name]);
                         }
+                        $postdata = $this->replace($name, $vars[$name], $postdata);
                         break;
                     default:
-                        // リンク化
-                        if ($cfg['link'] && is_page($vars[$name])) $vars[$name] = '[[' . $vars[$name] . ']]';
+                        // その他項目
+                        if ($cfg['link'] === 'true' && is_page($vars[$name])) $vars[$name] = '[[' . $vars[$name] . ']]';
+                        $postdata = $this->replace($name, $vars[$name], $postdata);
                         break;
                 }
-                $postdata = $this->replace($name, $vars[$name], $postdata);
             }
             // 項目名を使用
             $postdata = $this->replace('title:' . $name, $item, $postdata);
@@ -746,7 +818,7 @@ class Newtpl
                 else $items[$title]['required'] = 'false';
             } elseif (preg_match('/^--([^\-]+)$/', $line, $m) && ! empty($title)) {
                 // 各項目のオプション
-                $line = preg_replace('/\s+=\s+/', '=', $m[1]);
+                $m[1] = preg_replace('/\s+=\s+/', '=', $m[1]);
                 [$key, $val] = explode('=', $m[1]);
                 $items[$title][$key] = $val;
             } else {
