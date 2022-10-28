@@ -2,12 +2,13 @@
 /**
  * フォーム形式のページテンプレートプラグイン 配布版
  *
- * @version 1.1.0
+ * @version 1.1.1
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * @todo 非同期バリデーション + プレビュー
  * -- Updates --
+ * 2022-10-28 v1.1.1 編集制限時は管理者パスワードではなくログインを求めるように変更
  * 2022-10-27 v1.1.0 ファイル添付機能を追加
  *                   設定ページの凍結の要/不要を切り替える機能を追加
  *                   細かいバグを修正
@@ -211,9 +212,16 @@ class NewtplForm
      */
     public function show_form(): array
     {
-        global $_newtpl_messages, $edit_auth, $vars;
+        global $_newtpl_messages, $edit_auth, $auth_user, $vars;
 
         $refer = htmlsc($vars['refer']);
+
+        // 編集制限時のログインチェック
+        if ($edit_auth && ! $auth_user) {
+            header('Location:' . get_base_uri() . '?plugin=loginform&pcmd=login&page=' . $refer);
+            exit;
+        }
+
         $items = Newtpl::parse_config($this->tplcfg);
         $token = $_SESSION['token'] = Newtpl::token(16);
         $names = ['page' => true, '_date' => true];
@@ -270,7 +278,7 @@ class NewtplForm
         }
 
         // 管理者パスワードの認証
-        if ($edit_auth || PLUGIN_NEWTPL_ADMINONLY) $auth = <<<EOD
+        if (PLUGIN_NEWTPL_ADMINONLY) $auth = <<<EOD
             <fieldset class="newtpl-item" data-require="true">
                 <legend class="newtpl-label">{$_newtpl_messages['label_auth']}</legend>
                 <div class="newtpl-post">
