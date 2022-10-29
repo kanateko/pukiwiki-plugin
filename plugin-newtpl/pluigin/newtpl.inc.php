@@ -767,7 +767,7 @@ class NewtplPage
      * @param string $src 対象のページ内容
      * @return string 置き換え後のページ内容
      */
-    private function replace($name, $post, $src)
+    private function replace($name, $post, $src): string
     {
         $name = '{{{' . $name . '}}}';
         if (strpos($src, $name) !== false) {
@@ -843,7 +843,7 @@ class Newtpl
      * @param int $bytes バイト数
      * @return string ランダムな文字列
      */
-    public static function token($bytes)
+    public static function token($bytes): string
     {
         return bin2hex(openssl_random_pseudo_bytes($bytes));
     }
