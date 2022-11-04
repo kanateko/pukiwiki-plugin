@@ -2,12 +2,13 @@
 /**
  * フォーム形式のページテンプレートプラグイン 配布版
  *
- * @version 1.1.1
+ * @version 1.1.2
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * @todo 非同期バリデーション + プレビュー
  * -- Updates --
+ * 2022-11-04 v1.1.2 文字数カウントがマルチバイト文字に対応していなかった問題を修正
  * 2022-10-28 v1.1.1 編集制限時は管理者パスワードではなくログインを求めるように変更
  * 2022-10-27 v1.1.0 ファイル添付機能を追加
  *                   設定ページの凍結の要/不要を切り替える機能を追加
@@ -623,7 +624,7 @@ class NewtplPage
                     switch ($type) {
                         case 'text':
                         case 'textarea':
-                            $length = strlen($vars[$name]);
+                            $length = mb_strlen($vars[$name]);
                             if ($length > $cfg['max'] || $length < $cfg['min']) {
                                 $this->err = Newtpl::get_message('warn_length', $item);
                                 return false;
