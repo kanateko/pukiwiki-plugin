@@ -2,12 +2,13 @@
 /**
  * フォーム形式のページテンプレートプラグイン 配布版
  *
- * @version 1.1.2
+ * @version 1.1.3
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * @todo 非同期バリデーション + プレビュー
  * -- Updates --
+ * 2022-11-16 v1.1.3 fileのオプションにアップロードページの指定を追加
  * 2022-11-04 v1.1.2 文字数カウントがマルチバイト文字に対応していなかった問題を修正
  * 2022-10-28 v1.1.1 編集制限時は管理者パスワードではなくログインを求めるように変更
  * 2022-10-27 v1.1.0 ファイル添付機能を追加
@@ -30,6 +31,10 @@ define('PLUGIN_NEWTPL_RESTRICT', false);
 define('PLUGIN_NEWTPL_AVAILABLE_FORMAT', 'image/jpeg,image/png,image/gif,image/webp');
 // 添付可能なファイルの最大サイズ (キロバイト)
 define('PLUGIN_NEWTPL_MAX_FILESIZE', 1024);
+// fileのアップロードページ指定オプションの有効/無効
+define('PLUGIN_NEWTPL_ENABLE_UPLOADTO', true);
+// fileのアップロードページに指定不可能なページ (正規表現)
+define('PLUGIN_NEWTPL_UPLOADTO_EXCEPTION', '/^(FrontPage|MenuBar)$/');
 
 // 連携プラグインの読み込み
 require_once(PLUGIN_DIR . 'newpage.inc.php');
@@ -44,27 +49,31 @@ function plugin_newtpl_init(): void
     global $head_tags;
 
     $msg['_newtpl_messages'] = [
-        'msg_template'   => '以下のテンプレートを利用できます。',
-        'msg_notpl'      => '利用可能なテンプレートがありません。',
-        'msg_tplform'    => 'テンプレート：$1',
-        'label_pagename' => 'ページ名',
-        'label_auth'     => '管理者パスワード',
-        'label_maxsize'  => '最大サイズ：$1 KB',
-        'warn_used'      => 'ページ名 "$1" は既に使用されています。',
-        'warn_wrongpass' => 'パスワードが間違っています。',
-        'warn_pagename'  => 'ページ名が長すぎます。 (max: $1 bytes)',
-        'warn_character' => 'ページ名に使用できない文字が含まれています。',
-        'warn_length'    => '文字数制限を超えています。 ($1)',
-        'warn_range'     => '文字数制限、あるいは値の制限範囲を超えています。($1)',
-        'warn_required'  => '必須項目を記入してください。($1)',
-        'warn_size'      => 'ファイルが最大サイズを超えています。($1)',
-        'warn_format'    => 'ファイル形式が不正です。($1)',
-        'btn_submit'     => 'ページを作成',
-        'btn_back'       => '戻る',
-        'err_noexist'    => '#newtpl Error: Failed to load the template. ($1)',
-        'err_readonly'   => '#newtpl Error: PKWK_READONLY Enabled.',
-        'err_token'      => '#newtpl Error: Invalid token. click <a href="$1">here</a> for refresh manually.',
-        'err_freeze'     => '#newtpl Error: Restrict mode enabled. Need to freeze config pages before load them.'
+        'msg_template'     => '以下のテンプレートを利用できます。',
+        'msg_notpl'        => '利用可能なテンプレートがありません。',
+        'msg_tplform'      => 'テンプレート：$1',
+        'label_pagename'   => 'ページ名',
+        'label_auth'       => '管理者パスワード',
+        'label_maxsize'    => '最大サイズ：$1 KB',
+        'warn_used'        => 'ページ名 "$1" は既に使用されています。',
+        'warn_wrongpass'   => 'パスワードが間違っています。',
+        'warn_pagename'    => 'ページ名が長すぎます。 (max: $1 bytes)',
+        'warn_character'   => 'ページ名に使用できない文字が含まれています。',
+        'warn_length'      => '文字数制限を超えています。 ($1)',
+        'warn_range'       => '文字数制限、あるいは値の制限範囲を超えています。($1)',
+        'warn_required'    => '必須項目を記入してください。($1)',
+        'warn_size'        => 'ファイルが最大サイズを超えています。($1)',
+        'warn_format'      => 'ファイル形式が不正です。($1)',
+        'btn_submit'       => 'ページを作成',
+        'btn_back'         => '戻る',
+        'err_noexist'      => '#newtpl Error: Failed to load the template. ($1)',
+        'err_readonly'     => '#newtpl Error: PKWK_READONLY Enabled.',
+        'err_token'        => '#newtpl Error: Invalid token. click <a href="$1">here</a> for refresh manually.',
+        'err_freeze'       => '#newtpl Error: Restrict mode enabled. Need to freeze config pages before load them.',
+        'err_up_disabled'  => '#newtpl Error: "uploadto" option is disabled.',
+        'err_up_freezed'   => '#newtpl Error: You can not upload files to freezed pages. ($1)',
+        'err_up_exception' => '#newtpl Error: You can not upload files to "$1".',
+        'err_up_noexist'   => '#newtpl Error: The upload page does not exist. ($1)',
     ];
     set_plugin_messages($msg);
 
@@ -520,6 +529,14 @@ class NewtplForm
      */
     private function file($cfg): string
     {
+        // アップロードページの指定が有効か確認
+        if ($cfg['uploadto'] !== null) {
+            if (! PLUGIN_NEWTPL_ENABLE_UPLOADTO) die_message(Newtpl::get_message('err_up_disabled', null, false));
+            elseif (! is_page($cfg['uploadto'])) die_message(Newtpl::get_message('err_up_noexist', $cfg['uploadto'], false));
+            elseif (is_freeze($cfg['uploadto'])) die_message(Newtpl::get_message('err_up_freezed', $cfg['uploadto'], false));
+            elseif (preg_match(PLUGIN_NEWTPL_UPLOADTO_EXCEPTION, $cfg['uploadto'])) die_message(Newtpl::get_message('err_up_exception', $cfg['uploadto'], false));
+        }
+
         $name = $cfg['name'];
         $size = Newtpl::get_message('label_maxsize', number_format(PLUGIN_NEWTPL_MAX_FILESIZE), false);
         $format = PLUGIN_NEWTPL_AVAILABLE_FORMAT;
@@ -719,11 +736,17 @@ class NewtplPage
                     case 'file':
                         // 添付ファイル
                         $file = $_FILES[$name];
-                        $attach_name = encode($this->pagename) . '_' . encode($file['name']);
+                        if ($cfg['uploadto'] === null || $cfg['uploadto'] === $this->pagename) {
+                            $attach_name = encode($this->pagename) . '_' . encode($file['name']);
+                            $filename = $file['name'];
+                        } else {
+                            $attach_name = encode($cfg['uploadto']) . '_' . encode($file['name']);
+                            $filename = $cfg['fullpath'] === 'true' ? $cfg['uploadto'] . '/' . $file['name'] : $file['name'];
+                        }
                         if (! file_exists(UPLOAD_DIR . $attach_name)) {
                             move_uploaded_file($file['tmp_name'], UPLOAD_DIR . $attach_name);
                         }
-                        $postdata = $this->replace($name, $file['name'], $postdata);
+                        $postdata = $this->replace($name, $filename, $postdata);
                         break;
                     case 'checkbox':
                         // チェックボックス
