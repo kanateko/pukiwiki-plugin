@@ -1,9 +1,54 @@
+@charset "UTF-8";
 .plugin-gallery {
   --color-smoke: #cecece;
   display: grid;
   grid-template-columns: 1fr;
   margin-bottom: 24px;
   place-items: center;
+}
+
+.gallery-control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: right;
+  gap: 4px 8px;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
+}
+.gallery-control .search {
+  padding: 0 12px;
+  height: 32px;
+  outline: none;
+  border-radius: 20px;
+}
+.gallery-control .sorter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0 8px;
+}
+.gallery-control .sort {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: lightblue;
+  padding: 4px 8px;
+  border-radius: 20px;
+  width: 96px;
+}
+.gallery-control .sort::after {
+  content: "";
+}
+.gallery-control .sort.desc::after {
+  content: "▼";
+}
+.gallery-control .sort.asc::after {
+  content: "▲";
 }
 
 .gallery-items {

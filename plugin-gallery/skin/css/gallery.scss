@@ -6,6 +6,48 @@
     place-items: center;
 }
 
+.gallery-control {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: right;
+    gap: 4px 8px;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    user-select: none;
+    .search {
+        padding: 0 12px;
+        height: 32px;
+        outline: none;
+        border-radius: 20px;
+    }
+    .sorter {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0 8px;
+    }
+    .sort {
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background-color: lightblue;
+        padding: 4px 8px;
+        border-radius: 20px;
+        width: 96px;
+        &::after {
+            content: '';
+        }
+        &.desc::after {
+            content: '▼';
+        }
+        &.asc::after {
+            content: '▲';
+        }
+    }
+}
+
 .gallery-items {
     align-items: center;
     display: flex;

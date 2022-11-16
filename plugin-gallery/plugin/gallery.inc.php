@@ -2,12 +2,13 @@
 /**
  * photoswipe版 画像のギャラリー表示プラグイン (配布版)
  *
- * @version 2.3
+ * @version 2.4
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Updates --
- * 2022-11-16 v2.3 添付されたすべての画像を表示するオプション (all) を追加
+ * 2022-11-16 v2.4 ソートオプションを追加
+ *            v2.3 添付されたすべての画像を表示するオプション (all) を追加
  * 2022-07-09 v2.2 画像の挿入位置を変更するオプションを追加
  *                 アクション型の脆弱性を修正
  *                 各オプションの初期値と初期化のタイミングを変更
@@ -48,6 +49,8 @@
 define('PLUGIN_GALLERY_PSWP_CORE', 'https://unpkg.com/photoswipe/dist/photoswipe.esm.min.js');
 define('PLUGIN_GALLERY_PSWP_LIGHTBOX', 'https://unpkg.com/photoswipe/dist/photoswipe-lightbox.esm.min.js');
 define('PLUGIN_GALLERY_PSWP_CSS', 'https://unpkg.com/photoswipe/dist/photoswipe.css');
+// ソート用ライブラリ (List.js)
+define('PLUGIN_GALLERY_SORT_JS', 'https://cdnjs.cloudflare.com/ajax/libs/list.js/2.3.1/list.min.js');
 // PukiWiki用CSS
 define('PLUGIN_GALLERY_CSS', SKIN_DIR . 'css/gallery.css');
 // ファイルとキャプションのセパレータ
@@ -108,7 +111,7 @@ function plugin_gallery_action(): ?array
  * @property ?array $images 表示する画像の情報
  * @property ?array $options プラグインのオプション
  * @property int $id プラグインの呼び出し回数
- * @property bool $loaded スクリプトの読み込みフラグ
+ * @property array $loaded スクリプトの読み込みフラグ
  */
 class PluginGallery
 {
@@ -118,7 +121,7 @@ class PluginGallery
     private $images;
     private $options;
     private static $id = 0;
-    private static $loaded = false;
+    private static $loaded = [];
 
     /**
      * コンストラクタ
@@ -184,10 +187,16 @@ class PluginGallery
                 } else {
                     $cap = $cap_attr = '';
                 }
+                // ソート用
+                if ($this->options['sort']) {
+                    $sort_attr = ' data-name="' . $image['src'] . '" data-date="' . $image['date'] . '"';
+                } else {
+                    $sort_attr = '';
+                }
 
                 $href = get_base_uri() . '?cmd=attach&pcmd=open&refer=' . rawurlencode($image['page']) . '&file=' . $image['src'];
                 $items .= <<<EOD
-                <div class="gallery-item" id="galleryItem{$id}_$i"$cap_attr>
+                <div class="gallery-item" id="galleryItem{$id}_$i"$cap_attr$sort_attr>
                     <a href="$href"data-pswp-width="{$image['width']}"
                        data-pswp-height="{$image['height']}" target="blank">
                         <img class="gallery-image" src="$href" style="width:$width$unit;height:$height$unit;"
@@ -199,8 +208,8 @@ class PluginGallery
             }
 
             // スクリプト
-            if (! self::$loaded) {
-                self::$loaded = true;
+            if (! isset(self::$loaded['pswp'])) {
+                self::$loaded['pswp'] = true;
                 $core = PLUGIN_GALLERY_PSWP_CORE;
                 $lightbox = PLUGIN_GALLERY_PSWP_LIGHTBOX;
 
@@ -243,6 +252,34 @@ class PluginGallery
                 </script>
                 EOD;
             }
+            // ソート用
+            if ($this->options['sort']) {
+                if (! isset(self::$loaded['sort'])) {
+                    self::$loaded['sort'] = true;
+                    $script .= '<script src="' . PLUGIN_GALLERY_SORT_JS . '"></script>';
+                }
+                $script .= <<<EOD
+                <script>
+                    const options$id = {
+                        valueNames: [
+                            {data: ['name', 'date']}
+                        ]
+                    };
+                    const gallery$id = new List('gallery_wrap$id', options$id);
+                </script>
+                EOD;
+                $sorter = <<<EOD
+                <div class="gallery-control">
+                    <input class="search" placeholder="検索">
+                    <div class="sorter">
+                        <span class="sort" data-sort="name">ファイル名</span>
+                        <span class="sort" data-sort="date">投稿日時</span>
+                    </div>
+                </div>
+                EOD;
+            } else {
+                $sorter = '';
+            }
         }
 
         // 最終的な表示
@@ -255,8 +292,9 @@ class PluginGallery
         $wrap = ' data-wrap="' . var_export($this->options['wrap'], true) . '"';
 
         $html = <<<EOD
-        <div class="plugin-gallery">
-            <div class="gallery-items" id="gallery$id" style="justify-content:$placement"$break$crop$wrap>
+        <div class="plugin-gallery" id="gallery_wrap$id">
+            $sorter
+            <div class="gallery-items list" id="gallery$id" style="justify-content:$placement"$break$crop$wrap>
             $items
             </div>
             $add_button
@@ -340,7 +378,11 @@ class PluginGallery
                 // 追加ボタン、折り返し、キャプション、縁の有無
                 $this->options[$m[2]] = $m[1] ? false : true;
             } elseif ($arg === 'all') {
+                // 全添付ファイルを表示
                 $this->options['all'] = true;
+            } elseif ($arg === 'sort') {
+                // ソート
+                $this->options['sort'] = true;
             } else {
                 $this->err = str_replace('$1', $arg, $_gallery_messages['err_invalid']);
                 break;
@@ -429,7 +471,8 @@ class PluginGallery
                 'src' => $src,
                 'page' => $page,
                 'width' => $size[0],
-                'height' => $size[1]
+                'height' => $size[1],
+                'date' => get_date(DATE_RFC3339, filemtime($file))
             ];
         } else {
             $this->err = str_replace('$1', $src, $_gallery_messages['err_notfound']);
