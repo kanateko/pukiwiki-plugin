@@ -2,11 +2,12 @@
 /**
  * photoswipe版 画像のギャラリー表示プラグイン (配布版)
  *
- * @version 2.2
+ * @version 2.3
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Updates --
+ * 2022-11-16 v2.3 添付されたすべての画像を表示するオプション (all) を追加
  * 2022-07-09 v2.2 画像の挿入位置を変更するオプションを追加
  *                 アクション型の脆弱性を修正
  *                 各オプションの初期値と初期化のタイミングを変更
@@ -130,12 +131,21 @@ class PluginGallery
 
         $this->page = $vars['page'];
         $args = preg_replace("/\r|\r\n/", "\n", $args);
-        if (empty($args) || strpos(end($args), "\n") === false) {
+        if (empty($args)) {
             $this->is_empty = true;
+        } elseif (strpos(end($args), "\n") === false) {
+            $this->array_options($args);
+            if ($this->options['all'] === true) {
+                $this->array_images('');
+                if ($this->images === null || empty(array_filter($this->images))) $this->is_empty = true;
+            } else {
+                $this->is_empty = true;
+            }
         } else {
-            $this->array_images(array_pop($args));
-            if ($this->images === null || empty(array_filter($this->images))) $this->is_empty = true;
+            $multiline = array_pop($args);
             if (! empty($args)) $this->array_options($args);
+            $this->array_images($multiline);
+            if ($this->images === null || empty(array_filter($this->images))) $this->is_empty = true;
         }
 
         // デフォルト設定
@@ -265,7 +275,19 @@ class PluginGallery
      */
     private function array_images($multiline): void
     {
-        global $_gallery_messages;
+        global $_gallery_messages, $vars;
+
+        if ($this->options['all'] === true) {
+            $multiline = '';
+            $pattern = UPLOAD_DIR . encode($vars['page']) . '_*';
+            $files = glob($pattern);
+            foreach ($files as $file) {
+                preg_match('/.+_([^\.]+)$/', $file, $m);
+                if (empty($m[1])) continue;
+                $name = decode($m[1]);
+                $multiline .= $name . PLUGIN_GALLERY_SEPARATOR . $name . ' - ' . format_date(filemtime($file)) . "\n";
+            }
+        }
 
         $lines = function($x) {
             foreach (explode("\n", $x) as $str) yield $str;
@@ -317,11 +339,14 @@ class PluginGallery
             } elseif (preg_match('/^(no)?(add|break|cap|wrap)$/', $arg, $m)) {
                 // 追加ボタン、折り返し、キャプション、縁の有無
                 $this->options[$m[2]] = $m[1] ? false : true;
+            } elseif ($arg === 'all') {
+                $this->options['all'] = true;
             } else {
                 $this->err = str_replace('$1', $arg, $_gallery_messages['err_invalid']);
                 break;
             }
         }
+        if ($this->options['all'] === true) $this->options['add'] = false;
     }
 
     /**
