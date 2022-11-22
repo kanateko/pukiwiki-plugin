@@ -149,10 +149,12 @@ class GlossaryForTooltip
      */
     private function init_defs()
     {
-        $pattern = TOOLTIP_ENABLE_TABLE_GLOSSARY ? '/^(\||:)(.+?)\|(.*)(?<!\|(h|c))$/' : '/^:(.+?)\|(.*)$/';
+        $pattern = TOOLTIP_ENABLE_TABLE_GLOSSARY ? '/^(\||:)(.+?)\|([^\|]+)\|?(?<!\|(h|c))$/' : '/^:(.+?)\|(.*)$/';
         foreach ($this->source as $line) {
             if (preg_match($pattern, $line, $m)) {
-                self::$defs[$m[2]] = convert_html($m[3]);
+                $txt = convert_html($m[3]);
+                $txt = preg_replace('/<script>[\s\S]+<\/script>/', '', $txt);
+                self::$defs[$m[2]] = $txt;
             } else {
                 continue;
             }
