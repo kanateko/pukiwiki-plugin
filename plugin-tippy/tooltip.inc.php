@@ -2,11 +2,12 @@
 /**
  * ホバーorタップでツールチップを表示するプラグイン
  *
- * @version 0.5
+ * @version 0.6
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Update --
+ * 2022-11-22 v0.6 用語の定義方法にテーブルの書式を追加
  * 2021-11-24 v0.5 noteプラグインと併用できるようtippy.js関連部分を分離
  * 2021-08-21 v0.4 デフォルト設定の出力が1回で済むよう修正
  *                 デフォルト設定でのanimationやthemeの設定に対応
@@ -23,12 +24,12 @@ require_once('tippy.php');
 
 // 用語集ページ
 define('TOOLTIP_GLOSSARY_PAGE', ':config/plugin/tooltip');
-
 // 語句がページとして存在する場合にリンクを追加するかどうか
 define('TOOLTIP_ENABLE_AUTOLINK', true);
-
 // 語句と識別用文字列のセパレータ
 define('TOOLTIP_TERM_SEPARATOR', ':');
+// テーブル形式の定義を許可する
+define('TOOLTIP_ENABLE_TABLE_GLOSSARY', true);
 
 function plugin_tooltip_init()
 {
@@ -40,9 +41,8 @@ function plugin_tooltip_convert()
     return;
 }
 
-function plugin_tooltip_inline()
+function plugin_tooltip_inline(...$args)
 {
-    $args = func_get_args();
     $tooltip = new PluginTooltip($args);
     return $tooltip->error ?: $tooltip->convert_tooltip();
 }
@@ -139,7 +139,7 @@ class GlossaryForTooltip
     public function __construct()
     {
         if (empty(self::$defs)) {
-            $this->source = get_source(TOOLTIP_GLOSSARY_PAGE, true, true);
+            $this->source = get_source(TOOLTIP_GLOSSARY_PAGE);
             $this->init_defs();
         }
     }
@@ -149,11 +149,13 @@ class GlossaryForTooltip
      */
     private function init_defs()
     {
-        preg_match_all('/:(.+?)\|(.*)\n/', $this->source, $defs);
-
-        foreach ($defs[1] as $i => $val) {
-            $defs[2][$i] = preg_replace('/<\/?p>\n?/', '', convert_html($defs[2][$i]));
-            self::$defs[$val] = preg_replace('/\r|\n|\r\n/', '', $defs[2][$i]);
+        $pattern = TOOLTIP_ENABLE_TABLE_GLOSSARY ? '/^(\||:)(.+?)\|(.*)(?<!\|(h|c))$/' : '/^:(.+?)\|(.*)$/';
+        foreach ($this->source as $line) {
+            if (preg_match($pattern, $line, $m)) {
+                self::$defs[$m[2]] = convert_html($m[3]);
+            } else {
+                continue;
+            }
         }
     }
 
@@ -170,7 +172,7 @@ class GlossaryForTooltip
      */
     public function search_defs($term)
     {
-        if (array_key_exists($term, self::$defs)) {
+        if (isset(self::$defs[$term])) {
             return self::$defs[$term];
         } else {
             return false;
