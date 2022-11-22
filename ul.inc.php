@@ -2,11 +2,12 @@
 /**
 * table内でリスト表示するためのプラグイン
 *
-* @version 0.2
+* @version 0.3
 * @author kanateko
 * @link https://jpngamerswiki.com/?54760078c9
 * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
 * -- Updates --
+* 2022-11-22 v0.3 リストの内容を変換する際の方法を変更
 * 2022-03-27 v0.2 リストを横並びにする機能を追加
 * 2021-03-25 v0.1 初版作成
 */
@@ -44,7 +45,7 @@ function plugin_ul_convert()
     // リストを整形
     foreach ($items as $item) {
         $item = preg_replace('/^~/', '', $item);
-        $item = str_replace('p>', 'li>', convert_html($item));
+        $item = '<li>' . make_link($item) . '</li>';
         $li .= $item . "\n";
     }
 
