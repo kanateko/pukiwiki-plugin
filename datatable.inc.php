@@ -2,17 +2,18 @@
 /**
  * ソートや検索機能のあるテーブルを作成するプラグイン
  *
- * @version 1.0
+ * @version 1.0.1
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Update --
- * 2022-02-03 v1.0 初版作成
+ * 2022-01-18 v1.0.1 simple-datatablesのバージョンを5.x.xに固定 (一時的な対処)
+ * 2022-02-03 v1.0.0 初版作成
  */
 
 // CDN
-define('DATATABLE_CDN_CSS', '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css">');
-define('DATATABLE_CDN_JS', '<script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest"></script>');
+define('DATATABLE_CDN_CSS', '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-datatables@5/dist/style.css">');
+define('DATATABLE_CDN_JS', '<script src="https://cdn.jsdelivr.net/npm/simple-datatables@5"></script>');
 // 日本語化
 define('DATATABLE_TRANSLATE_LABELS', true);
 // ----- DataTablesのデフォルト設定 -----
