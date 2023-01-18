@@ -7,7 +7,11 @@
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Update --
+<<<<<<< HEAD
  * 2023-01-18 v1.0.1 simple-datatablesのバージョンを5.x.xに固定 (一時的な対処)
+=======
+ * 2022-01-18 v1.0.1 simple-datatablesのバージョンを5.x.xに固定 (一時的な対処)
+>>>>>>> 72713577d9ecd5088bc3f0ff34aad869c1421b48
  * 2022-02-03 v1.0.0 初版作成
  */
 
