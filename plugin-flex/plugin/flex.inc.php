@@ -2,17 +2,18 @@
 /**
 * flexレイアウト用プラグイン (配布版)
 *
-* @version 1.3
+* @version 1.4.0
 * @author kanateko
 * @link https://jpngamerswiki.com/?f51cd63681
 * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
-* -- Update --
-* 2022-07-31 v1.3 マルチラインプラグインの入れ子に対応
-*                 公開用にコードを整理
-* 2022-04-13 v1.2 クラスを追加する機能を実装
-*                 要素幅の指定方法を拡張
-* 2021-07-12 v1.1 menuオプションの画像の切り抜きをやめてmenu-squareとして分離
-* 2021-07-03 v1.0 初版作成
+* -- Updates --
+* 2023-03-17 v1.4.0 scrollオプションを追加
+* 2022-07-31 v1.3.0 マルチラインプラグインの入れ子に対応
+*                   公開用にコードを整理
+* 2022-04-13 v1.2.0 クラスを追加する機能を実装
+*                   要素幅の指定方法を拡張
+* 2021-07-12 v1.1.0 menuオプションの画像の切り抜きをやめてmenu-squareとして分離
+* 2021-07-03 v1.0.0 初版作成
 */
 
 function plugin_flex_init():void
@@ -120,6 +121,7 @@ class PluginFlex
                     case 'nogap':
                     case 'nowrap':
                     case 'border':
+                    case 'scroll':
                         $op['class'][] = 'flex-' . $arg;
                         break;
                     default:

@@ -21,6 +21,17 @@
 
 .flex-nowrap {
     flex-wrap: nowrap;
+    justify-content: left;
+}
+
+.flex-scroll {
+    overflow: auto;
+}
+
+.flex-scroll > .flex-box {
+    min-width: -webkit-fit-content;
+    min-width: -moz-fit-content;
+    min-width: fit-content;
 }
 
 .flex-border > .flex-box {
