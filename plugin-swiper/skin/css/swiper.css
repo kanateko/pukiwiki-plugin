@@ -1,0 +1,20 @@
+.plugin-swiper {
+  margin-bottom: 24px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.plugin-swiper.swiper-initialized {
+  opacity: 1;
+}
+
+.swiper-slide {
+  width: -webkit-fit-content;
+  width: -moz-fit-content;
+  width: fit-content;
+}
+.swiper-slide > :first-of-type {
+  margin-top: 0;
+}
+.swiper-slide > :last-of-type {
+  margin-bottom: 0;
+}
