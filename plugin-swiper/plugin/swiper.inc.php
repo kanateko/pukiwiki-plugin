@@ -8,7 +8,9 @@
 * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
 * @todo スライドの (半) 動的追加、エフェクト系の詳細設定
 * -- Updates --
-* 2023-03-30 v1.1.0 cardプラグインとの連携機能を追加
+* 2023-03-30 v1.1.1 重複していたオプションを削除
+*                   反映されていなかったオプションを修正
+*            v1.1.0 cardプラグインとの連携機能を追加
 *                   slidesPerGroup関連オプションを追加
 *                   breakpoints関連オプションを追加
 * 2023-03-23 v1.0.0 初版作成
@@ -557,6 +559,7 @@ class SwiperConfig
                 case 'width':
                 case 'initialSlide':
                 case 'slidesPerGroup':
+                case 'slidesPerGroupSkip':
                 case 'spaceBetween':
                 case 'speed':
                     // 数値入力系
