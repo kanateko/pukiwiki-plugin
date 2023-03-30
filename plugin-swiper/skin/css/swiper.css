@@ -6,6 +6,14 @@
 .plugin-swiper.swiper-initialized {
   opacity: 1;
 }
+.plugin-swiper .plugin-card {
+  display: flex;
+  gap: 0;
+  justify-content: unset;
+}
+.plugin-swiper .plugin-card .card-item {
+  max-width: unset !important;
+}
 
 .swiper-slide {
   width: -webkit-fit-content;

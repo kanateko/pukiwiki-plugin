@@ -2,12 +2,15 @@
 /**
 * swiper.jsを利用したスライダー作成プラグイン
 *
-* @version 1.0.0
+* @version 1.1.0
 * @author kanateko
 * @link https://jpngamerswiki.com/?f51cd63681
 * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
-* @todo 他プラグインとの連携、スライドの (半) 動的追加
+* @todo スライドの (半) 動的追加、エフェクト系の詳細設定
 * -- Updates --
+* 2023-03-30 v1.1.0 cardプラグインとの連携機能を追加
+*                   slidesPerGroup関連オプションを追加
+*                   breakpoints関連オプションを追加
 * 2023-03-23 v1.0.0 初版作成
 */
 
@@ -29,9 +32,12 @@ function plugin_swiper_init(): void
     global $head_tags;
 
     $msg['_swiper_messages'] = [
-        'msg_usage'   => '#swiper([options]){{<br>slide 1<br>#-slide2 ...<br>}}',
-        'err_unknown' => '#swiper Error: Unknown argument. ($1)',
-        'label_empty' => 'スライドがありません'
+        'msg_usage'                => '#swiper([options]){{<br>slide 1<br>#-<br>slide2 ...<br>}}',
+        'err_unknown'              => '#swiper Error: Unknown argument. ($1)',
+        'err_plugin_not_exist'     => '#swiper Error: "$1" plugin does not exist.',
+        'err_plugin_not_found'     => '#swiper Error: "$1" plugin is not found in the multiline section.',
+        'err_plugin_not_supported' => '#swiper Error: "$1" plugin is not supported.',
+        'label_empty'              => 'スライドがありません'
     ];
     set_plugin_messages($msg);
 
@@ -82,12 +88,11 @@ Class SwiperMain
      */
     public function __construct(array $args)
     {
-        $this->cfg = new SwiperConfig;
-
         // スライド
         if (preg_match("/\r|\n|\r\n/", end($args))) $this->contents = preg_replace("/\r|\r\n/", "\n", array_pop($args));
         else $this->contents = SwiperUtil::get_msg('label_empty', null, false);
         // オプション
+        $this->cfg = new SwiperConfig($this->contents);
         $this->options = $this->cfg->parse_options($args);
         // オプション処理時のエラー
         if ($this->cfg->err) $this->err = $this->cfg->err;
@@ -104,20 +109,32 @@ Class SwiperMain
         $rtl = $this->options['rtl'] ? ' dir="rtl"' : '';
         $height = $this->options['containerHeight'] ? ' style="height:' . $this->options['containerHeight'] . ';"' : '';
         $class = $this->options['class'] ? ' ' . $this->options['class'] : '';
+        $plugin = $this->options['plugin'];
 
         // 個々のスライドを作成
-        $slides = $this->get_slides($id);
+        if ($plugin !== null) {
+            // 別プラグインとの連携
+            switch ($plugin) {
+                case 'card':
+                    if (! file_exists(PLUGIN_DIR . $plugin . '.inc.php')) return SwiperUtil::get_msg('err_plugin_not_exist', $plugin);
+                    $slides = convert_html($this->contents);
+                    break;
+                default:
+                    return SwiperUtil::get_msg('err_plugin_not_supported', $plugin);
+            }
+        } else {
+            // 通常のスライド
+            $slides = $this->get_slides($id);
+        }
         // ナビゲーション関連
         $nav = $this->get_navs();
         // 初期化用スクリプト
-        $script = $this->get_scripts($id);
+        $script = $this->get_scripts($id, $plugin);
 
         // 最終的なHTML
         $html = <<<EOD
         <div$rtl class="plugin-swiper swiper$class" id="swiper_$id"$height>
-            <div class="swiper-wrapper">
-                $slides
-            </div>
+            $slides
             $nav
         </div>
         $script
@@ -136,9 +153,9 @@ Class SwiperMain
     {
         $src = $this->contents;
         $evac = [];
-        preg_match_all("/#[^\s]+?({{2,})\n/", $src, $m);
 
         // 入れ子を一時退避
+        preg_match_all("/#[^\s]+?({{2,})\n/", $src, $m);
         if (! empty($m)) {
             foreach ($m[1] as $i => $start) {
                 $end = str_replace('{', '}', $start);
@@ -167,6 +184,12 @@ Class SwiperMain
             </div>
             EOD;
         }
+        // ラッパー
+        $slides_merged = <<<EOD
+        <div class="swiper-wrapper">
+            $slides_merged
+        </div>
+        EOD;
 
         return $slides_merged;
     }
@@ -207,16 +230,29 @@ Class SwiperMain
      * 初期化用スクリプトの作成
      *
      * @param int $id スライダーの識別用ID
+     * @param string $plugin 連携するプラグイン
      * @return string $script 初期化用スクリプト
      */
-    private function get_scripts(int $id): string
+    private function get_scripts(int $id, string $plugin = null): string
     {
-        $script = '';
+        if ($plugin !== null) {
+            $override = <<<EOD
+            const plugin$id = document.querySelector('#swiper_$id .plugin-$plugin');
+            const slides$id = plugin$id.querySelectorAll('.card-item');
+            plugin$id.classList.add('swiper-wrapper');
+            for (const item of slides$id) {
+                item.classList.add('swiper-slide');
+            }
+            EOD;
+        } else {
+            $override = '';
+        }
 
         $script = <<<EOD
         <script>
             document.addEventListener('DOMContentLoaded', () => {
-                var swiper$id = new Swiper ('#swiper_$id', {$this->options['params']});
+                $override
+                const swiper$id = new Swiper ('#swiper_$id', {$this->options['params']});
             });
         </script>
         EOD;
@@ -234,12 +270,15 @@ Class SwiperMain
  * @var bool ENABLE_NAV デフォルトで前/次の矢印を有効にする
  * @var bool ENABLE_REWIND デフォルトで巻き戻りを有効にする (loopと排他)
  * @var bool ENABLE_WHEEL デフォルトでマウスホイール操作を有効にする
+ * @var int BP_LARGER ブレイクポイント (大)
+ * @var int BP_SMALLER ブレイクポイント (小)
  * @var string DEFAULT_HEIGHT 縦スライド時のデフォルトの高さ
  * @var string DIRECTION デフォルトのスライド方向 (horizontal, vertical)
  * @var string EFFECT デフォルトのスライドエフェクト (false, fade, cube, coverflow, flip, cards, creative)
  * @var string PAGINATION デフォルトの現在位置表示 (false, bullets, dynamic, progressbar, fraction)
  * @var string LOOP_PRIORITY ループ系オプションが競合している場合の優先度 (loop, rewind)
  * @property string $err エラーメッセージ
+ * @property string $contents 引数のマルチライン部分
  * @property array $availables 利用可能なオプション
  * @property array $abbr オプションの略称系と正式名の対応
  */
@@ -250,7 +289,9 @@ class SwiperConfig
     const ENABLE_LOOP = false;
     const ENABLE_NAV = false;
     const ENABLE_REWIND = false;
-    const ENABLE_WHEEL = true;
+    const ENABLE_WHEEL = false;
+    const BP_LARGER = 720;
+    const BP_SMALLER = 460;
     const DEFAULT_HEIGHT = '500px';
     const DIRECTION = 'horizontal';
     const EFFECT = 'false';
@@ -258,51 +299,64 @@ class SwiperConfig
     const LOOP_PRIORITY = 'rewind';
 
     public $err;
+    private $contents;
     private $availables;
     private $abbr;
 
     /**
      * コンストラクタ
      */
-    public function __construct()
+    public function __construct($contents)
     {
+        $this->contents = $contents;
         // 1 = 簡略指定 (値不要) 可, 2 =不可
         $this->availables = [
-            'autoplay'        => 1,
-            'autoHeight'      => 1,
-            'centeredSlides'  => 1,
-            'class'           => 2,
-            'containerHeight' => 2,
-            'direction'       => 2,
-            'effect'          => 2,
-            'freeMode'        => 1,
-            'grabCursor'      => 1,
-            'grid'            => 2,
-            'height'          => 2,
-            'initialSlide'    => 2,
-            'start'           => 2,
-            'loop'            => 1,
-            'mousewheel'      => 1,
-            'navigation'      => 1,
-            'pagination'      => 2,
-            'rewind'          => 1,
-            'rtl'             => 1,
-            'scrollbar'       => 1,
-            'slidesPerView'   => 2,
-            'spaceBetween'    => 2,
-            'speed'           => 2,
-            'width'           => 2,
+            'autoplay'           => 1,
+            'autoHeight'         => 1,
+            'breakpoints'        => 2,
+            'breakpointsBase'    => 2,
+            'centeredSlides'     => 1,
+            'class'              => 2,
+            'containerHeight'    => 2,
+            'direction'          => 2,
+            'effect'             => 2,
+            'freeMode'           => 1,
+            'grabCursor'         => 1,
+            'grid'               => 2,
+            'height'             => 2,
+            'initialSlide'       => 2,
+            'start'              => 2,
+            'loop'               => 1,
+            'mousewheel'         => 1,
+            'navigation'         => 1,
+            'pagination'         => 2,
+            'plugin'             => 2,
+            'rewind'             => 1,
+            'rtl'                => 1,
+            'scrollbar'          => 1,
+            'slidesPerGroup'     => 2,
+            'slidesPerGroupAuto' => 1,
+            'slidesPerGroupSkip' => 2,
+            'slidesPerView'      => 2,
+            'spaceBetween'       => 2,
+            'speed'              => 2,
+            'width'              => 2,
         ];
         // 略称との対応
         $this->abbr = [
+            'auto'    => 'autoplay',
+            'base'    => 'breakpointsBase',
+            'bp'      => 'breakpoints',
             'center'  => 'centeredSlides',
             '_height' => 'containerHeight',
             'free'    => 'freeMode',
             'grab'    => 'grabCursor',
+            'group'   => 'slidesPerGroup',
+            'skip'    => 'slidesPerGroupSkip',
             'start'   => 'initialSlide',
             'nav'     => 'navigation',
             'wheel'   => 'mousewheel',
-            'page'    => 'pagination',
+            'paging'  => 'pagination',
             'num'     => 'slidesPerView',
             'gap'     => 'spaceBetween',
         ];
@@ -316,16 +370,8 @@ class SwiperConfig
      */
     public function parse_options(array $args): array
     {
-        // デフォルト設定
-        if (self::ENABLE_AUTO) $options['autoplay'] = true;
-        if (self::ENABLE_GRAB) $options['grabCursor'] = true;
-        if (self::ENABLE_LOOP) $options['loop'] = true;
-        if (self::ENABLE_NAV) $options['navigation'] =true;
-        if (self::ENABLE_REWIND) $options['rewind'] = true;
-        if (self::ENABLE_WHEEL) $options['mousewheel'] = true;
-        if (self::PAGINATION !== 'false') $options['pagination'] = self::PAGINATION;
-        if (self::DIRECTION === 'vertical') $options['direction'] = self::DIRECTION;
-        if (self::EFFECT !== 'false') $options['effect'] = self::EFFECT;
+        // デフォルト設定の取得
+        $options = $this->get_default_options();
 
         foreach ($args as $arg) {
             $arg = htmlsc($arg);
@@ -349,22 +395,92 @@ class SwiperConfig
             }
         }
         // オプションの調整等
+        $options = $this->adjust_options($options);
+        // オプションを整形する
+        if ($this-> err === null) $options['params'] = $this->format_options($options);
+
+        return $options;
+    }
+
+    /**
+     * デフォルト設定の取得
+     *
+     * @return array $options デフォルト設定の配列
+     */
+    private function get_default_options(): array
+    {
+        $options = [];
+
+        if (self::ENABLE_AUTO) $options['autoplay'] = true;
+        if (self::ENABLE_GRAB) $options['grabCursor'] = true;
+        if (self::ENABLE_LOOP) $options['loop'] = true;
+        if (self::ENABLE_NAV) $options['navigation'] =true;
+        if (self::ENABLE_REWIND) $options['rewind'] = true;
+        if (self::ENABLE_WHEEL) $options['mousewheel'] = true;
+        if (self::PAGINATION !== 'false') $options['pagination'] = self::PAGINATION;
+        if (self::DIRECTION === 'vertical') $options['direction'] = self::DIRECTION;
+        if (self::EFFECT !== 'false') $options['effect'] = self::EFFECT;
+
+        return $options;
+    }
+
+    /**
+     * 競合の解消や各オプションの調整
+     *
+     * @param array $options オプションの配列
+     * @return array $options 調整後のオプションの配列
+     */
+    private function adjust_options(array $options): array
+    {
+        // プラグイン連携
+        if ($options['plugin'] == 'card') {
+            switch ($options['plugin']) {
+                case 'card':
+                    // カードプラグイン
+                    $spv = $this->get_card_num();
+                    if ($options['slidesPerGroup'] !== null) {
+                        $spg = $options['slidesPerGroup'] === 'auto' ? $spv : $options['slidesPerGroup'];
+                        $options['slidesPerGroup'] = null;
+                    } else {
+                        $spg = 1;
+                    }
+                    $bp_larger = self::BP_LARGER . '-' . $spv . '-' . $spg;
+                    $bp_smaller = self::BP_SMALLER . '-' . ceil($spv / 2) . '-' . ceil($spg / 2);
+                    $options['breakpoints'] = $bp_larger . '|' . $bp_smaller;
+                    $options['breakpointsBase'] ??= 'container';
+                    $options['spaceBetween'] ??= 8;
+                    break;
+                default:
+                    break;
+            }
+        }
+        // ループ系の競合解消
         if ($options['loop'] && $options['rewind']) {
-            // ループ系の競合解消
             if (self::LOOP_PRIORITY === 'loop') $options['rewind'] = null;
             else $options['loop'] = null;
         }
+        // 縦スライド時の初期設定
         if ($options['direction'] === 'vertical') {
-            // 縦スライド時の初期設定
             $options['navigation'] = null;
             $options['containerHeight'] ??= self::DEFAULT_HEIGHT;
         }
+        // コンテナの高さに単位を付与
         if (is_numeric($options['containerHeight'])) {
-            // コンテナの高さに単位を付与
             $options['containerHeight'] .= 'px';
         }
-        // オプションを整形する
-        if ($this-> err === null) $options['params'] = $this->format_options($options);
+        // スライドグループ関連
+        if ($options['slidesPerGroup'] === 'auto') {
+            $options['slidesPerGroup'] = null;
+            $options['slidesPerGroupAuto'] = true;
+        }
+        if ($options['slidesPerGroup'] && is_numeric($options['slidesPerView'])) {
+            if ($options['slidesPerGroup'] > $options['slidesPerView'])
+                $options['slidesPerView'] = $options['slidesPerGroup'];
+        }
+        if ($options['slidesPerGroupAuto'] === true) {
+            $options['slidesPerView'] = 'auto';
+            $options['slidesPerGroup'] = null;
+        }
 
         return $options;
     }
@@ -397,9 +513,17 @@ class SwiperConfig
                 case 'loop':
                 case 'mousewheel':
                 case 'rewind':
+                case 'slidesPerGroupAuto':
                     // 値不要系
                     if ($val === true) $params[$key] = true;
                     break;
+                case 'breakpoints':
+                    // ブレイクポイント
+                    $params[$key] = $this->get_breakpoints($val);
+                    break;
+                case 'breakpointsBase':
+                    // ブレイクポイントの基準
+                    $params[$key] = $val;
                 case 'direction':
                     // スライド方向
                     if ($val === 'vertical') $params[$key] = $val;
@@ -433,6 +557,7 @@ class SwiperConfig
                 case 'height':
                 case 'width':
                 case 'initialSlide':
+                case 'slidesPerGroup':
                 case 'spaceBetween':
                 case 'speed':
                     // 数値入力系
@@ -491,6 +616,53 @@ class SwiperConfig
         // die_message(print_r($params, true));
 
         return $params;
+    }
+
+    /**
+     * カードプラグインの列数設定を取得する
+     *
+     * @return int 列数の設定
+     */
+    private function get_card_num(): int
+    {
+        if (preg_match('/#card(\((\d)[,\)])?/', $this->contents, $m)) {
+            $num = $m[1] === null ? 1 : (int)$m[2];
+            return $num;
+        } else {
+            $this->err = SwiperUtil::get_msg('err_plugin_not_found', 'card');
+        }
+
+        return 1;
+    }
+
+    /**
+     * 引数からブレイクポイントを設定する
+     *
+     * @param string $val 引数
+     * @return array $breakpoints ブレイクポイントの設定
+     */
+    private function get_breakpoints(string $val): array
+    {
+        $bps = explode('|', $val);
+        $breakpoints = [];
+
+        foreach ($bps as $bp) {
+            [$width, $spv, $spg] = explode('-', $bp);
+            $spv = $spv === 'auto' ? $spv : (int)$spv;
+            if ($spg === 'auto') {
+                $auto = 'Auto';
+                $spg = true;
+            } else {
+                $auto = '';
+                $spg = (int)$spg;
+            }
+            $breakpoints[$width] = [
+                'slidesPerView' => $spv,
+                'slidesPerGroup' . $auto => $spg,
+            ];
+        }
+
+        return $breakpoints;
     }
 }
 

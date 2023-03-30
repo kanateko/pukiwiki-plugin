@@ -5,6 +5,14 @@
     &.swiper-initialized {
         opacity: 1;
     }
+    .plugin-card {
+        display: flex;
+        gap: 0;
+        justify-content: unset;
+        .card-item {
+            max-width: unset!important;
+        }
+    }
 }
 
 .swiper-slide {
