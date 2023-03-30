@@ -325,7 +325,6 @@ class SwiperConfig
             'grid'               => 2,
             'height'             => 2,
             'initialSlide'       => 2,
-            'start'              => 2,
             'loop'               => 1,
             'mousewheel'         => 1,
             'navigation'         => 1,
