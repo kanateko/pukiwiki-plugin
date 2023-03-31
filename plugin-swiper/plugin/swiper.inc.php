@@ -2,12 +2,14 @@
 /**
 * swiper.jsを利用したスライダー作成プラグイン
 *
-* @version 1.1.0
+* @version 1.1.2
 * @author kanateko
 * @link https://jpngamerswiki.com/?f51cd63681
 * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
 * @todo スライドの (半) 動的追加、エフェクト系の詳細設定
 * -- Updates --
+* 2023-03-31 v1.1.2 幅や高さ指定の処理を変更
+*                   縦スライドやグリッド表示の処理を改善
 * 2023-03-30 v1.1.1 重複していたオプションを削除
 *                   反映されていなかったオプションを修正
 *            v1.1.0 cardプラグインとの連携機能を追加
@@ -109,7 +111,6 @@ Class SwiperMain
     {
         $id = self::$id++;
         $rtl = $this->options['rtl'] ? ' dir="rtl"' : '';
-        $height = $this->options['containerHeight'] ? ' style="height:' . $this->options['containerHeight'] . ';"' : '';
         $class = $this->options['class'] ? ' ' . $this->options['class'] : '';
         $plugin = $this->options['plugin'];
 
@@ -131,11 +132,11 @@ Class SwiperMain
         // ナビゲーション関連
         $nav = $this->get_navs();
         // 初期化用スクリプト
-        $script = $this->get_scripts($id, $plugin);
+        $script = $this->get_scripts($id);
 
         // 最終的なHTML
         $html = <<<EOD
-        <div$rtl class="plugin-swiper swiper$class" id="swiper_$id"$height>
+        <div$rtl class="plugin-swiper swiper$class" id="swiper_$id">
             $slides
             $nav
         </div>
@@ -232,29 +233,82 @@ Class SwiperMain
      * 初期化用スクリプトの作成
      *
      * @param int $id スライダーの識別用ID
-     * @param string $plugin 連携するプラグイン
      * @return string $script 初期化用スクリプト
      */
-    private function get_scripts(int $id, string $plugin = null): string
+    private function get_scripts(int $id): string
     {
+        $plugin = $this->options['plugin'];
+        $height = $this->options['height'];
+        $width = $this->options['width'];
+        $_height = $this->options['containerHeight'];
+        $_width = $this->options['containerWidth'];
+        $_size = ['width', 'height', 'containerHeight', 'containerWidth'];
+
+
+        // プラグイン連携用
+        $override = '';
         if ($plugin !== null) {
-            $override = <<<EOD
-            const plugin$id = document.querySelector('#swiper_$id .plugin-$plugin');
-            const slides$id = plugin$id.querySelectorAll('.card-item');
-            plugin$id.classList.add('swiper-wrapper');
-            for (const item of slides$id) {
-                item.classList.add('swiper-slide');
+            switch ($plugin) {
+                case 'card':
+                    // cardプラグイン
+                    $override = <<<EOD
+                    const plugin$id = document.querySelector('#swiper_$id .plugin-$plugin');
+                    const slides$id = plugin$id.querySelectorAll('.card-item');
+                    plugin$id.classList.add('swiper-wrapper');
+                    for (const item of slides$id) {
+                        item.classList.add('swiper-slide');
+                    }
+                    EOD;
+                    break;
+                default:
+                    $override = '';
             }
-            EOD;
-        } else {
-            $override = '';
         }
 
+        // スタイル関連
+        $style = '';
+        foreach ($_size as $size) {
+            if ($this->options[$size] !== null) {
+                switch ($size) {
+                    case 'width':
+                    case 'height':
+                        $target = ' .swiper-slide';
+                        break;
+                    case 'containerWidth':
+                    case 'containerHeight':
+                        $target = '';
+                        break;
+                    default:
+                        break 2;
+                }
+                switch ($size) {
+                    case 'width':
+                    case 'containerWidth':
+                        $property = 'width';
+                        break;
+                    case 'height':
+                    case 'containerHeight':
+                        $property = 'height';
+                        break;
+                    default:
+                        break 2;
+                }
+                $style .= <<<EOD
+                const swiper_{$size}_{$id} = document.querySelectorAll('#swiper_$id$target');
+                for (const t of swiper_{$size}_{$id}) {
+                    t.style.$property = '{$this->options[$size]}';
+                }
+                EOD;
+            }
+        }
+
+        // 最終的なスクリプト
         $script = <<<EOD
         <script>
             document.addEventListener('DOMContentLoaded', () => {
                 $override
                 const swiper$id = new Swiper ('#swiper_$id', {$this->options['params']});
+                $style
             });
         </script>
         EOD;
@@ -272,9 +326,8 @@ Class SwiperMain
  * @var bool ENABLE_NAV デフォルトで前/次の矢印を有効にする
  * @var bool ENABLE_REWIND デフォルトで巻き戻りを有効にする (loopと排他)
  * @var bool ENABLE_WHEEL デフォルトでマウスホイール操作を有効にする
- * @var int BP_LARGER ブレイクポイント (大)
- * @var int BP_SMALLER ブレイクポイント (小)
- * @var string DEFAULT_HEIGHT 縦スライド時のデフォルトの高さ
+ * @var int BP_LARGER ブレイクポイント (大) (cardとの連携用)
+ * @var int BP_SMALLER ブレイクポイント (小) (cardとの連携用)
  * @var string DIRECTION デフォルトのスライド方向 (horizontal, vertical)
  * @var string EFFECT デフォルトのスライドエフェクト (false, fade, cube, coverflow, flip, cards, creative)
  * @var string PAGINATION デフォルトの現在位置表示 (false, bullets, dynamic, progressbar, fraction)
@@ -294,7 +347,6 @@ class SwiperConfig
     const ENABLE_WHEEL = false;
     const BP_LARGER = 720;
     const BP_SMALLER = 460;
-    const DEFAULT_HEIGHT = '500px';
     const DIRECTION = 'horizontal';
     const EFFECT = 'false';
     const PAGINATION = 'bullets';
@@ -345,11 +397,12 @@ class SwiperConfig
         ];
         // 略称との対応
         $this->abbr = [
+            '_height' => 'containerHeight',
+            '_width'  => 'containerwdith',
             'auto'    => 'autoplay',
             'base'    => 'breakpointsBase',
             'bp'      => 'breakpoints',
             'center'  => 'centeredSlides',
-            '_height' => 'containerHeight',
             'free'    => 'freeMode',
             'grab'    => 'grabCursor',
             'group'   => 'slidesPerGroup',
@@ -460,14 +513,10 @@ class SwiperConfig
             if (self::LOOP_PRIORITY === 'loop') $options['rewind'] = null;
             else $options['loop'] = null;
         }
-        // 縦スライド時の初期設定
-        if ($options['direction'] === 'vertical') {
-            $options['navigation'] = null;
-            $options['containerHeight'] ??= self::DEFAULT_HEIGHT;
-        }
-        // コンテナの高さに単位を付与
-        if (is_numeric($options['containerHeight'])) {
-            $options['containerHeight'] .= 'px';
+        // 幅や高さの指定に単位を付与
+        $_size = ['width', 'height', 'containerWidth', 'containerHeight'];
+        foreach ($_size as $size) {
+            if (is_numeric($options[$size])) $options[$size] .= 'px';
         }
         // スライドグループ関連
         if ($options['slidesPerGroup'] === 'auto') {
@@ -542,21 +591,19 @@ class SwiperConfig
                     break;
                 case 'grid':
                     // グリッド
-                    if (preg_match('/(row|col)(\d+)/', $val, $m)) {
-                        if ($m[1] === 'col') {
+                    if (preg_match('/(row|col)?(\d+)/', $val, $m)) {
+                        if ($m[1] === 'row') {
                             $params[$key] = [
+                                'fill' => 'row',
                                 'rows' => $m[2]
                             ];
                         } else {
                             $params[$key] = [
-                                'fill' => 'row',
                                 'rows' => $m[2]
                             ];
                         }
                     }
                     break;
-                case 'height':
-                case 'width':
                 case 'initialSlide':
                 case 'slidesPerGroup':
                 case 'slidesPerGroupSkip':
@@ -628,7 +675,7 @@ class SwiperConfig
     private function get_card_num(): int
     {
         if (preg_match('/#card(\((\d)[,\)])?/', $this->contents, $m)) {
-            $num = $m[1] === null ? 1 : (int)$m[2];
+            $num = $m[1] === '' ? 1 : (int)$m[2];
             return $num;
         } else {
             $this->err = SwiperUtil::get_msg('err_plugin_not_found', 'card');

@@ -1,4 +1,5 @@
 .plugin-swiper {
+  max-height: 100vh;
   margin-bottom: 24px;
   opacity: 0;
   transition: opacity 0.3s;
@@ -25,4 +26,10 @@
 }
 .swiper-slide > :last-of-type {
   margin-bottom: 0;
+}
+
+.swiper-vertical.swiper-autoheight .swiper-slide {
+  height: -webkit-fit-content !important;
+  height: -moz-fit-content !important;
+  height: fit-content !important;
 }
