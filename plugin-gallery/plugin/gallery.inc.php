@@ -2,11 +2,12 @@
 /**
  * photoswipe版 画像のギャラリー表示プラグイン (配布版)
  *
- * @version 2.4
+ * @version 2.5
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Updates --
+ * 2023-05-24 v2.5 参照するページを指定するオプション (page) を追加
  * 2022-11-16 v2.4 ソートオプションを追加
  *            v2.3 添付されたすべての画像を表示するオプション (all) を追加
  * 2022-07-09 v2.2 画像の挿入位置を変更するオプションを追加
@@ -66,6 +67,7 @@ function plugin_gallery_init(): void
     $msg['_gallery_messages'] = [
         'err_invalid'  => '#gallery Error: Invalid argument. ($1)',
         'err_notfound' => '#gallery Error: File not Found. ($1)',
+        'err_nopage'   => '#gallery Error: Page Not Found. ($1)',
         'err_mime'     => '#gallery Error: Unsuppoerted Format. ($1)',
         'label_add'    => '画像を追加する',
         'label_cap'    => 'キャプション',
@@ -138,6 +140,7 @@ class PluginGallery
             $this->is_empty = true;
         } elseif (strpos(end($args), "\n") === false) {
             $this->array_options($args);
+            if ($this->options['page']) $this->page = $this->options['page'];
             if ($this->options['all'] === true) {
                 $this->array_images('');
                 if ($this->images === null || empty(array_filter($this->images))) $this->is_empty = true;
@@ -147,6 +150,7 @@ class PluginGallery
         } else {
             $multiline = array_pop($args);
             if (! empty($args)) $this->array_options($args);
+            if ($this->options['page'])  $this->page = $this->options['page'];
             $this->array_images($multiline);
             if ($this->images === null || empty(array_filter($this->images))) $this->is_empty = true;
         }
@@ -171,7 +175,7 @@ class PluginGallery
      */
     public function convert(): string
     {
-        global $_gallery_messages;
+        global $vars, $_gallery_messages;
 
         $id = self::$id++;
         $items = '';
@@ -193,8 +197,12 @@ class PluginGallery
                 } else {
                     $sort_attr = '';
                 }
+                // 参照ページ
+                if ($this->options['page']) {
+                    $image['page'] = $this->options['page'];
+                }
 
-                $href = get_base_uri() . '?cmd=attach&pcmd=open&refer=' . rawurlencode($image['page']) . '&file=' . $image['src'];
+                $href = get_base_uri() . '?cmd=ref&page=' . rawurlencode($image['page']) . '&src=' . $image['src'];
                 $items .= <<<EOD
                 <div class="gallery-item" id="galleryItem{$id}_$i"$cap_attr$sort_attr>
                     <a href="$href"data-pswp-width="{$image['width']}"
@@ -284,7 +292,7 @@ class PluginGallery
 
         // 最終的な表示
         $add_button = $this->options['add'] ? '<a class="gallery-add" href="'
-        . get_base_uri() . '?cmd=gallery&mode=add&page=' . $this->page . '&id=' . $id
+        . get_base_uri() . '?cmd=gallery&mode=add&page=' . $this->page . '&refer=' . $vars['page'] . '&id=' . $id
         . '&insert_to=' . $this->options['insert_to'] . '">' . $_gallery_messages['label_add'] . '</a>' : '';
         $placement = ! $this->options['break'] ? 'left' : $this->options['placement'];
         $break = ' data-break="' . var_export($this->options['break'], true) . '"';
@@ -313,11 +321,11 @@ class PluginGallery
      */
     private function array_images($multiline): void
     {
-        global $_gallery_messages, $vars;
+        global $_gallery_messages;
 
         if ($this->options['all'] === true) {
             $multiline = '';
-            $pattern = UPLOAD_DIR . encode($vars['page']) . '_*';
+            $pattern = UPLOAD_DIR . encode($this->page) . '_*';
             $files = glob($pattern);
             foreach ($files as $file) {
                 preg_match('/.+_([^\.]+)$/', $file, $m);
@@ -333,6 +341,7 @@ class PluginGallery
 
         foreach ($lines($multiline) as $line) {
             [$src, $cap] = explode(PLUGIN_GALLERY_SEPARATOR, $line);
+            if ($this->options['page']) $src = $this->options['page'] . '/' . $src;
             if (preg_match('/\.(jpe?g|png|gif|webp)$/', $src)) {
                 // 暫定的にフォーマットを確認
                 $info = $this->get_image_info(trim(htmlsc($src)));
@@ -377,6 +386,13 @@ class PluginGallery
             } elseif (preg_match('/^(no)?(add|break|cap|wrap)$/', $arg, $m)) {
                 // 追加ボタン、折り返し、キャプション、縁の有無
                 $this->options[$m[2]] = $m[1] ? false : true;
+            } elseif (preg_match('/^page=(.+)$/', $arg, $m)) {
+                // 参照ページの指定
+                if (is_page($m[1])){
+                    $this->options['page'] = $m[1];
+                } else {
+                    $this->err = str_replace('$1', $arg, $_gallery_messages['err_nopage']);
+                }
             } elseif ($arg === 'all') {
                 // 全添付ファイルを表示
                 $this->options['all'] = true;
@@ -485,11 +501,13 @@ class PluginGallery
  * ギャラリーへの画像追加
  *
  * @var int MAX_FILESIZE アップロード可能な最大ファイルサイズ (キロバイト)
+ * @property string $upload_page アップロード先のページ
  * @property string $err エラー内容
  */
 class GalleryAction
 {
     private const MAX_FILESIZE = 1024;
+    private $upload_page;
     private $err;
 
     /**
@@ -499,9 +517,13 @@ class GalleryAction
      */
     public function select_mode(): array
     {
-        global $vars;
+        global $vars, $_gallery_messages;
 
-        if ($vars['mode'] === 'add') return $this->show_upload_form();
+        $is_page = is_page($vars['page']);
+        $nopage = str_replace('$1', htmlsc($vars['page']), $_gallery_messages['err_nopage']);
+
+        if ($vars['mode'] === 'add' && $is_page) return $this->show_upload_form();
+        elseif (! $is_page) return ['msg', 'body' => '<p>' . $nopage . '</p>'];
         else return ['msg', 'body'];
     }
 
@@ -514,11 +536,13 @@ class GalleryAction
     {
         global $vars, $_gallery_messages;
 
+        $current_page = $vars['refer'];
+        $upload_page = $vars['page'];
+
         // 編集権限をチェック
-        check_editable($vars['page']);
+        check_editable($upload_page);
 
         $max_kb = number_format(self::MAX_FILESIZE);
-        $page = htmlsc($vars['page']);
         $id = htmlsc($vars['id']);
         $insert_to = htmlsc($vars['insert_to']);
         $file = $_FILES['attach_file'];
@@ -530,7 +554,7 @@ class GalleryAction
             <form enctype="multipart/form-data" method="post">
                 <input type="hidden" name="cmd" value="gallery">
                 <input type="hidden" name="mode" value="add">
-                <input type="hidden" name="page" value="$page">
+                <input type="hidden" name="page" value="$upload_page">
                 <input type="hidden" name="id" value="$id">
                 <input type="hidden" name="insert_to" value="$insert_to">
                 <input type="file" name="attach_file"  accept="image/jpeg, image/png, image/gif, image/webp">&nbsp;
@@ -546,7 +570,7 @@ class GalleryAction
                 return ['msg' , 'body' => '<p>' . $this->err . '</p>' . $body];
             }
             // アップロードされた画像を保存
-            $attach_name = encode($vars['page']) . '_' . encode($file['name']);
+            $attach_name = encode($upload_page) . '_' . encode($file['name']);
             if (! file_exists(UPLOAD_DIR . $attach_name)) {
                 move_uploaded_file($file['tmp_name'], UPLOAD_DIR . $attach_name);
             }
@@ -558,10 +582,10 @@ class GalleryAction
             }
 
             // ページ内容を書き換え
-            $this->add_new_item($new_line);
+            if ($current_page === $upload_page) $this->add_new_item($new_line);
 
             // 処理が終わったら元のページに戻る
-            $uri = get_page_uri($vars['page']);
+            $uri = get_page_uri($current_page);
             header("Location: " . $uri);
         }
 
