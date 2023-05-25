@@ -400,7 +400,7 @@ class SwiperConfig
         // 略称との対応
         $this->abbr = [
             '_height' => 'containerHeight',
-            '_width'  => 'containerwdith',
+            '_width'  => 'containerWidth',
             'auto'    => 'autoplay',
             'base'    => 'breakpointsBase',
             'bp'      => 'breakpoints',
