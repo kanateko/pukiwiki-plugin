@@ -2,12 +2,13 @@
 /**
 * swiper.jsを利用したスライダー作成プラグイン
 *
-* @version 1.1.2
+* @version 1.1.3
 * @author kanateko
 * @link https://jpngamerswiki.com/?f51cd63681
 * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
 * @todo スライドの (半) 動的追加、エフェクト系の詳細設定
 * -- Updates --
+* 2023-05-26 v1.1.3 containerWidthが効かない問題を修正
 * 2023-03-31 v1.1.2 幅や高さ指定の処理を変更
 *                   縦スライドやグリッド表示の処理を改善
 * 2023-03-30 v1.1.1 重複していたオプションを削除
@@ -372,6 +373,7 @@ class SwiperConfig
             'centeredSlides'     => 1,
             'class'              => 2,
             'containerHeight'    => 2,
+            'containerWidth'     => 2,
             'direction'          => 2,
             'effect'             => 2,
             'freeMode'           => 1,
