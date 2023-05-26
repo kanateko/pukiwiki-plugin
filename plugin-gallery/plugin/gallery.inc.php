@@ -2,11 +2,12 @@
 /**
  * photoswipe版 画像のギャラリー表示プラグイン (配布版)
  *
- * @version 2.5
+ * @version 2.6
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Updates --
+ * 2023-05-27 v2.6 キャプションの検索とソートを追加
  * 2023-05-24 v2.5 参照するページを指定するオプション (page) を追加
  * 2022-11-16 v2.4 ソートオプションを追加
  *            v2.3 添付されたすべての画像を表示するオプション (all) を追加
@@ -270,7 +271,7 @@ class PluginGallery
                 <script>
                     const options$id = {
                         valueNames: [
-                            {data: ['name', 'date']}
+                            {data: ['name', 'date', 'cap']}
                         ]
                     };
                     const gallery$id = new List('gallery_wrap$id', options$id);
@@ -281,6 +282,7 @@ class PluginGallery
                     <input class="search" placeholder="検索">
                     <div class="sorter">
                         <span class="sort" data-sort="name">ファイル名</span>
+                        <span class="sort" data-sort="cap">キャプション</span>
                         <span class="sort" data-sort="date">投稿日時</span>
                     </div>
                 </div>
