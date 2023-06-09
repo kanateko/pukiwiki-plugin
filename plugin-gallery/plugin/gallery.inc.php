@@ -2,11 +2,13 @@
 /**
  * photoswipe版 画像のギャラリー表示プラグイン (配布版)
  *
- * @version 2.6
+ * @version 2.7
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Updates --
+ * 2023-06-10 v2.7 all指定時、キャプションの投稿時間が正しくなかった問題を修正
+ *                 sortとnocapを同時指定した際にキャプションが表示されてしまう問題を修正
  * 2023-05-27 v2.6 キャプションの検索とソートを追加
  * 2023-05-24 v2.5 参照するページを指定するオプション (page) を追加
  * 2022-11-16 v2.4 ソートオプションを追加
@@ -267,11 +269,17 @@ class PluginGallery
                     self::$loaded['sort'] = true;
                     $script .= '<script src="' . PLUGIN_GALLERY_SORT_JS . '"></script>';
                 }
+                if ($this->options['cap'] === true) {
+                    $data_cap = ", 'cap'";
+                    $sorter_cap = '<span class="sort" data-sort="cap">キャプション</span>';
+                } else {
+                    $data_cap = $sorter_cap = '';
+                }
                 $script .= <<<EOD
                 <script>
                     const options$id = {
                         valueNames: [
-                            {data: ['name', 'date', 'cap']}
+                            {data: ['name', 'date'$data_cap]}
                         ]
                     };
                     const gallery$id = new List('gallery_wrap$id', options$id);
@@ -282,7 +290,7 @@ class PluginGallery
                     <input class="search" placeholder="検索">
                     <div class="sorter">
                         <span class="sort" data-sort="name">ファイル名</span>
-                        <span class="sort" data-sort="cap">キャプション</span>
+                        $sorter_cap
                         <span class="sort" data-sort="date">投稿日時</span>
                     </div>
                 </div>
@@ -333,7 +341,7 @@ class PluginGallery
                 preg_match('/.+_([^\.]+)$/', $file, $m);
                 if (empty($m[1])) continue;
                 $name = decode($m[1]);
-                $multiline .= $name . PLUGIN_GALLERY_SEPARATOR . $name . ' - ' . format_date(filemtime($file)) . "\n";
+                $multiline .= $name . PLUGIN_GALLERY_SEPARATOR . $name . ' - ' . format_date(filemtime($file) - LOCALZONE) . "\n";
             }
         }
 
