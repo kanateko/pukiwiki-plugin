@@ -164,7 +164,9 @@ class PluginIncTmp
     {
         foreach($this->map as $key => $val) {
             $key = preg_quote($key, '/');
-            $contents = preg_replace('/{{{' . $key . '}}}/', $val, $contents);
+            $format = preg_quote(PLUGIN_INCTMP_KEY_FORMAT, '/');
+            $pattern = '/' . str_replace('%s', $key, $format) . '/';
+            $contents = preg_replace($pattern, $val, $contents);
         }
 
         return $contents;
@@ -178,8 +180,10 @@ class PluginIncTmp
      */
     private function strip(string $contents): string
     {
+        $format = preg_quote(PLUGIN_INCTMP_KEY_FORMAT, '/');
+        $pattern = '/.*' . str_replace('%s', '.+?', $format) . '.*/';
+        $contents = preg_replace($pattern, '', $contents);
         $contents = preg_replace('/==noinclude==[\s\S]+?==\/noinclude==/', '', $contents);
-        $contents = preg_replace('/.*{{{.+?}}}.*/', '', $contents);
 
         return $contents;
     }
