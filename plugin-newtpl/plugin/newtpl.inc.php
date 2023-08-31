@@ -2,12 +2,15 @@
 /**
  * フォーム形式のページテンプレートプラグイン 配布版
  *
- * @version 1.1.3
+ * @version 1.2.0
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * @todo 非同期バリデーション + プレビュー
  * -- Updates --
+ * 2023-08-31 v1.2.0 filledオプションを追加
+ * 2023-08-24 v1.1.4 0が未記入扱いになる問題を修正
+ *                   パスワード入力欄が表示されない問題を修正
  * 2022-11-16 v1.1.3 fileのオプションにアップロードページの指定を追加
  * 2022-11-04 v1.1.2 文字数カウントがマルチバイト文字に対応していなかった問題を修正
  * 2022-10-28 v1.1.1 編集制限時は管理者パスワードではなくログインを求めるように変更
@@ -34,7 +37,7 @@ define('PLUGIN_NEWTPL_MAX_FILESIZE', 1024);
 // fileのアップロードページ指定オプションの有効/無効
 define('PLUGIN_NEWTPL_ENABLE_UPLOADTO', true);
 // fileのアップロードページに指定不可能なページ (正規表現)
-define('PLUGIN_NEWTPL_UPLOADTO_EXCEPTION', '/^(FrontPage|MenuBar)$/');
+define('PLUGIN_NEWTPL_UPLOADTO_EXCEPTION', '/^(FrontPage|MenuBar|トップページ)$/');
 
 // 連携プラグインの読み込み
 require_once(PLUGIN_DIR . 'newpage.inc.php');
@@ -288,7 +291,7 @@ class NewtplForm
         }
 
         // 管理者パスワードの認証
-        if (PLUGIN_NEWTPL_ADMINONLY) $auth = <<<EOD
+        if (($edit_auth && ! $auth_user) || PLUGIN_NEWTPL_ADMINONLY) $auth = <<<EOD
             <fieldset class="newtpl-item" data-require="true">
                 <legend class="newtpl-label">{$_newtpl_messages['label_auth']}</legend>
                 <div class="newtpl-post">
@@ -329,7 +332,7 @@ class NewtplForm
     /**
      * テキスト入力
      *
-     * オプション：placeholder, default, max, required, desc, null, link
+     * オプション：placeholder, default, max, required, desc, null, filled, link
      *
      * @param array $cfg 項目の設定
      * @return string $field 項目のHTML
@@ -370,7 +373,7 @@ class NewtplForm
     /**
      * 数値系
      *
-     * オプション：default, min, max, step, required, desc, null(, link)
+     * オプション：default, min, max, step, required, desc, null, filled(, link)
      *
      * @param array $cfg 項目の設定
      * @return string $field 項目のHTML
@@ -393,6 +396,10 @@ class NewtplForm
         }
 
         $field = "<input type=\"$type\" name=\"$name\"$default$min$max$step$require>\n";
+        /*
+        $field = $type === 'number' ? "<input type=\"text\" inputmode=\"numeric\" pattern=\"[\d\-]*\"" : "<input type=\"$type\"";
+        $field .= " name=\"$name\"$default$min$max$step$require>\n";
+        */
 
         if ($type === 'range') {
             $field .= "<i class=\"$name-val\"></i>\n";
@@ -425,7 +432,7 @@ class NewtplForm
     /**
      * 選択項目
      *
-     * オプション：default, option, required, desc, null, separator, link
+     * オプション：default, option, required, desc, null, filled, separator, link
      *
      * @param array $cfg 項目の設定
      * @return string $field 項目のHTML
@@ -492,7 +499,7 @@ class NewtplForm
     /**
      * プルダウン
      *
-     * オプション：default, option, required, desc, null, link
+     * オプション：default, option, required, desc, null, filled, link
      *
      * @param array $cfg 項目の設定
      * @return string $field 項目のHTML
@@ -522,7 +529,7 @@ class NewtplForm
      /**
      * ファイル添付
      *
-     * オプション：required, desc, null(, link)
+     * オプション：required, desc, null, filled(, link)
      *
      * @param array $cfg 項目の設定
      * @return string $field 項目のHTML
@@ -599,7 +606,7 @@ class NewtplPage
      */
     public function validation(): bool
     {
-        global $vars, $edit_auth;
+        global $vars, $edit_auth, $auth_user;
 
         // トークンの確認
         if (! isset($_SESSION['token']) || $_SESSION['token'] !== $vars['token']) {
@@ -610,7 +617,7 @@ class NewtplPage
         }
 
         // 入力内容の確認
-        if (($edit_auth || PLUGIN_NEWTPL_ADMINONLY) && ! pkwk_login($this->pass)) {
+        if ((($edit_auth && ! $auth_user) || PLUGIN_NEWTPL_ADMINONLY) && ! pkwk_login($this->pass)) {
             // 編集制限時のパスワード確認
             $this->err = Newtpl::get_message('warn_wrongpass');
             return false;
@@ -727,7 +734,7 @@ class NewtplPage
             $name = $cfg['name'];
             $type = $cfg['type'];
 
-            if (($type === 'file' && empty($_FILES[$name]['name'])) || ($type !== 'file' && empty($vars[$name]))) {
+            if (($type === 'file' && empty($_FILES[$name]['name'])) || ($type !== 'file' && $vars[$name] === '')) {
                 // 未入力の場合に表示する内容
                 if (isset($cfg['null'])) $postdata = $this->replace($name, htmlspecialchars_decode($cfg['null']), $postdata);
                 else $postdata = $this->replace($name, '', $postdata);
@@ -756,6 +763,12 @@ class NewtplPage
                                 if (is_page($val)) $vars[$name][$i] = '[[' . $vars[$name][$i] . ']]';
                             }
                         }
+                        if (isset($cfg['filled']) && count($vars[$name]) > 0) {
+                            // 入力内容を装飾
+                            foreach ($vars[$name] as $i => $val) {
+                                $vars[$name][$i] = str_replace('%s', $val, htmlspecialchars_decode($cfg['filled']));
+                            }
+                        }
                         if (isset($cfg['separator'])) {
                             // 複数項目を表示する際のセパレータを変更
                             $separator = str_replace('\\s', ' ', htmlspecialchars_decode($cfg['separator']));
@@ -769,6 +782,7 @@ class NewtplPage
                     default:
                         // その他項目
                         if ($cfg['link'] === 'true' && is_page($vars[$name])) $vars[$name] = '[[' . $vars[$name] . ']]';
+                        if (isset($cfg['filled']) && isset($vars[$name])) $vars[$name] = str_replace('%s', $vars[$name],  htmlspecialchars_decode($cfg['filled']));
                         $postdata = $this->replace($name, $vars[$name], $postdata);
                         break;
                 }
@@ -850,8 +864,9 @@ class Newtpl
                 else $items[$title]['required'] = 'false';
             } elseif (preg_match('/^--([^\-]+)$/', $line, $m) && ! empty($title)) {
                 // 各項目のオプション
-                $m[1] = preg_replace('/\s+=\s+/', '=', $m[1]);
-                [$key, $val] = explode('=', $m[1]);
+                [$key, $val] = explode('=', $m[1], 2);
+                $key = trim($key);
+                $val = trim($val);
                 $items[$title][$key] = $val;
             } else {
                 continue;
