@@ -2,11 +2,12 @@
 /**
  * テンプレートを使ってページ内容の一部を表示するプラグイン
  *
- * @version 1.0.0
+ * @version 1.0.1
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Updates --
+ * 2023-09-25 v1.0.1 出力時の余分な改行を削除
  * 2023-07-19 v1.0.0 初版作成
  */
 
@@ -138,7 +139,7 @@ class PluginIncTmp
                         }
                     }
 
-                    $contents = $contents === '' ? $line : "$contents\n$line";
+                    $contents .= $line;
                 }
             }
         }
