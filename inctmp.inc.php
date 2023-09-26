@@ -8,6 +8,7 @@
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Updates --
  * 2023-09-25 v1.0.1 出力時の余分な改行を削除
+ *                   不要な行を削除する際、改行が残る問題を修正
  * 2023-07-19 v1.0.0 初版作成
  */
 
@@ -182,7 +183,7 @@ class PluginIncTmp
     private function strip(string $contents): string
     {
         $format = preg_quote(PLUGIN_INCTMP_KEY_FORMAT, '/');
-        $pattern = '/.*' . str_replace('%s', '.+?', $format) . '.*/';
+        $pattern = "/.*" . str_replace('%s', '.+?', $format) . ".*\n?/";
         $contents = preg_replace($pattern, '', $contents);
         $contents = preg_replace('/==noinclude==[\s\S]+?==\/noinclude==/', '', $contents);
 
