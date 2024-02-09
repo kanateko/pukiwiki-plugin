@@ -1,13 +1,15 @@
 <?php
 /**
- * フォーム形式のページテンプレートプラグイン 配布版
+ * フォーム形式のページテンプレートプラグイン (配布版)
  *
- * @version 1.2.0
+ * @version 1.2.1
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * @todo 非同期バリデーション + プレビュー
  * -- Updates --
+ * 2024-02-06 v1.2.1 クエリのpageで事前にページ名を指定する機能を追加
+ *                   nullとfilledに空白や改行の置き換えを追加
  * 2023-08-31 v1.2.0 filledオプションを追加
  * 2023-08-24 v1.1.4 0が未記入扱いになる問題を修正
  *                   パスワード入力欄が表示されない問題を修正
@@ -139,7 +141,8 @@ class NewtplList
     {
         global $vars;
 
-        $refer = $vars['page'] ?: $vars['refer'];
+        $page = $vars['page'] ? '&page=' . htmlsc($vars['page']) : '';
+        $refer = htmlsc($vars['refer']);
         $templates = $this->get_templates();
         $body = Newtpl::get_message('msg_template') . "\n";
 
@@ -151,7 +154,7 @@ class NewtplList
             if ($m[1] !== null) {
                 $base_uri = get_base_uri();
                 $e_tplname = rawurlencode($m[1]);
-                $list .= '<li><a href="' . $base_uri . '?cmd=newtpl&tpl=' . $e_tplname . '&refer=' . $refer . '">' . $m[1] . '</a></li>' . "\n";
+                $list .= '<li><a href="' . $base_uri . '?cmd=newtpl' . $page . '&tpl=' . $e_tplname . '&refer=' . $refer . '">' . $m[1] . '</a></li>' . "\n";
             }
         }
 
@@ -736,8 +739,13 @@ class NewtplPage
 
             if (($type === 'file' && empty($_FILES[$name]['name'])) || ($type !== 'file' && $vars[$name] === '')) {
                 // 未入力の場合に表示する内容
-                if (isset($cfg['null'])) $postdata = $this->replace($name, htmlspecialchars_decode($cfg['null']), $postdata);
-                else $postdata = $this->replace($name, '', $postdata);
+                if (isset($cfg['null'])) {
+                    $null = str_replace('\\s', ' ', htmlspecialchars_decode($cfg['null']));
+                    $null = str_replace('\\n', "\n", $null);
+                    $postdata = $this->replace($name, $null, $postdata);
+                } else {
+                    $postdata = $this->replace($name, '', $postdata);
+                }
             } else {
                 switch ($type) {
                     case 'file':
@@ -765,14 +773,17 @@ class NewtplPage
                         }
                         if (isset($cfg['filled']) && count($vars[$name]) > 0) {
                             // 入力内容を装飾
+                            $filled = str_replace('\\n', "\n", htmlspecialchars_decode($cfg['filled']));
+
                             foreach ($vars[$name] as $i => $val) {
-                                $vars[$name][$i] = str_replace('%s', $val, htmlspecialchars_decode($cfg['filled']));
+                                $vars[$name][$i] = str_replace('%s', $val, $filled);
                             }
+
                         }
                         if (isset($cfg['separator'])) {
                             // 複数項目を表示する際のセパレータを変更
                             $separator = str_replace('\\s', ' ', htmlspecialchars_decode($cfg['separator']));
-                            $separator = str_replace('\\n', "\r\n", $separator);
+                            $separator = str_replace('\\n', "\n", $separator);
                             $vars[$name] = implode($separator, $vars[$name]);
                         } else {
                             $vars[$name] = implode(',', $vars[$name]);
@@ -782,7 +793,11 @@ class NewtplPage
                     default:
                         // その他項目
                         if ($cfg['link'] === 'true' && is_page($vars[$name])) $vars[$name] = '[[' . $vars[$name] . ']]';
-                        if (isset($cfg['filled']) && isset($vars[$name])) $vars[$name] = str_replace('%s', $vars[$name],  htmlspecialchars_decode($cfg['filled']));
+                        if (isset($cfg['filled']) && isset($vars[$name])) {
+                            $filled = str_replace('\\s', ' ', htmlspecialchars_decode($cfg['filled']));
+                            $filled = str_replace('\\n', "\n", $filled);
+                            $vars[$name] = str_replace('%s', $vars[$name],  $filled);
+                        }
                         $postdata = $this->replace($name, $vars[$name], $postdata);
                         break;
                 }
