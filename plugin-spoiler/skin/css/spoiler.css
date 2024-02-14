@@ -5,7 +5,13 @@ span.plugin-spoiler {
 .plugin-spoiler {
   position: relative;
 }
-.plugin-spoiler .spoiler-top {
+.plugin-spoiler[data-mode=hover] {
+  filter: blur(4px);
+}
+.plugin-spoiler[data-mode=hover]:hover {
+  filter: blur(0);
+}
+.plugin-spoiler .spoiler-overlay {
   display: block;
   position: absolute;
   top: 0;
@@ -15,12 +21,7 @@ span.plugin-spoiler {
   -webkit-backdrop-filter: blur(4px);
           backdrop-filter: blur(4px);
 }
-.plugin-spoiler .spoiler-top[data-mode=hover]:hover {
-  cursor: initial;
-  -webkit-backdrop-filter: blur(0);
-          backdrop-filter: blur(0);
-}
-.plugin-spoiler .spoiler-check:checked + .spoiler-top[data-mode=click] {
+.plugin-spoiler .spoiler-check:checked + .spoiler-overlay {
   display: none;
 }
 .plugin-spoiler > p {

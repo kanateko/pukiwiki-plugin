@@ -4,7 +4,13 @@ span.plugin-spoiler {
 
 .plugin-spoiler {
     position: relative;
-    .spoiler-top {
+    &[data-mode=hover] {
+        filter: blur(4px);
+        &:hover {
+            filter: blur(0);
+        }
+    }
+    .spoiler-overlay {
         display: block;
         position: absolute;
         top: 0;
@@ -13,11 +19,7 @@ span.plugin-spoiler {
         height: 100%;
         backdrop-filter: blur(4px);
     }
-    .spoiler-top[data-mode=hover]:hover {
-        cursor: initial;
-        backdrop-filter: blur(0);
-    }
-    .spoiler-check:checked + .spoiler-top[data-mode=click] {
+    .spoiler-check:checked + .spoiler-overlay {
         display: none;
     }
     > p {

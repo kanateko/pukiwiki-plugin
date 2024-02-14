@@ -2,11 +2,12 @@
 /**
  * ネタバレ防止用プラグイン
  *
- * @version 1.0.0
+ * @version 1.0.1
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Updates --
+ * 2024-02-14 v1.0.1 hover指定時の構造を改善
  * 2024-02-07 v1.0.0 初版作成
  */
 
@@ -105,11 +106,18 @@ Class PluginSpoiler
         $mode = $this->mode;
         $tag = $this->type === 'inline' ? 'span' : 'div';
         $id = self::$id++;
+        $overlay = '';
+
+        if ($mode === 'click') {
+            $overlay = <<<EOD
+            <input class="spoiler-check" type="checkbox" id="spoiler$id" style="display:none">
+            <label class="spoiler-overlay" for="spoiler$id"></label>
+            EOD;
+        }
 
         $html = <<<EOD
-        <$tag class="plugin-spoiler">
-            <input class="spoiler-check" type="checkbox" id="spoiler$id" style="display:none">
-            <label class="spoiler-top" for="spoiler$id" data-mode="$mode"></label>
+        <$tag class="plugin-spoiler" data-mode="$mode">
+            $overlay
             $body
         </$tag>
         EOD;
