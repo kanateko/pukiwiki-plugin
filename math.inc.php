@@ -2,11 +2,12 @@
 /**
  * 数学関数を使って様々計算を行うプラグイン
  *
- * @version 1.0.0
+ * @version 1.0.1
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Updates --
+ * 2024-08-21 v1.0.1 最後の引数で数字以外を渡した場合のエラーを修正
  * 2023-10-10 v1.0.0 初版作成
  */
 
@@ -139,6 +140,7 @@ class PluginMath
      */
     private function get_vals(string $val_str): void
     {
+        $this->vals = [];
         $vals = explode(',', $val_str);
 
         foreach ($vals as $val) {
