@@ -1,40 +1,54 @@
 .plugin-flex {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px 8px;
-    justify-content: center;
-    margin-bottom: 24px;
-    max-width: 100%;
+  --color-track: #ccc;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px 6px;
+  max-width: 100%;
+  margin-bottom: 24px;
+}
+.plugin-flex .flex-box {
+  max-width: 100%;
+}
+.plugin-flex .flex-box > *, .plugin-flex .flex-box .ie5 {
+  margin: 0;
+}
+.plugin-flex.flex-nowrap {
+  flex-wrap: nowrap;
+}
+.plugin-flex.flex-scroll {
+  overflow: auto;
+  justify-content: left;
+}
+.plugin-flex.flex-scroll > .flex-box {
+  min-width: -webkit-fit-content;
+  min-width: -moz-fit-content;
+  min-width: fit-content;
+}
+.plugin-flex.flex-nogap {
+  gap: 0;
+}
+.plugin-flex.flex-border > .flex-box {
+  border: 1px solid rgba(40, 40, 40, 0.6);
+  border-radius: 3px;
+}
+.plugin-flex::-webkit-scrollbar {
+  background-color: transparent;
+  height: 8px;
+}
+.plugin-flex::-webkit-scrollbar-track {
+  background-color: var(--color-track);
+  border-radius: 20px;
+}
+.plugin-flex::-webkit-scrollbar-thumb {
+  background-color: #808080;
+  border: 2px solid var(--color-track);
+  border-radius: 20px;
+}
+.plugin-flex::-webkit-scrollbar-thumb:hover {
+  border: none;
 }
 
-.flex-box {
-    max-width: 100%;
-}
-
-.flex-box > * {
-    margin: 0;
-}
-
-.flex-nogap {
-    gap: 0;
-}
-
-.flex-nowrap {
-    flex-wrap: nowrap;
-    justify-content: left;
-}
-
-.flex-scroll {
-    overflow: auto;
-}
-
-.flex-scroll > .flex-box {
-    min-width: -webkit-fit-content;
-    min-width: -moz-fit-content;
-    min-width: fit-content;
-}
-
-.flex-border > .flex-box {
-    border: 1px solid rgb(40 40 40 / 60%);
-    border-radius: 3px;
+.style_td .plugin-flex {
+  margin-bottom: 0;
 }

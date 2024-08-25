@@ -1,0 +1,52 @@
+.plugin-flex {
+    --color-track: #ccc;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px 6px;
+    max-width: 100%;
+    margin-bottom: 24px;
+    .flex-box {
+        max-width: 100%;
+        > *, .ie5 {
+            margin: 0;
+        }
+    }
+    &.flex-nowrap {
+        flex-wrap: nowrap;
+    }
+    &.flex-scroll {
+        overflow: auto;
+        justify-content: left;
+        > .flex-box {
+            min-width: fit-content;
+        }
+    }
+    &.flex-nogap {
+        gap: 0;
+    }
+    &.flex-border > .flex-box {
+        border: 1px solid rgba(40, 40, 40, .6);
+        border-radius: 3px;
+    }
+    &::-webkit-scrollbar {
+        background-color: transparent;
+        height: 8px;
+        &-track {
+            background-color: var(--color-track);
+            border-radius: 20px;
+        }
+        &-thumb {
+            background-color: #808080;
+            border: 2px solid var(--color-track);
+            border-radius: 20px;
+            &:hover {
+                border: none;
+            }
+        }
+    }
+}
+
+.style_td .plugin-flex {
+    margin-bottom: 0;
+}

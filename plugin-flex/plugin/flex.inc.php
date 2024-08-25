@@ -2,11 +2,14 @@
 /**
 * flexレイアウト用プラグイン (配布版)
 *
-* @version 1.4.0
+* @version 1.5.0
 * @author kanateko
 * @link https://jpngamerswiki.com/?f51cd63681
 * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
 * -- Updates --
+* 2024-08-21 v1.5.0 align-itemsを指定するオプションを追加
+*                   各アイテムのmax-widthとmin-widthを指定するオプションを追加
+*                   gapを指定するオプションを追加
 * 2023-03-17 v1.4.0 scrollオプションを追加
 * 2022-07-31 v1.3.0 マルチラインプラグインの入れ子に対応
 *                   公開用にコードを整理
@@ -16,6 +19,13 @@
 * 2021-07-03 v1.0.0 初版作成
 */
 
+define('PLUGIN_FLEX_CSS', SKIN_DIR . 'css/flex.min.css');
+
+/**
+ * 初期化
+ *
+ * @return void
+ */
 function plugin_flex_init():void
 {
     global $head_tags;
@@ -25,44 +35,39 @@ function plugin_flex_init():void
     ];
     set_plugin_messages($msg);
 
-    $head_tags[] = '<link rel="stylesheet" href="' . SKIN_DIR . 'css/flex.css">';
+    $head_tags[] = '<link rel="stylesheet" href="' . PLUGIN_FLEX_CSS . '?t=' . filemtime(PLUGIN_FLEX_CSS) . '">';
 }
 
 /**
  * ブロック型
  *
- * @param array $args プラグインの引数
- * @return string フレックスコンテナ
+ * @param array $args
+ * @return string
  */
-function plugin_flex_convert(...$args):string
+function plugin_flex_convert(string ...$args):string
 {
     $flex = new PluginFlex($args);
-    if ($flex->err) return $flex->err;
-    else return $flex->convert();
+
+    return $flex->convert();
 }
 
 /**
  * flexレイアウト作成用クラス
- *
- * @var string SPLIT_TAG 要素を分割するためのタグ
- * @property string $err エラーメッセージ
- * @property string $multiline マルチライン部分
- * @property array $options オプション
  */
 class PluginFlex
 {
-    const SPLIT_TAG = '#-';
-
-    public $err;
-    private $multiline;
-    private $options;
+    private const SPLIT_TAG = '#-';
+    private array $err = [];
+    private array $options = [];
+    private string $type = 'block';
+    private string $multiline = '';
 
     /**
      * コンストラクタ
      *
-     * @param array $args プラグインの引数
+     * @param array $args
      */
-    public function __construct($args)
+    public function __construct(array $args)
     {
         $this->multiline = preg_replace("/\r|\r\n/", "\n", array_pop($args));
         if (! empty($args)) $this->parse_options($args);
@@ -71,16 +76,17 @@ class PluginFlex
     /**
      * flexコンテナと各要素の組み立て
      *
-     * @return string $html HTMLに変換したコンテナと各要素
+     * @return string $html
      */
     public function convert():string
     {
         $boxes = $this->get_boxes();
-        $class = 'plugin-flex';
-        if ($this->options['class']) $class .= ' ' . implode(' ', $this->options['class']);
+        $style = $this->options['style'] != null ? ' style="' . implode(';', $this->options['style']) . '"' : '';
+        $class = $this->options['auto'] ? 'flex' : 'plugin-flex';
+        if ($this->options['class'] != null) $class .= ' ' . implode(' ', $this->options['class']);
 
         $html = <<<EOD
-        <div class="$class" style="{$this->options['justify']}">
+        <div class="$class"$style>
             $boxes
         </div>
         EOD;
@@ -91,18 +97,36 @@ class PluginFlex
     /**
      * オプションの判別
      *
-     * @param array $args マルチライン部分を取り除いた引数
+     * @param array $args
      * @return void
      */
     private function parse_options($args):void
     {
-        $op = &$this->options;
         foreach ($args as $arg) {
             $arg = htmlsc($arg);
-            if (preg_match('/^class=(.+)$/', $arg, $m)) {
-                $op['class'][] = $m[1];
-            } elseif (preg_match('/^\d+(px|%|em|rem|vw|vh)?$/', $arg, $m)) {
-                $op['box_width'] = $m[1] ? 'width:' . $arg : 'width:' . $arg . 'px';
+            [$key, $val] = array_map('trim', explode('=', $arg));
+
+            if ($val != null) {
+                if (($key == 'class')) {
+                    // クラス追加
+                    $this->options[$key][] = $val;
+                } elseif ($key == 'justify') {
+                    // justify-content
+                    $this->options['style'][] = 'justify-content:' . $val;
+                } else if ($key == 'align') {
+                    // align-items
+                    $this->options['style'][] = 'align-items:' . $val;
+                } elseif ($key == 'gap') {
+                    // gap
+                    $val = is_numeric($val) && $val !== '0' ? $val . 'px' : $val;
+                    $this->options['style'][] = $key . ':' . $val;
+                } elseif (preg_match('/(min-|max-)?width/', $key)) {
+                    // width, min-width, max-width
+                    $val = is_numeric($val) && $val !== '0' ? $val . 'px' : $val;
+                    $this->options['box_style'][] = $key . ':' . $val;
+                }
+            } elseif (preg_match('/^\d+(px|%|em|rem|vw|vh)?$/', $key, $m)) {
+                $this->options['box_style'][] = $m[1] ? 'width:' . $arg : 'width:' . $arg . 'px';
             } else {
                 switch ($arg) {
                     case 'flex-start':
@@ -116,16 +140,18 @@ class PluginFlex
                     case 'space-between':
                     case 'space-evenly':
                     case 'stretch':
-                        $op['justify'] = 'justify-content:' . $arg;
+                        // justify-content
+                        $this->options['style'][] = 'justify-content:' . $arg;
                         break;
                     case 'nogap':
                     case 'nowrap':
                     case 'border':
                     case 'scroll':
-                        $op['class'][] = 'flex-' . $arg;
+                        // プリメイドのクラス追加
+                        $this->options['class'][] = 'flex-' . $arg;
                         break;
                     default:
-                        $this->err = $this->get_messages('err_unknown', $arg);
+                        $this->err = ['err_unknown' => $arg];
                 }
             }
         }
@@ -134,17 +160,20 @@ class PluginFlex
     /**
      * 分割表示する各要素の組み立て
      *
-     * @return string $boxes HTMLに変換した各要素
+     * @return string $boxes
      */
     private function get_boxes():string
     {
         // 入れ子を一時的に退避させる
         $nested = [];
         $src = $this->multiline;
+
         if (preg_match_all('/#.+?({{2,})/', $src, $m)) {
             foreach ($m[0] as $i => $start) {
                 $end = str_replace('{', '}', $m[1][$i]);
+
                 preg_match('/' . preg_quote($start) . '[\s\S]+?' . $end . '/', $src, $m_nested);
+
                 $nested[$i] = $m_nested[0];
                 $src = str_replace($m_nested[0], '%' . $i . '%', $src);
             }
@@ -162,10 +191,12 @@ class PluginFlex
 
         // HTMLに変換
         $boxes = '';
+        $style = $this->options['box_style'] != null ? ' style="' . implode(';', $this->options['box_style']) . '"' : '';
+
         foreach ($boxes_raw as $box) {
             $box = convert_html($box);
             $boxes .= <<<EOD
-            <div class="flex-box" style="{$this->options['box_width']}">
+            <div class="flex-box"$style>
                 $box
             </div>
             EOD;
@@ -175,22 +206,41 @@ class PluginFlex
     }
 
     /**
-     * エラーメッセージの取得
+     * エラーの確認
      *
-     * @param string $key 表示するメッセージの指定
-     * @param string|null $replace メッセージの置き換え用
-     * @return string 表示するメッセージ
+     * @return boolean
      */
-    private function get_messages($key, $replace = null):string
+    public function has_error(): bool
+    {
+        return $this->err != [];
+    }
+
+    /**
+     * メッセージ表示
+     *
+     * @return string
+     */
+    public function show_msg(): string
     {
         global $_flex_messages;
 
-        if ($replace !== null) {
-            $msg = str_replace('$1', $replace, $_flex_messages[$key]);
-        } else {
-            $msg = $_flex_messages[$key];
+        $msg = '';
+        $type = $this->type ?? 'block';
+
+        if ($this->options["noerror"] == null) {
+            if (array_values($this->err) === $this->err) {
+                $msg = $_flex_messages[$this->err[0]];
+            } else {
+                foreach ($this->err as $key => $val) {
+                    $msg = $_flex_messages[$key];
+                    $msg = str_replace('%s', htmlsc($val), $msg);
+                }
+            }
+
+            if ($type == 'block') $msg = "<p>$msg</p>";
         }
 
-        return '<p>' . $msg . '</p>';
+        return $msg;
     }
 }
+
