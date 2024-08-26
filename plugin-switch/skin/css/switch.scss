@@ -1,0 +1,26 @@
+.plugin-switch {
+    font-size: inherit;
+    &.switch-select {
+        &[data-transparent] {
+            appearance: none;
+            border: none;
+            outline: none;
+            background-color: transparent;
+            vertical-align: baseline;
+        }
+        &[data-disable] {
+            pointer-events: none;
+        }
+        &[data-rtl] {
+            direction: rtl;
+        }
+    }
+    &.switch-default {
+        .switch-item {
+            display: none;
+            &[data-selected] {
+                display: initial;
+            }
+        }
+    }
+}
