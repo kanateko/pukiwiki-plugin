@@ -1,0 +1,41 @@
+.plugin-tab {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 24px;
+
+    .tab-label {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(98, 98, 98, 0.3);
+        border-bottom-color: rgba(98, 98, 98, 1);
+        border-radius: 4px 4px 0 0;
+        cursor: pointer;
+        flex: 1;
+        font-weight: bold;
+        min-width: 120px;
+        order: -1;
+        padding: 12px 8px;
+        text-align: center;
+    }
+
+    .tab-content {
+        display: none;
+        margin-top: 24px;
+        width: 100%;
+    }
+
+    .tab-switch {
+        display: none;
+    }
+
+    .tab-switch:checked {
+        + .tab-label {
+            background: transparent;
+            border: 1px solid rgba(98, 98, 98, 1);
+            border-bottom: none;
+            + .tab-content {
+                display: block;
+            }
+        }
+    }
+}
