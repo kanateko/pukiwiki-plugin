@@ -2,11 +2,13 @@
 /**
  * テンプレートを使ってページ内容の一部を表示するプラグイン
  *
- * @version 1.0.1
+ * @version 1.1.0
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Updates --
+ * 2024-08-31 v1.1.0 各キーのデフォルト値を指定する機能を追加
+ *                   値を複数行にわたってかけるように改善
  * 2023-09-25 v1.0.1 出力時の余分な改行を削除
  *                   不要な行を削除する際、改行が残る問題を修正
  * 2023-07-19 v1.0.0 初版作成
@@ -18,6 +20,9 @@ define('PLUGIN_INCTMP_PAGE', ':config/plugin/inctmp/');
 define('PLUGIN_INCTMP_SAFEMODE', false);
 // キーの書式
 define('PLUGIN_INCTMP_KEY_FORMAT', '{{{%s}}}');
+// デフォルト値検索用の正規表現
+// preg_match時に $matches[1] = キー $matches[2] = デフォルト値 になるようにする
+define('PLUGIN_INCTMP_DEFAULT_VALUE_REGEXP', '([^{}]+):([^{}]+)');
 
 /**
  * 初期化
@@ -28,10 +33,10 @@ function plugin_inctmp_init(): void
 {
     $msg['_inctmp_messages'] = [
         'msg_usage' => '#inctmp(&lt;template&gt;){{ &lt;key = val&gt; }}',
-        'err_notemplate' => '#inctmp Error: The template does not exist. ($1)',
-        'err_nopermission' => '#inctmp Error: You are not allowed to access the template page. ($1)',
-        'err_loop' => '#inctmp Error: Loop detected. ($1)',
-        'err_unknown' => '#inctmp Error: Unknown argument. ($1)'
+        'err_notemplate' => '#inctmp Error: The template does not exist. (%s)',
+        'err_nopermission' => '#inctmp Error: You are not allowed to access the template page. (%s)',
+        'err_loop' => '#inctmp Error: Loop detected. (%s)',
+        'err_unknown' => '#inctmp Error: Unknown argument. (%s)'
     ];
     set_plugin_messages($msg);
 }
@@ -58,10 +63,10 @@ function plugin_inctmp_convert(string ...$args): string
  */
 class PluginIncTmp
 {
-    private $err;
-    private $template;
-    private $options;
-    private $map;
+    private string $template;
+    private array $err = [];
+    private array $options = [];
+    private array $map = [];
     private static $included;
 
     /**
@@ -76,14 +81,14 @@ class PluginIncTmp
         $num = count($args);
 
         if ($num < 1) {
-            $this->err = 'msg_usage';
+            $this->err = ['msg_usage'];
         } else {
             $this->template = PLUGIN_INCTMP_PAGE . array_shift($args);
 
             // エラーチェック
             if (! is_page($this->template)) $this->err = ["err_notemplate" => $this->template];
             elseif (! $this->has_permission()) $this->err = ["err_nopermission" => $this->template];
-            elseif (! empty($args)) $this->breakdown($args);
+            elseif (! empty($args)) $this->parse_options($args);
         }
     }
 
@@ -115,7 +120,7 @@ class PluginIncTmp
      *
      * @return string
      */
-    private function get_contents(): string
+    public function get_contents(): string
     {
         $contents = '';
 
@@ -146,6 +151,7 @@ class PluginIncTmp
         }
 
         if (! $this->has_error()) {
+            $contents = $this->get_default_values($contents);
             $contents = $this->replace_by_key($contents);
             $contents = $this->strip($contents);
             $contents = convert_html($contents);
@@ -157,12 +163,33 @@ class PluginIncTmp
     }
 
     /**
+     * 各キーのデフォルトの値を取得する
+     *
+     * @param string $contents
+     * @return string
+     */
+    public function get_default_values(string $contents): string
+    {
+        $pattern = str_replace('%s', PLUGIN_INCTMP_DEFAULT_VALUE_REGEXP, PLUGIN_INCTMP_KEY_FORMAT);
+
+        if (preg_match_all('/' . $pattern . '/', $contents, $m)) {
+            foreach ($m[2] as $i => $default_value) {
+                $this->map[$m[1][$i]] ??= $default_value;
+                $contents = str_replace($m[0][$i], str_replace('%s', $m[1][$i], PLUGIN_INCTMP_KEY_FORMAT), $contents);
+            }
+        }
+
+
+        return $contents;
+    }
+
+    /**
      * キーから値への置き換え
      *
      * @param string $contents
      * @return string
      */
-    private function replace_by_key(string $contents): string
+    public function replace_by_key(string $contents): string
     {
         foreach($this->map as $key => $val) {
             $key = preg_quote($key, '/');
@@ -180,7 +207,7 @@ class PluginIncTmp
      * @param string $contents
      * @return string
      */
-    private function strip(string $contents): string
+    public function strip(string $contents): string
     {
         $format = preg_quote(PLUGIN_INCTMP_KEY_FORMAT, '/');
         $pattern = "/.*" . str_replace('%s', '.+?', $format) . ".*\n?/";
@@ -191,13 +218,13 @@ class PluginIncTmp
     }
 
     /**
-     * エラー確認
+     * エラーの確認
      *
      * @return boolean
      */
     public function has_error(): bool
     {
-        return $this->err !== null;
+        return $this->err !== [];
     }
 
     /**
@@ -211,13 +238,12 @@ class PluginIncTmp
 
         $msg = '';
 
-        if (is_string($this->err)) {
-            $msg = $_inctmp_messages[$this->err];
+        if (array_values($this->err) === $this->err) {
+            $msg = $_inctmp_messages[$this->err[0]];
         } else {
-            foreach ($this->err as $key => $rpl) {
-                $rpl = htmlsc($rpl);
+            foreach ($this->err as $key => $val) {
                 $msg = $_inctmp_messages[$key];
-                $msg = str_replace('$1', $rpl, $msg);
+                $msg = str_replace('%s', htmlsc($val), $msg);
             }
         }
 
@@ -229,7 +255,7 @@ class PluginIncTmp
      *
      * @return boolean
      */
-    private function has_permission(): bool
+    public function has_permission(): bool
     {
         $is_safe = PLUGIN_INCTMP_SAFEMODE ? ! check_editable($this->template, true, false) : true;
         $is_readable = check_readable($this->template, true, false);
@@ -243,13 +269,13 @@ class PluginIncTmp
      * @param array $args
      * @return void
      */
-    private function breakdown(array $args): void
+    public function parse_options(array $args): void
     {
         $multiline = null;
 
         foreach ($args as $arg) {
             if (str_contains($arg, "\r")) {
-                $multiline = $arg;
+                $multiline = preg_replace("/\r$/", '', $arg);
             } elseif (preg_match('/^(class)\s*=\s*(.+)/', $arg, $m)) {
                 // オプション
                 $this->options[$m[1]] = $m[2];
@@ -263,14 +289,25 @@ class PluginIncTmp
         if ($multiline !== null) {
             // キーワードと値
             $lines = explode("\r", $multiline);
+            $multi_key = '';
 
             foreach ($lines as $line) {
-                preg_match('/(.+?)\s*=\s*(.+)/', $line, $m);
+                if (preg_match('/(.+?)\s*(?<!\\\)=\s*(.+)?/', $line, $m)) {
+                    $multi_key = '';
 
-                if ($m[1] && $m[2]) {
-                    $this->map[$m[1]] = $m[2];
+                    if ($m[2] !== null) {
+                        $this->map[$m[1]] = $m[2];
+                    } else {
+                        // 複数行のキーを設定
+                        $multi_key = $m[1];
+                    }
+                } elseif ($multi_key !== '') {
+                    // 複数行での値指定
+                    $this->map[$multi_key] = $this->map[$multi_key] === null ? '' : $this->map[$multi_key] . "&br;";
+                    $this->map[$multi_key] .= str_replace('\=', '=', $line);
                 }
             }
+
         }
     }
 }
