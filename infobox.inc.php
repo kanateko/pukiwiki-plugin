@@ -170,7 +170,7 @@ class PluginInfobox {
         } elseif ($current_page === $template_page) {
             // ループ (現ページ)
             $this->err = ['err_self'];
-        } elseif (self::ENABLE_SAFE_MODE && is_freeze($template_page)) {
+        } elseif (self::ENABLE_SAFE_MODE && ! is_freeze($template_page)) {
             // セーフモード
             $this->err = ['err_freeze'];
         }
