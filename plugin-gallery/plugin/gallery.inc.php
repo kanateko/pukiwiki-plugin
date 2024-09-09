@@ -2,11 +2,12 @@
 /**
  * photoswipe版 画像のギャラリー表示プラグイン (配布版)
  *
- * @version 2.7
+ * @version 2.8
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Updates --
+ * 2024-09-09 v2.8 画像同士の余白を指定するオプション (gap) を追加
  * 2023-06-10 v2.7 all指定時、キャプションの投稿時間が正しくなかった問題を修正
  *                 sortとnocapを同時指定した際にキャプションが表示されてしまう問題を修正
  * 2023-05-27 v2.6 キャプションの検索とソートを追加
@@ -305,6 +306,7 @@ class PluginGallery
         . get_base_uri() . '?cmd=gallery&mode=add&page=' . $this->page . '&refer=' . $vars['page'] . '&id=' . $id
         . '&insert_to=' . $this->options['insert_to'] . '">' . $_gallery_messages['label_add'] . '</a>' : '';
         $placement = ! $this->options['break'] ? 'left' : $this->options['placement'];
+        $gap = $this->options['gap'] !== null ? ';gap:' . $this->options['gap'] : '';
         $break = ' data-break="' . var_export($this->options['break'], true) . '"';
         $crop = $this->options['crop'] ? ' data-crop="' . $this->options['crop'] . '"' : '';
         $wrap = ' data-wrap="' . var_export($this->options['wrap'], true) . '"';
@@ -312,7 +314,7 @@ class PluginGallery
         $html = <<<EOD
         <div class="plugin-gallery" id="gallery_wrap$id">
             $sorter
-            <div class="gallery-items list" id="gallery$id" style="justify-content:$placement"$break$crop$wrap>
+            <div class="gallery-items list" id="gallery$id" style="justify-content:$placement$gap"$break$crop$wrap>
             $items
             </div>
             $add_button
@@ -403,6 +405,10 @@ class PluginGallery
                 } else {
                     $this->err = str_replace('$1', $arg, $_gallery_messages['err_nopage']);
                 }
+            } elseif (preg_match('/^gap=(.+)$/', $arg, $m)) {
+                // 画像同士の余白
+                $m[1] = is_numeric($m[1]) && $m[1] !== '0' ? $m[1] . 'px' : $m[1];
+                $this->options['gap'] = $m[1];
             } elseif ($arg === 'all') {
                 // 全添付ファイルを表示
                 $this->options['all'] = true;
