@@ -279,7 +279,7 @@ class PluginInfobox {
                 }
             } elseif ($key === 'nozoom') {
                 // 追加クラス
-                $class_array[] = $val;
+                $class_array[] = $key;
             }
         }
 
