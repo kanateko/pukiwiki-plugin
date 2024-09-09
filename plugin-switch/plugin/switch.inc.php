@@ -2,11 +2,12 @@
 /**
 * プルダウンやスライダーと連動して表示内容を切り替えるプラグイン
 *
-* @version 1.0.0
+* @version 1.0.1
 * @author kanateko
 * @link https://jpngamerswiki.com/?f51cd63681
 * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
 * -- Updates --
+* 2024-09-09 v1.0.1 マルチライン内のテーブルが正しく変換されない問題を修正
 * 2024-08-25 v1.0.0 初版作成
 */
 
@@ -438,6 +439,7 @@ class PluginSwitchML extends PluginSwitchBase
         }
 
         // 各アイテムをHTMLに変換する
+        $items_array = str_replace(["\r", "\r\n"], "\n", $items_array);
         $items_array = array_map('trim', $items_array);
         $items_array = array_map('convert_html', $items_array);
 
