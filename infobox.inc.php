@@ -2,12 +2,13 @@
 /**
  * テンプレートを読み込んでインフォボックスを設置するプラグイン
  *
- * @version 1.0.1
+ * @version 1.1.0
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Update --
- * 2024-09-13 v1.0.1 複数行の値でコメントアウトに対応
+ * 2024-09-13 v1.1.0 他プラグインとの互換性を改善
+ *            v1.0.1 複数行の値でコメントアウトに対応
  * 2024-09-01 v1.0.0 コードを整理
  *                   デフォルト値を設定する機能を追加
  *                   値を複数行にわたって書けるように改善
@@ -88,9 +89,9 @@ class PluginInfobox {
                 $this->err = ['err_notpl' => $template_page];
             } else {
                 $this->template_page = $template_page;
-                $this->parse_options($args);
-                $this->parse_template($template_page);
-                $this->parse_keyvals($multiline);
+                $this->options = $this->parse_options($args);
+                $this->template = $this->parse_template($template_page);
+                $this->map = [...$this->map, ...self::parse_keyvals($multiline)];
             }
         }
     }
@@ -155,9 +156,9 @@ class PluginInfobox {
      * テンプレートを取得
      *
      * @param string $template_page
-     * @return string
+     * @return array
      */
-    public function parse_template(string $template_page): void
+    public function parse_template(string $template_page): array
     {
         global $vars;
 
@@ -200,7 +201,7 @@ class PluginInfobox {
             $template = $this->get_default_values($template);
         }
 
-        $this->template = $template;
+        return $template;
     }
 
     /**
@@ -214,15 +215,18 @@ class PluginInfobox {
         $key_regexp = self::KEY_REGEXP;
         $separator = self::DEFAULT_VALUE_SEPARATOR;
         $regexp = '/' . str_replace('%s', $key_regexp .  $separator . $key_regexp, self::KEY_FORMAT) . '/';
+        $map = [];
 
         // デフォルト値の取得
         foreach ($template as $i => $line) {
             if (preg_match($regexp, $line, $m)) {
-                $this->map[$m[1]]= $m[2];
+                $map[$m[1]]= $m[2];
                 $replace = str_replace('%s', $m[1], self::KEY_FORMAT);
                 $template[$i] = str_replace($m[0], $replace, $line);
             }
         }
+
+        $this->map = $map;
 
         return $template;
     }
@@ -231,10 +235,11 @@ class PluginInfobox {
      * マルチライン引数からキーと値を取得する
      *
      * @param string $multiline
-     * @return void
+     * @return array
      */
-    public function parse_keyvals(string $multiline): void
+    public static function parse_keyvals(string $multiline): array
     {
+        $map = [];
         $lines = explode("\r", trim($multiline));
         $current_key = '';
 
@@ -243,7 +248,7 @@ class PluginInfobox {
                 $current_key = '';
 
                 if ($m[2] !== null) {
-                    $this->map[$m[1]] = $m[2];
+                    $map[$m[1]] = $m[2];
                 } else {
                     // 複数行のキーを設定
                     $current_key = $m[1];
@@ -252,21 +257,23 @@ class PluginInfobox {
                 // 複数行での値指定
                 if (str_starts_with($line, '//')) continue;
 
-                $this->map[$current_key] = $this->map[$current_key] === null ? '' : $this->map[$current_key] . "&br;";
-                $this->map[$current_key] .= str_replace('\=', '=', $line);
+                $map[$current_key] = $map[$current_key] === null ? '' : $map[$current_key] . "&br;";
+                $map[$current_key] .= str_replace('\=', '=', $line);
             }
         }
 
+        return $map;
     }
 
     /**
      * オプションの判別
      *
      * @param array $args
-     * @return void
+     * @return array
      */
-    public function parse_options(array $args): void
+    public function parse_options(array $args): array
     {
+        $options = [];
         $class_array = [];
 
         foreach($args as $arg) {
@@ -275,7 +282,7 @@ class PluginInfobox {
             if ($val !== null) {
                 if ($key === 'except') {
                     // 正規表現での除外設定
-                    $this->options['except'] = '/' . str_replace('/', '\/', $val) . '/';
+                    $options['except'] = '/' . str_replace('/', '\/', $val) . '/';
                 } elseif ($key === 'class') {
                     // 追加クラス
                     $class_array[] = $val;
@@ -288,8 +295,10 @@ class PluginInfobox {
 
         // クラスの整形
         if ($class_array !== []) {
-            $this->options['class'] = ' ' . htmlsc(implode(' ', $class_array));
+            $options['class'] = ' ' . htmlsc(implode(' ', $class_array));
         }
+
+        return $options;
     }
 
     /**
