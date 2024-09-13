@@ -2,11 +2,12 @@
 /**
  * テンプレートを使ってページ内容の一部を表示するプラグイン
  *
- * @version 1.1.0
+ * @version 1.1.1
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Updates --
+ * 2024-09-13 v1.1.1 複数行の値でコメントアウトに対応
  * 2024-08-31 v1.1.0 各キーのデフォルト値を指定する機能を追加
  *                   値を複数行にわたってかけるように改善
  * 2023-09-25 v1.0.1 出力時の余分な改行を削除
@@ -303,6 +304,8 @@ class PluginIncTmp
                     }
                 } elseif ($multi_key !== '') {
                     // 複数行での値指定
+                    if (str_starts_with($line, '//')) continue;
+
                     $this->map[$multi_key] = $this->map[$multi_key] === null ? '' : $this->map[$multi_key] . "&br;";
                     $this->map[$multi_key] .= str_replace('\=', '=', $line);
                 }

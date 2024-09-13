@@ -2,11 +2,12 @@
 /**
  * テンプレートを読み込んでインフォボックスを設置するプラグイン
  *
- * @version 1.0.0
+ * @version 1.0.1
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Update --
+ * 2024-09-13 v1.0.1 複数行の値でコメントアウトに対応
  * 2024-09-01 v1.0.0 コードを整理
  *                   デフォルト値を設定する機能を追加
  *                   値を複数行にわたって書けるように改善
@@ -249,6 +250,8 @@ class PluginInfobox {
                 }
             } elseif ($current_key !== '') {
                 // 複数行での値指定
+                if (str_starts_with($line, '//')) continue;
+
                 $this->map[$current_key] = $this->map[$current_key] === null ? '' : $this->map[$current_key] . "&br;";
                 $this->map[$current_key] .= str_replace('\=', '=', $line);
             }
