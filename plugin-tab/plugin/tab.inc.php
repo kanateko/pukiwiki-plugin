@@ -2,11 +2,12 @@
 /**
 * 指定した領域のタブ切り替え表示を可能にするプラグイン
 *
-* @version 2.1.0
+* @version 2.2.0
 * @author kanateko
 * @link https://jpngamerswiki.com/?f51cd63681
 * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
 * -- Updates --
+* 2024-09-22 v2.2.0 ページ内のタブを同期させるオプション (gorup) を追加
 * 2024-08-17 v2.1.0 ラベルのPukiWiki記法対応
 *                   classオプションが機能していなかった問題を修正
 * 2023-07-21 v2.0.1 入れ子退避の正規表現を修正
@@ -25,6 +26,8 @@
 define('PLUGIN_TAB_SEPARATOR', ['#-', '#split']);
 // CSSのパス
 define('PLUGIN_TAB_CSS', SKIN_DIR . 'css/tab.min.css');
+// JSのパス
+define('PLUGIN_TAB_JS', SKIN_DIR . 'js/tab.min.js');
 
 /**
  * 初期化
@@ -64,6 +67,7 @@ class PluginTab
     private array $nested_plugins;
     private bool $is_legacy;
     private static int $id;
+    private static bool $loaded;
 
     /**
      * コンストラクタ
@@ -75,6 +79,7 @@ class PluginTab
         $this->err = $this->labels = $this->contents = $this->nested_plugins = [];
         $this->is_legacy = false;
         self::$id ??= 0;
+        self::$loaded ??= false;
 
         $multiline = array_pop($args);
         $multiline = preg_replace("/\r|\r\n/", "\n", $multiline);
@@ -100,6 +105,7 @@ class PluginTab
         $this->back_nested();
 
         $html = '';
+        $script = '';
         $id = self::$id++;
         $num = 0;
 
@@ -120,11 +126,24 @@ class PluginTab
         }
 
         $class = $this->options['class'] != null ? ' ' . $this->options['class'] : '';
+        $group = $this->options['group'] !== null ? ' data-group="' . $this->options['group'] . '"' : '';
+
+        if ($group !== '' && self::$loaded === false) {
+            self::$loaded = true;
+            $src = $src = './' . PLUGIN_TAB_JS . '?t=' . filemtime(PLUGIN_TAB_JS);
+            $script = <<<EOD
+            <script type="module" defer>
+                import { pluginTab } from '$src';
+                pluginTab();
+            </script>
+            EOD;
+        }
 
         $html = <<<EOD
-        <div id="tab$id" class="plugin-tab$class">
+        <div id="tab$id" class="plugin-tab$class"$group>
             $html
         </div>
+        $script
         EOD;
 
         return $html;
@@ -174,7 +193,7 @@ class PluginTab
         foreach ($args as $arg) {
             [$key, $val] = array_map('trim', explode('=', $arg));
 
-            if ($key == 'class')  {
+            if ($key === 'class' || $key === 'group') {
                 // オプション
                 $this->options[$key] = htmlsc($val);
             } else {
