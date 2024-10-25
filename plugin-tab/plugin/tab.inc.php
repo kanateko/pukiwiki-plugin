@@ -2,12 +2,13 @@
 /**
 * 指定した領域のタブ切り替え表示を可能にするプラグイン
 *
-* @version 2.3.0
+* @version 2.3.1
 * @author kanateko
 * @link https://jpngamerswiki.com/?f51cd63681
 * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
 * -- Updates --
-* 2024-10-25 v2.3.0 初期状態で表示するタブを指定する機能を追加
+* 2024-10-25 v2.3.1 startで開始位置の指定に失敗した場合の処理を追加
+*            v2.3.0 初期状態で表示するタブを指定する機能を追加
 * 2024-09-22 v2.2.0 ページ内のタブを同期させるオプション (gorup) を追加
 * 2024-08-17 v2.1.0 ラベルのPukiWiki記法対応
 *                   classオプションが機能していなかった問題を修正
@@ -113,6 +114,7 @@ class PluginTab
         $num = 0;
         $group = $this->options['group'];
         $start = $this->options['start'] ?? $group !== null ? self::$start_index[$group] : null;
+        $num_contents = count($this->contents);
         $is_checked = false;
 
         foreach ($this->contents as $label => $content) {
@@ -120,12 +122,12 @@ class PluginTab
 
             if (! $is_checked) {
                 if ($start !== null) {
-                    if (is_int($start) && $num === $start) {
-                        $checked = ' checked';
-                        $is_checked = true;
-                    } elseif (preg_match($start, $label)) {
-                        $checked = ' checked';
-                        $is_checked = true;
+                    switch (true) {
+                        case is_int($start) && $num === $start:
+                        case is_string($start) && preg_match($start, $label):
+                        case $num === $num_contents - 1:
+                            $checked = ' checked';
+                            $is_checked = true;
                     }
                 } elseif ($num === 0) {
                     $checked = ' checked';
@@ -244,7 +246,6 @@ class PluginTab
             } else {
                 $this->options['start'] = null;
             }
-            
         }
     }
 
