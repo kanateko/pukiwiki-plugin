@@ -2,11 +2,12 @@
 /**
 * 指定した領域のタブ切り替え表示を可能にするプラグイン
 *
-* @version 2.2.0
+* @version 2.3.0
 * @author kanateko
 * @link https://jpngamerswiki.com/?f51cd63681
 * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
 * -- Updates --
+* 2024-10-25 v2.3.0 初期状態で表示するタブを指定する機能を追加
 * 2024-09-22 v2.2.0 ページ内のタブを同期させるオプション (gorup) を追加
 * 2024-08-17 v2.1.0 ラベルのPukiWiki記法対応
 *                   classオプションが機能していなかった問題を修正
@@ -68,6 +69,7 @@ class PluginTab
     private bool $is_legacy;
     private static int $id;
     private static bool $loaded;
+    private static array $start_index;
 
     /**
      * コンストラクタ
@@ -80,6 +82,7 @@ class PluginTab
         $this->is_legacy = false;
         self::$id ??= 0;
         self::$loaded ??= false;
+        self::$start_index ??= [];
 
         $multiline = array_pop($args);
         $multiline = preg_replace("/\r|\r\n/", "\n", $multiline);
@@ -108,11 +111,30 @@ class PluginTab
         $script = '';
         $id = self::$id++;
         $num = 0;
+        $group = $this->options['group'];
+        $start = $this->options['start'] ?? $group !== null ? self::$start_index[$group] : null;
+        $is_checked = false;
 
         foreach ($this->contents as $label => $content) {
+            $checked = '';
+
+            if (! $is_checked) {
+                if ($start !== null) {
+                    if (is_int($start) && $num === $start) {
+                        $checked = ' checked';
+                        $is_checked = true;
+                    } elseif (preg_match($start, $label)) {
+                        $checked = ' checked';
+                        $is_checked = true;
+                    }
+                } elseif ($num === 0) {
+                    $checked = ' checked';
+                    $is_checked = true;
+                }
+            }
+
             $label = make_link($label);
             $content = convert_html($content);
-            $checked = $num == 0 ? ' checked' : '';
 
             $html .= <<<EOD
             <input id="tab{$id}_$num" type="radio" name="tab{$id}" class="tab-switch"$checked />
@@ -194,15 +216,36 @@ class PluginTab
             [$key, $val] = array_map('trim', explode('=', $arg));
 
             if ($key === 'class' || $key === 'group') {
-                // オプション
+                // クラス, グループ
                 $this->options[$key] = htmlsc($val);
+            } elseif ($key === 'start') {
+                // 開始位置
+                if (is_numeric($val)) {
+                    // 番号
+                    $val = $val < 1 ? 1 : $val;
+                    $this->options[$key] = (int)$val - 1;
+                } else {
+                    // 文字列一致
+                    $this->options[$key] = '/' . htmlsc(str_replace('/', '\/', $val)) . '/';
+                }
             } else {
                 // ラベル
                 $this->labels[] = $arg;
             }
         }
 
+        // 旧書式使用
         if (! empty($this->labels)) $this->is_legacy = true;
+
+        // グループと開始位置の調整
+        if ($this->options['group'] !== null && $this->options['start'] !== null) {
+            if (self::$start_index[$this->options['group']] === null) {
+                self::$start_index[$this->options['group']] = $this->options['start'];
+            } else {
+                $this->options['start'] = null;
+            }
+            
+        }
     }
 
     /**
