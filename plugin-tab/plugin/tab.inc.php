@@ -2,11 +2,12 @@
 /**
 * 指定した領域のタブ切り替え表示を可能にするプラグイン
 *
-* @version 2.3.2
+* @version 2.3.3
 * @author kanateko
 * @link https://jpngamerswiki.com/?f51cd63681
 * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
 * -- Updates --
+* 2024-12-07 v2.3.3 タブ数が二桁以上のときに内容が正常に表示されない問題を修正
 * 2024-10-25 v2.3.2 groupの指定がない場合にstartの指定が効かない問題を修正
 *            v2.3.1 startで開始位置の指定に失敗した場合の処理を追加
 *            v2.3.0 初期状態で表示するタブを指定する機能を追加
@@ -323,7 +324,7 @@ class PluginTab
 
             preg_match($pattern ,$ml, $nested);
             $this->nested_plugins[$i] = $nested[0];
-            $ml = preg_replace('/' . preg_quote($nested[0], '/') . '/', '%np' . $i++, $ml);
+            $ml = preg_replace('/' . preg_quote($nested[0], '/') . '/', '%np' . $i++ . '%', $ml);
         }
 
         return $ml;
@@ -338,7 +339,7 @@ class PluginTab
     {
         foreach($this->contents as $label => $content) {
             foreach($this->nested_plugins as $i => $replace) {
-                $pattern = "%np$i";
+                $pattern = "%np$i%";
                 $content = str_replace($pattern, $replace, $content);
                 $this->contents[$label] = $content;
             }
