@@ -1,13 +1,17 @@
 <?php
 /**
- * フォーム形式のページテンプレートプラグイン (配布版)
+ * フォーム形式のページテンプレートプラグイン
  *
- * @version 1.2.1
+ * @version 1.3.0
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * @todo 非同期バリデーション + プレビュー
  * -- Updates --
+ * 2025-01-12 v1.3.0 入力サジェスト機能を追加
+ *                   全般設定の書式を追加
+ *                   全般設定として親ページの指定を追加
+ *                   ページ名の自動入力に関連する問題を修正
  * 2024-02-06 v1.2.1 クエリのpageで事前にページ名を指定する機能を追加
  *                   nullとfilledに空白や改行の置き換えを追加
  * 2023-08-31 v1.2.0 filledオプションを追加
@@ -25,7 +29,7 @@
  */
 
 // スタイルシート
-define('PLUGIN_NEWTPL_CSS', SKIN_DIR . 'css/newtpl.css');
+define('PLUGIN_NEWTPL_CSS', SKIN_DIR . 'css/newtpl.min.css');
 // テンプレートの親ページ
 define('PLUGIN_NEWTPL_ROOT', ':config/plugin/newtpl/');
 // 管理者のみ
@@ -40,12 +44,14 @@ define('PLUGIN_NEWTPL_MAX_FILESIZE', 1024);
 define('PLUGIN_NEWTPL_ENABLE_UPLOADTO', true);
 // fileのアップロードページに指定不可能なページ (正規表現)
 define('PLUGIN_NEWTPL_UPLOADTO_EXCEPTION', '/^(FrontPage|MenuBar|トップページ)$/');
+// autoComplete (入力サジェスト) の有効/無効
+define('PLUGIN_NEWTPL_ENABLE_AUTOCOMPLETE', true);
 
 // 連携プラグインの読み込み
 require_once(PLUGIN_DIR . 'newpage.inc.php');
 
 /**
- * 初期丘
+ * 初期化
  *
  * @return void
  */
@@ -58,6 +64,7 @@ function plugin_newtpl_init(): void
         'msg_notpl'        => '利用可能なテンプレートがありません。',
         'msg_tplform'      => 'テンプレート：$1',
         'label_pagename'   => 'ページ名',
+        'label_rootname'   => '親ページ：',
         'label_auth'       => '管理者パスワード',
         'label_maxsize'    => '最大サイズ：$1 KB',
         'warn_used'        => 'ページ名 "$1" は既に使用されています。',
@@ -141,8 +148,8 @@ class NewtplList
     {
         global $vars;
 
-        $page = $vars['page'] ? '&page=' . htmlsc($vars['page']) : '';
-        $refer = htmlsc($vars['refer']);
+        $page = $vars['page'] && ! is_page($vars['page']) ? '&page=' . htmlsc($vars['page']) : '';
+        $refer = $vars['page'] && is_page($vars['page']) ? htmlsc($vars['page']) : htmlsc($vars['refer']);
         $templates = $this->get_templates();
         $body = Newtpl::get_message('msg_template') . "\n";
 
@@ -200,6 +207,7 @@ class NewtplForm
     private $tplpage;
     private $notification;
     private static $script = [];
+    private static $ac_id = 0;
 
     /**
      * コンストラクタ
@@ -208,6 +216,8 @@ class NewtplForm
      */
     public function __construct($tplname, $notification = null)
     {
+        global $head_tags;
+
         $esc = htmlsc($tplname);
         $this->msg = Newtpl::get_message('msg_tplform', $esc, false);
         $this->tplname = $esc;
@@ -219,6 +229,11 @@ class NewtplForm
             die_message(Newtpl::get_message('err_noexist', $this->tplname, false));
         elseif (PLUGIN_NEWTPL_RESTRICT && ! is_freeze($this->tplcfg) && is_freeze($this->tplpage))
             die_message(Newtpl::get_message('err_freeze'));
+
+        if (PLUGIN_NEWTPL_ENABLE_AUTOCOMPLETE) {
+            // 入力サジェスト用ライブラリ
+            $head_tags[] = '<script src="https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.9/dist/autoComplete.min.js"></script>';
+        }
     }
 
     /**
@@ -238,10 +253,12 @@ class NewtplForm
             exit;
         }
 
-        $items = Newtpl::parse_config($this->tplcfg);
+        [$items, $settings] = Newtpl::parse_config($this->tplcfg);
         $token = $_SESSION['token'] = Newtpl::token(16);
         $names = ['page' => true, '_date' => true];
         $fields = '';
+        $scripts = '';
+
         foreach ($items as $item => $cfg) {
             // 不正項目をスキップ
             if (! (isset($cfg['type']) && isset($cfg['name']))) continue;
@@ -290,6 +307,63 @@ class NewtplForm
                     </div>
                 </fieldset>
                 EOD;
+
+                // 入力サジェスト用スクリプト
+                if (isset($cfg['suggest'])) {
+                    $id = self::$ac_id++;
+                    $array = [];
+                    $getpages = new NewtplGetPages;
+
+                    if ($cfg['suggest'] === 'all') {
+                        // 全ページ
+                        $array = $getpages->get_pages();
+                    } elseif (preg_match('/^tag:(.+)$/', $cfg['suggest'], $m)) {
+                        $array = $getpages->get_pages_by_tag($m[1]);
+                    } elseif (preg_match('/^root:(.+)$/', $cfg['suggest'], $m)) {
+                        $array = $getpages->get_pages_from_root($m[1]);
+                    } elseif (preg_match('/^regexp:(.+)$/', $cfg['suggest'], $m)) {
+                        $array = $getpages->get_pages_by_regexp($m[1]);
+                    } else {
+                        $array = explode('|', $cfg['suggest']);
+                        $array = array_map('htmlsc', $array);
+                    }
+
+                    $src = json_encode($array, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
+                    $scripts .= <<<EOD
+                    <script>
+                        const autoComplete{$id} = new autoComplete({
+                            selector: "#autoComplete{$id}",
+                            data: {
+                                src: $src,
+                                cache: true,
+                            },
+                            resultsList: {
+                                maxResults: 25
+                            },
+                            resultItem: {
+                                highlight: true
+                            },
+                            events: {
+                                input: {
+                                    selection: (event) => {
+                                        const selection = event.detail.selection.value;
+                                        autoComplete{$id}.input.value = selection;
+                                    }
+                                }
+                            }
+                        });
+                    </script>
+                    EOD;
+                }
+            }
+        }
+
+        $rootname = '';
+
+        foreach ($settings as $key => $val) {
+            if ($key === 'root') {
+                $fields .= '<input type="hidden" name="_' . $key . '" value="' . $val . '">' . "\n";
+                $rootname = '<p class="newtpl-desc">' . $_newtpl_messages['label_rootname'] . $val . '</p>';
             }
         }
 
@@ -319,6 +393,7 @@ class NewtplForm
                     <legend class="newtpl-label">{$_newtpl_messages['label_pagename']}</legend>
                     <div class="newtpl-post">
                         <input type="text" name="page" value="$p_page" required>
+                        $rootname
                     </div>
                 </fieldset>
                 $fields
@@ -327,6 +402,7 @@ class NewtplForm
                 <button type="submit" class="newtpl-submit" name="_submit" value="1">{$_newtpl_messages['btn_submit']}</button>
             </div>
         </form>
+        $scripts
         EOD;
 
         return ['msg' => $this->msg, 'body' => $body];
@@ -345,6 +421,7 @@ class NewtplForm
         global $vars;
 
         $name = $cfg['name'];
+        $id = $cfg['suggest'] ? ' id="autoComplete' . self::$ac_id . '"' : '';
         $holder = $cfg['placeholder'] ? ' placeholder="' . $cfg['placeholder'] . '"' : '';
         $max = $cfg['max'] > 0 ? ' maxlength="' . $cfg['max'] . '" data-max="' . $cfg['max'] . '"' : '';
         $require = $cfg['required'] === 'true' ? ' required' : '';
@@ -365,9 +442,9 @@ class NewtplForm
         }
 
         if ($cfg['type'] === 'text') {
-            $field = "<input type=\"text\" name=\"$name\"$holder$default$max$require>\n";
+            $field = "<input$id type=\"text\" name=\"$name\"$holder$default$max$require>\n";
         } else {
-            $field = "<textarea name=\"$name\"$holder$max$require>$default</textarea>\n";
+            $field = "<textarea$id name=\"$name\"$holder$max$require>$default</textarea>\n";
         }
 
         return $field;
@@ -577,6 +654,7 @@ class NewtplPage
     private $tplcfg;
     private $tplpage;
     private $items;
+    private $settings;
 
     /**
      * コンストラクタ
@@ -593,12 +671,16 @@ class NewtplPage
             // 相対パスを絶対パスに変換
             $this->pagename = get_fullname($vars['page'], $vars['refer']);
         } else {
-            $this->pagename = $vars['page'];
+            if ($vars['_root']) {
+                $this->pagename = $vars['_root'] . '/' . $vars['page'];
+            } else {
+                $this->pagename = $vars['page'];
+            }
         }
         if (! (is_page($this->tplcfg) && is_page($this->tplpage))) {
             die_message(Newtpl::get_message('err_noexist', $this->tplname, false));
         } else {
-            $this->items = Newtpl::parse_config($this->tplcfg, true);
+            [$this->items, $this->settings] = Newtpl::parse_config($this->tplcfg, true);
         }
     }
 
@@ -832,6 +914,127 @@ class NewtplPage
 }
 
 /**
+ * サジェスト用ページ一覧取得
+ *
+ * @property array $existpages
+ * @property bool $tag_available
+ */
+class NewtplGetPages
+{
+    private $existpages;
+    private $tag_available;
+    private $regexp_exception = '/^(Comments|コメント)\//';
+
+    /**
+     * コンストラクタ
+     */
+    public function __construct()
+    {
+        $existpages = get_existpages();
+        $this->existpages = $this->sort_pages($existpages);
+        $this->tag_available = exist_plugin('tag');
+    }
+
+    /**
+     * 全ページの取得
+     *
+     * @return array
+     */
+    public function get_pages(): array
+    {
+        $pages = [];
+        foreach ($this->existpages as $page) $pages[] = $page;
+
+        return $pages;
+    }
+
+    /**
+     * タグ指定でのページ取得
+     *
+     * @param string query
+     * @return array
+     */
+    public function get_pages_by_tag($query): array
+    {
+        $pages = [];
+
+        if ($this->tag_available) {
+            $tags = explode('|', $query);
+
+            foreach ($tags as $tag) {
+                $plugin_tag = new PluginSonotsTag();
+                $tagged_pages = $plugin_tag->get_taggedpages($tag);
+                $tagged_pages = $this->sort_pages($tagged_pages);
+                $pages = [...$pages, ...$tagged_pages];
+            }
+        }
+
+        return $pages;
+    }
+
+    /**
+     * 親ページ指定でのページ取得
+     *
+     * @param string query
+     * @return array
+     */
+    public function get_pages_from_root($query): array
+    {
+        global $vars;
+
+        $pages = [];
+        $existpages = $this->existpages;
+        $roots = explode('|', $query);
+
+        foreach ($roots as $root) {
+            if (strpos($root, './') !== false) {
+                // 相対パスを絶対パスに変換
+                $root = get_fullname($root, $vars['page']);
+            }
+
+            foreach ($existpages as $page) {
+                if (preg_match('/^' . $root . '\/.+/', $page)) $pages[] = $page;
+            }
+        }
+
+        return $pages;
+    }
+
+    /**
+     * 正規表現でのページ取得
+     *
+     * @param string query
+     * @return array
+     */
+    public function get_pages_by_regexp($query): array
+    {
+        $pages = [];
+        $pattern = str_replace('/', '\/', $query);
+        $existpages = $this->existpages;
+
+        foreach ($existpages as $page) {
+            if (preg_match('/' . $pattern . '/', $page) && ! preg_match($this->regexp_exception, $page)) $pages[] = $page;
+        }
+
+        $pages = $this->sort_pages($pages);
+
+        return $pages;
+    }
+
+    /**
+     * ページ一覧のソート
+     *
+     * @param array $pages
+     * @return array
+     */
+    public function sort_pages($pages): array
+    {
+        natsort($pages);
+        return $pages;
+    }
+}
+
+/**
  * 汎用
  */
 class Newtpl
@@ -862,7 +1065,7 @@ class Newtpl
      * 各項目と設定の取得
      *
      * @param string $tplcfg テンプレの設定ページ
-     * @return array $items 入力項目と設定
+     * @return array $items 入力項目と設定 $settings その他設定
      */
     public static function parse_config($tplcfg): array
     {
@@ -870,6 +1073,8 @@ class Newtpl
         $src = array_map('trim', $src);
         $title = '';
         $items = [];
+        $settings = [];
+
         foreach ($src as $line) {
             $line = htmlsc($line);
             if (preg_match('/^-([^\-]+(?<!\*))(\*)?$/', $line, $m)) {
@@ -883,12 +1088,16 @@ class Newtpl
                 $key = trim($key);
                 $val = trim($val);
                 $items[$title][$key] = $val;
+            } elseif (preg_match('/^:([^:|]+)\|(.+)$/', $line, $m)) {
+                if ($m[1] === 'root') {
+                    $settings[$m[1]] = htmlsc($m[2]);
+                }
             } else {
                 continue;
             }
         }
 
-        return $items;
+        return [$items, $settings];
     }
 
     /**
