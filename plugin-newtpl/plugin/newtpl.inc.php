@@ -9,6 +9,7 @@
  * @todo 非同期バリデーション + プレビュー
  * -- Updates --
  * 2025-01-14 v1.3.1 入力サジェストに指定したページの添付ファイル一覧を追加
+ *                   設定取得時の正規表現を修正
  * 2025-01-12 v1.3.0 入力サジェスト機能を追加
  *                   全般設定の書式を追加
  *                   全般設定として親ページの指定を追加
@@ -1109,18 +1110,18 @@ class Newtpl
 
         foreach ($src as $line) {
             $line = htmlsc($line);
-            if (preg_match('/^-([^\-]+(?<!\*))(\*)?$/', $line, $m)) {
+            if (preg_match('/^-((?!-).+(?<!\*))(\*)?$/', $line, $m)) {
                 // 項目名
                 $title = $m[1];
                 if ($m[2]) $items[$title]['required'] = 'true';
                 else $items[$title]['required'] = 'false';
-            } elseif (preg_match('/^--([^\-]+)$/', $line, $m) && ! empty($title)) {
+            } elseif (preg_match('/^--((?!-).+)$/', $line, $m) && ! empty($title)) {
                 // 各項目のオプション
                 [$key, $val] = explode('=', $m[1], 2);
                 $key = trim($key);
                 $val = trim($val);
                 $items[$title][$key] = $val;
-            } elseif (preg_match('/^:([^:|]+)\|(.+)$/', $line, $m)) {
+            } elseif (preg_match('/^:([^|]+)\|(.+)$/', $line, $m)) {
                 if ($m[1] === 'root') {
                     $settings[$m[1]] = htmlsc($m[2]);
                 }
