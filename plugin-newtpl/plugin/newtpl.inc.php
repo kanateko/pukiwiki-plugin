@@ -2,12 +2,13 @@
 /**
  * フォーム形式のページテンプレートプラグイン
  *
- * @version 1.3.0
+ * @version 1.3.1
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * @todo 非同期バリデーション + プレビュー
  * -- Updates --
+ * 2025-01-14 v1.3.1 入力サジェストに指定したページの添付ファイル一覧を追加
  * 2025-01-12 v1.3.0 入力サジェスト機能を追加
  *                   全般設定の書式を追加
  *                   全般設定として親ページの指定を追加
@@ -312,17 +313,19 @@ class NewtplForm
                 if (isset($cfg['suggest'])) {
                     $id = self::$ac_id++;
                     $array = [];
-                    $getpages = new NewtplGetPages;
+                    $getsuggets = new NewtplGetSuggestList;
 
                     if ($cfg['suggest'] === 'all') {
                         // 全ページ
-                        $array = $getpages->get_pages();
+                        $array = $getsuggets->get_pages();
                     } elseif (preg_match('/^tag:(.+)$/', $cfg['suggest'], $m)) {
-                        $array = $getpages->get_pages_by_tag($m[1]);
+                        $array = $getsuggets->get_pages_by_tag($m[1]);
                     } elseif (preg_match('/^root:(.+)$/', $cfg['suggest'], $m)) {
-                        $array = $getpages->get_pages_from_root($m[1]);
+                        $array = $getsuggets->get_pages_from_root($m[1]);
                     } elseif (preg_match('/^regexp:(.+)$/', $cfg['suggest'], $m)) {
-                        $array = $getpages->get_pages_by_regexp($m[1]);
+                        $array = $getsuggets->get_pages_by_regexp($m[1]);
+                    } elseif (preg_match('/^file(path)?:(.+)$/', $cfg['suggest'], $m)) {
+                        $array = $getsuggets->get_files_by_page($m[2], !! $m[1]);
                     } else {
                         $array = explode('|', $cfg['suggest']);
                         $array = array_map('htmlsc', $array);
@@ -392,8 +395,8 @@ class NewtplForm
                 <fieldset class="newtpl-item" data-require="true">
                     <legend class="newtpl-label">{$_newtpl_messages['label_pagename']}</legend>
                     <div class="newtpl-post">
-                        <input type="text" name="page" value="$p_page" required>
                         $rootname
+                        <input type="text" name="page" value="$p_page" required>
                     </div>
                 </fieldset>
                 $fields
@@ -914,12 +917,12 @@ class NewtplPage
 }
 
 /**
- * サジェスト用ページ一覧取得
+ * サジェスト一覧取得
  *
  * @property array $existpages
  * @property bool $tag_available
  */
-class NewtplGetPages
+class NewtplGetSuggestList
 {
     private $existpages;
     private $tag_available;
@@ -1019,6 +1022,35 @@ class NewtplGetPages
         $pages = $this->sort_pages($pages);
 
         return $pages;
+    }
+
+    /**
+     * ページに添付されたファイルを取得
+     *
+     * @param string $page
+     * @param bool $is_fullpath
+     * @return array
+     */
+    public function get_files_by_page($page, $is_fullpath): array
+    {
+        $files = [];
+        if (! is_page($page)) return $files;
+
+        $pattern = UPLOAD_DIR . encode($page) . '_*';
+        $files_attached = glob($pattern);
+
+        foreach ($files_attached as $file) {
+            if (strpos($file, '.') !== false) continue;
+            [, $filename] = array_map('decode', explode('_', $file, 2));
+
+            if ($is_fullpath) {
+                $files[] = $page . '/' . $filename;
+            } else {
+                $files[] = $filename;
+            }
+        }
+
+        return $files;
     }
 
     /**
