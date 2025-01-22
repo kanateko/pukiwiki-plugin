@@ -2,12 +2,13 @@
 /**
  * フォーム形式のページテンプレートプラグイン
  *
- * @version 1.3.1
+ * @version 1.4.0
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * @todo 非同期バリデーション + プレビュー
  * -- Updates --
+ * 2025-01-22 v1.4.0 インライン型を追加 (フォームへのリンク作成)
  * 2025-01-14 v1.3.1 入力サジェストに指定したページの添付ファイル一覧を追加
  *                   設定取得時の正規表現を修正
  * 2025-01-12 v1.3.0 入力サジェスト機能を追加
@@ -69,6 +70,7 @@ function plugin_newtpl_init(): void
         'label_rootname'   => '親ページ：',
         'label_auth'       => '管理者パスワード',
         'label_maxsize'    => '最大サイズ：$1 KB',
+        'label_newpage'    => '新規ページを作成',
         'warn_used'        => 'ページ名 "$1" は既に使用されています。',
         'warn_wrongpass'   => 'パスワードが間違っています。',
         'warn_pagename'    => 'ページ名が長すぎます。 (max: $1 bytes)',
@@ -82,16 +84,24 @@ function plugin_newtpl_init(): void
         'btn_back'         => '戻る',
         'err_noexist'      => '#newtpl Error: Failed to load the template. ($1)',
         'err_readonly'     => '#newtpl Error: PKWK_READONLY Enabled.',
-        'err_token'        => '#newtpl Error: Invalid token. click <a href="$1">here</a> for refresh manually.',
-        'err_freeze'       => '#newtpl Error: Restrict mode enabled. Need to freeze config pages before load them.',
+        'err_token'        => '#newtpl Error: Invalid token. click <a href="$1">here</a> to refresh manually.',
+        'err_freeze'       => '#newtpl Error: Restrictive mode is enabled. Setting pages must be frozen.',
         'err_up_disabled'  => '#newtpl Error: "uploadto" option is disabled.',
-        'err_up_freezed'   => '#newtpl Error: You can not upload files to freezed pages. ($1)',
-        'err_up_exception' => '#newtpl Error: You can not upload files to "$1".',
-        'err_up_noexist'   => '#newtpl Error: The upload page does not exist. ($1)',
+        'err_up_freezed'   => '#newtpl Error: Failed to upload the file because the page is frozen. ($1)',
+        'err_up_exception' => '#newtpl Error: Uploading files to the page is not allowed. ($1)',
+        'err_up_noexist'   => '#newtpl Error: The page to upload the file does not exist. ($1)',
+        'err_args_missing' => '#newtpl Error: Required arguments are missing. ($1)',
+        'err_args_invalid' => '#newtpl Error: The argument is invalid. ($1)'
     ];
     set_plugin_messages($msg);
 
     $head_tags[] = '<link rel="stylesheet" href="' . PLUGIN_NEWTPL_CSS . '?t=' . filemtime(PLUGIN_NEWTPL_CSS) . '">';
+}
+
+function plugin_newtpl_inline(...$args): string
+{
+    $link = new NewtplLink($args);
+    return $link->create_link();
 }
 
 /**
@@ -125,14 +135,86 @@ function plugin_newtpl_action(): array
         else return $cmd->show_form();
     } elseif ($vars['tpl']) {
         // フォームの表示
-        $tplname = htmlsc(rawurldecode($vars['tpl']));
-        $cmd = new NewtplForm($tplname);
+        $tplname = rawurldecode($vars['tpl']);
+        $root = $vars['root'] ? rawurldecode($vars['root']) : null;
+        $cmd = new NewtplForm($tplname, null, $root);
         return $cmd->show_form();
     } else {
         // テンプレート一覧
         $cmd = new NewtplList;
         $body = plugin_newpage_convert() . "\n<br>\n" . $cmd->list_templates();
         return ['msg' => $_msg_newpage, 'body' => $body];
+    }
+}
+
+/**
+ * フォームへのリンク作成
+ */
+class NewtplLink
+{
+    private $tplname;
+    private $root;
+    private $alias;
+    private $err;
+
+    /**
+     * コンストラクタ
+     *
+     * @param array $args
+     */
+    public function __construct($args)
+    {
+        if (count($args) < 2) {
+            $this->err = Newtpl::get_message('err_args_missing', '&amp;newtpl(&lt;template name&gt;);', false);
+        } else {
+            $this->tplname = array_shift($args);
+            if ($this->tplname == '') $this->err = Newtpl::get_message('err_args_invalid', htmlsc($this->tplname), false);
+            [$this->root, $this->alias] = $this->parse_config($args);
+        }
+    }
+
+    /**
+     * リンクの作成
+     *
+     * @return string
+     */
+    public function create_link(): string
+    {
+        $html = '';
+        if ($this->err !== null) return $this->err;
+
+        $tplname = rawurlencode($this->tplname);
+        $root = $this->root !== null ? '&root=' . rawurlencode($this->root) : '';
+        $alias = htmlsc($this->alias);
+        $html = "<span class=\"newtpl-link\"><a href=\"./?cmd=newtpl&tpl=$tplname$root\">$alias</a></span>";
+
+        return $html;
+    }
+
+    /**
+     * オプションの取得
+     *
+     * @param array $args
+     * @return array
+     */
+    public function parse_config($args): array
+    {
+        global $vars, $_newtpl_messages;
+
+        $label = array_pop($args);
+        $alias = $label === '' ? $_newtpl_messages['label_newpage'] : $label;
+        $root = null;
+
+        foreach($args as $arg) {
+            [$key, $val] = array_map('trim', explode('=', $arg, 2));
+
+            if ($key === 'root') {
+                // 親ページ指定
+                $root = strpos($val, './') !== false ? get_fullname($vars['page'], $val) : $val;
+            }
+        }
+
+        return [$root, $alias];
     }
 }
 
@@ -208,6 +290,7 @@ class NewtplForm
     private $tplcfg;
     private $tplpage;
     private $notification;
+    private $root;
     private static $script = [];
     private static $ac_id = 0;
 
@@ -216,16 +299,17 @@ class NewtplForm
      *
      * @param string $tplname テンプレ名
      */
-    public function __construct($tplname, $notification = null)
+    public function __construct($tplname, $notification = null, $root = null)
     {
         global $head_tags;
 
-        $esc = htmlsc($tplname);
-        $this->msg = Newtpl::get_message('msg_tplform', $esc, false);
-        $this->tplname = $esc;
+        $tplname = htmlsc($tplname);
+        $this->msg = Newtpl::get_message('msg_tplform', $tplname, false);
+        $this->tplname = $tplname;
         $this->tplcfg = PLUGIN_NEWTPL_ROOT . $tplname;
         $this->tplpage = $this->tplcfg . '/page';
         $this->notification = $notification;
+        $this->root = htmlsc($root);
 
         if (! (is_page($this->tplcfg) && is_page($this->tplpage)))
             die_message(Newtpl::get_message('err_noexist', $this->tplname, false));
@@ -256,6 +340,7 @@ class NewtplForm
         }
 
         [$items, $settings] = Newtpl::parse_config($this->tplcfg);
+        $settings['root'] ??= $this->root;
         $token = $_SESSION['token'] = Newtpl::token(16);
         $names = ['page' => true, '_date' => true];
         $fields = '';
@@ -362,14 +447,14 @@ class NewtplForm
             }
         }
 
+        // 親ページ
         $rootname = '';
 
-        foreach ($settings as $key => $val) {
-            if ($key === 'root') {
-                $fields .= '<input type="hidden" name="_' . $key . '" value="' . $val . '">' . "\n";
-                $rootname = '<p class="newtpl-desc">' . $_newtpl_messages['label_rootname'] . $val . '</p>';
-            }
+        if ($settings['root'] !== null) {
+            $fields .= '<input type="hidden" name="_root" value="' . $settings['root'] . '">' . "\n";
+            $rootname = '<p class="newtpl-desc">' . $_newtpl_messages['label_rootname'] . $settings['root'] . '</p>';
         }
+
 
         // 管理者パスワードの認証
         if (($edit_auth && ! $auth_user) || PLUGIN_NEWTPL_ADMINONLY) $auth = <<<EOD
