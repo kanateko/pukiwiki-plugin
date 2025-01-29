@@ -2,11 +2,12 @@
 /**
 * 指定したテキストをワンクリックでコピーさせるプラグイン
 *
-* @version 1.0.0
+* @version 1.0.1
 * @author kanateko
 * @link https://jpngamerswiki.com/?f51cd63681
 * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
 * -- Updates --
+* 2-25-01-29 1.0.1 ソースコピー時に不要な改行が入らないよう修正
 * 2025-01-22 1.0.0 初版作成
 */
 
@@ -31,7 +32,6 @@ function plugin_clipboard_init(): void
         'label_copied'    => 'コピーしました',
         'label_copy_text' => 'コピーする',
         'label_copy_src'  => 'ソースをコピーする',
-        'lable_copy_icon' => '📋',
         'err_arg_invalid' => '#clipboard: Invalid Argument. ($0)'
     ];
     set_plugin_messages($msg);
@@ -130,11 +130,7 @@ class PluginClipboard
     {
         $source = htmlsc($this->content);
 
-        return <<<EOD
-        <$tag class="clipboard-source">
-            $source
-        </$tag>
-        EOD;
+        return "<$tag class=\"clipboard-source\">$source</$tag>";
     }
 
     /**
