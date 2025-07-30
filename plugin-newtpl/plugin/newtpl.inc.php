@@ -2,12 +2,14 @@
 /**
  * フォーム形式のページテンプレートプラグイン
  *
- * @version 1.4.0
+ * @version 1.4.1
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * @todo 非同期バリデーション + プレビュー
  * -- Updates --
+ * 2025-07-29 v1.4.1 親ページ指定周りのバグを修正
+ *                   意図せず不正な入力フォームが表示されてしまう問題を修正
  * 2025-01-22 v1.4.0 インライン型を追加 (フォームへのリンク作成)
  * 2025-01-14 v1.3.1 入力サジェストに指定したページの添付ファイル一覧を追加
  *                   設定取得時の正規表現を修正
@@ -120,7 +122,7 @@ function plugin_newtpl_convert(): string
  *
  * @return array
  */
-function plugin_newtpl_action(): array
+function plugin_newtpl_action(): ?array
 {
     global $vars, $_msg_newpage;
 
@@ -309,7 +311,7 @@ class NewtplForm
         $this->tplcfg = PLUGIN_NEWTPL_ROOT . $tplname;
         $this->tplpage = $this->tplcfg . '/page';
         $this->notification = $notification;
-        $this->root = htmlsc($root);
+        $this->root = $root === null ? $root : htmlsc($root);
 
         if (! (is_page($this->tplcfg) && is_page($this->tplpage)))
             die_message(Newtpl::get_message('err_noexist', $this->tplname, false));
@@ -356,35 +358,18 @@ class NewtplForm
             if ($cfg['type'] === 'hidden') {
                 $fields .= '<input type="hidden" name="' . $cfg['name'] . '" value="' . $cfg['value'] . '">' . "\n";
             } else {
-                switch ($cfg['type']) {
-                    case 'text':
-                    case 'textarea':
-                        $field = $this->text($cfg);
-                        break;
-                    case 'number':
-                    case 'range':
-                        $field = $this->number($cfg);
-                        break;
-                    case 'radio':
-                    case 'checkbox':
-                        if (empty($cfg['option'])) break;
-                        $field = $this->checkable($cfg);
-                        break;
-                    case 'select':
-                        if (empty($cfg['option'])) break;
-                        $field = $this->select($cfg);
-                        break;
-                    case 'file':
-                        $field = $this->file($cfg);
-                    default:
-                        continue;
-                }
+                $field = match($cfg['type']) {
+                    'text', 'textarea' => $this->text($cfg),
+                    'number', 'range' => $this->number($cfg),
+                    'radio', 'checkbox' => empty($cfg['option']) ? '' : $this->checkable($cfg),
+                    'select' => empty($cfg['option']) ? '' : $this->select($cfg),
+                    'file' => $this->file($cfg),
+                    default => ''
+                };
 
-                if (isset($cfg['desc'])) {
-                    $desc = '<p class="newtpl-desc">' . make_link(htmlspecialchars_decode($cfg['desc'])) . '</p>';
-                } else {
-                    $desc = '';
-                }
+                if ($field === '') continue;
+
+                $desc = isset($cfg['desc']) ? '<p class="newtpl-desc">' . make_link(htmlspecialchars_decode($cfg['desc'])) . '</p>' : '';
                 $fields .= <<<EOD
                 <fieldset class="newtpl-item" data-require="{$cfg['required']}">
                     <legend class="newtpl-label">$item</legend>
@@ -881,9 +866,9 @@ class NewtplPage
     /**
      * ページの作成
      *
-     * @return void
+     * @return never
      */
-    public function create_page(): void
+    public function create_page(): never
     {
         global $vars;
 
