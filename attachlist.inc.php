@@ -2,11 +2,13 @@
 /**
  * 添付ファイル一覧表示用プラグイン 配布版
  *
- * @version 1.1
+ * @version 1.3
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Update --
+ * 2025-08-05 v1.3 正規表現でのファイル一括指定を追加
+ * 2023-07-01 v1.2 添付日時の表示を修正
  * 2022-05-18 v1.1 1.5.4のURLカスタマイズに対応
  *                 一括管理画面のフォームの配置を若干変更
  * 2022-01-26 v1.0 attachプラグインを改造しなくても動作するように仕様を変更
@@ -153,7 +155,7 @@ function attachlist_get_files($page, $dir)
         preg_match('/.+_([^\.]+)$/', $file, $matches);
         if (empty($matches[1])) continue;
         $files[$i]['name'] = decode($matches[1]);
-        $files[$i]['time'] = format_date(filemtime($file));
+        $files[$i]['time'] = format_date(filemtime($file) - LOCALZONE);
         $files[$i]['size'] = attachlist_get_filesize($file);
     }
 
@@ -272,9 +274,15 @@ EOD;
     <input type="hidden" name="cmd" value="attachlist">
     <input type="hidden" name="pcmd" value="confirm">
     <input type="hidden" name="page" value="$page">
-    <input type="submit" name="mode" value="削除">
-    <input type="submit" name="mode" value="凍結">
-    <input type="submit" name="mode" value="解凍">
+    <div style="margin-bottom:24px">
+        <label for="filter_re">正規表現で指定</label>
+        <input type="text" id="filter_re" name="re">
+    </div>
+    <div>
+        <input type="submit" name="mode" value="削除">
+        <input type="submit" name="mode" value="凍結">
+        <input type="submit" name="mode" value="解凍">
+    </div>
 </form>
 $js
 EOD;
@@ -297,16 +305,35 @@ function attachlist_confirmation($msg, $page)
     $mode = isset($vars['mode']) ? htmlsc($vars['mode']) : '';
 
     // 選択した添付ファイルのリストを作成
-    $targets = '';
-    if ($vars['file']) {
-        foreach ($vars['file'] as $i => $val) {
-            $targets .= '<li><input type="hidden" name="file[' . $i . ']" value="' . $val . '">' . $val . '</li>' . "\n";
+    $files = [];
+
+    if ($vars['re']) {
+        // 正規表現での指定
+        $pattern = '/' . str_replace('/', '\/', $vars['re']) . '/';
+        $allfiles = attachlist_get_files($page, UPLOAD_DIR);
+
+        foreach ($allfiles as $file) {
+            if (preg_match($pattern, $file['name'])) {
+                $files[] = $file['name'];
+            }
         }
-        $targets = '<ul>' . $targets . '</ul>';
-    } else {
-        // ファイルが一つも選択されていなかった場合はエラー
+    } elseif ($vars['file']) {
+        // 手動選択
+        $files = $vars['file'];
+    }
+
+    // ファイルが一つも選択されていなかった場合はエラー
+    if (empty($files)) {
         return array('msg' => $msg, 'body' => '<p>ファイルが選択されていません</p>');
     }
+
+    $targets = '';
+
+    foreach ($files as $i => $val) {
+        $targets .= '<li><input type="hidden" name="file[' . $i . ']" value="' . $val . '">' . $val . '</li>' . "\n";
+    }
+
+    $targets = '<ul>' . $targets . '</ul>';
 
     // 最終確認用フォームの作成
     $auth_failed = '<p>パスワードが違います</p>' . "\n";
