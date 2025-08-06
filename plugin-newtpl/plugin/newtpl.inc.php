@@ -2,12 +2,13 @@
 /**
  * フォーム形式のページテンプレートプラグイン
  *
- * @version 1.4.1
+ * @version 1.4.2
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * @todo 非同期バリデーション + プレビュー
  * -- Updates --
+ * 2025-07-29 v1.4.2 予約済みのキーとしてUnixタイムスタンプを追加
  * 2025-07-29 v1.4.1 親ページ指定周りのバグを修正
  *                   意図せず不正な入力フォームが表示されてしまう問題を修正
  * 2025-01-22 v1.4.0 インライン型を追加 (フォームへのリンク作成)
@@ -887,6 +888,7 @@ class NewtplPage
         $postdata = $this->replace('_tpl', $this->tplcfg, $postdata);
         $postdata = $this->replace('_tpllink', '[[' . $this->tplcfg . ']]', $postdata);
         $postdata = $this->replace('_date', format_date(UTIME), $postdata);
+        $postdata = $this->replace('_unix', UTIME, $postdata);
 
         // 受け取った内容でテンプレートを置換
         foreach ($this->items as $item => $cfg) {
