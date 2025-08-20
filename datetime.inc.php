@@ -2,11 +2,12 @@
 /**
  * 指定したフォーマットで日付や時間を表示するプラグイン
  *
- * @version 1.0.1
+ * @version 1.0.2
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Updates --
+ * 2025-08-20 v1.0.2 現在時刻がずれる問題を修正
  * 2025-08-07 v1.0.1 PukiWikiの日付フォーマットを追加 (DATE_PKWK)
  * 2025-08-06 v1.0.0 初版作成
  */
@@ -32,7 +33,7 @@ function plugin_datetime_inline(string ...$args): string
         $datetime = format_date($timestamp);
     } else {
         // 定義済みor手動指定フォーマット
-        $timestamp = $has_timestamp ? (int)$args[1] : UTIME;
+        $timestamp = $has_timestamp ? (int)$args[1] : time();
         $format = match($args[0]) {
             'DATE_ATOM'    => DATE_ATOM,
             'DATE_COOKIE'  => DATE_COOKIE,
