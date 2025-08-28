@@ -2,13 +2,14 @@
 /**
  * フォーム形式のページテンプレートプラグイン
  *
- * @version 1.4.2
+ * @version 1.4.3
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * @todo 非同期バリデーション + プレビュー
  * -- Updates --
- * 2025-07-29 v1.4.2 予約済みのキーとしてUnixタイムスタンプを追加
+ * 2025-08-28 v1.4.3 AVIF画像に対応
+ * 2025-08-06 v1.4.2 予約済みのキーとしてUnixタイムスタンプを追加
  * 2025-07-29 v1.4.1 親ページ指定周りのバグを修正
  *                   意図せず不正な入力フォームが表示されてしまう問題を修正
  * 2025-01-22 v1.4.0 インライン型を追加 (フォームへのリンク作成)
@@ -43,7 +44,7 @@ define('PLUGIN_NEWTPL_ADMINONLY', false);
 // 設定ページの凍結の要/不要
 define('PLUGIN_NEWTPL_RESTRICT', false);
 // 添付可能なファイルのmime-type (カンマ区切り)
-define('PLUGIN_NEWTPL_AVAILABLE_FORMAT', 'image/jpeg,image/png,image/gif,image/webp');
+define('PLUGIN_NEWTPL_AVAILABLE_FORMAT', 'image/jpeg,image/png,image/gif,image/webp,image/avif');
 // 添付可能なファイルの最大サイズ (キロバイト)
 define('PLUGIN_NEWTPL_MAX_FILESIZE', 1024);
 // fileのアップロードページ指定オプションの有効/無効

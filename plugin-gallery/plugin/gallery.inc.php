@@ -2,11 +2,12 @@
 /**
  * photoswipe版 画像のギャラリー表示プラグイン (配布版)
  *
- * @version 2.8
+ * @version 2.9
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Updates --
+ * 2025-08-28 v2.9 AVIF画像に対応
  * 2024-09-09 v2.8 画像同士の余白を指定するオプション (gap) を追加
  * 2023-06-10 v2.7 all指定時、キャプションの投稿時間が正しくなかった問題を修正
  *                 sortとnocapを同時指定した際にキャプションが表示されてしまう問題を修正
@@ -62,7 +63,7 @@ define('PLUGIN_GALLERY_CSS', SKIN_DIR . 'css/gallery.css');
 define('PLUGIN_GALLERY_SEPARATOR', '>');
 // 対応フォーマット (参考：https://www.php.net/manual/ja/function.exif-imagetype.php)
 // gif, jpg, png, webp
-define('PLUGIN_GALLERY_AVAILABLE_FORMAT', '/[1-3]|18/');
+define('PLUGIN_GALLERY_AVAILABLE_FORMAT', '/[1-3]|18|19/');
 
 function plugin_gallery_init(): void
 {
@@ -624,7 +625,7 @@ class GalleryAction
             return false;
         }
         // フォーマット (jpg, png, gif, webp)
-        if(! preg_match(PLUGIN_GALLERY_AVAILABLE_FORMAT, getimagesize($file['tmp_name'])[2])) {
+        if(! preg_match(PLUGIN_GALLERY_AVAILABLE_FORMAT, (string)exif_imagetype($file['tmp_name']))) {
             $this->err = $_gallery_messages['msg_mime'];
             return false;
         }

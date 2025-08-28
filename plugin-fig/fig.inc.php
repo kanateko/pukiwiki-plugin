@@ -2,11 +2,12 @@
 /**
 * キャプション付きの図表を表示するプラグイン
 *
-* @version 1.4
+* @version 1.5
 * @author kanateko
 * @link https://jpngamerswiki.com/?f51cd63681
 * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
 * -- Update --
+* 2025-08-28 v1.5 AVIF画像に対応
 * 2022-05-20 v1.4 定数のフォーマットを修正
 *                 エラー関連の処理を変更
 * 2021-09-30 v1.3 クラスを追加する機能を追加
@@ -17,7 +18,7 @@
 */
 
 // 許可するmime-type
-define('FIG_FORMAT_REGEXP', '/image\/(jpeg|png|gif|webp)/i');
+define('FIG_FORMAT_REGEXP', '/image\/(jpeg|png|gif|webp|avif)/i');
 
 // デフォルトの表示位置 (left, center, right)
 define('FIG_DEFAULT_POSITION', 'right');

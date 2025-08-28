@@ -5,9 +5,12 @@
  * 画像を指定したサイズに縮小、トリミングして保存する。
  * 参考：https://qiita.com/suin/items/b01eebc05209dba0eb3e
  *
- * @version 1.1
+ * @version 1.2
  * @author kanateko
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
+ * -- Updates --
+ * 2025-08-28 v1.2 AVIF画像に対応
+ * 2021-07-28 v1.1 WEBP画像に対応
  */
 
  class ImageResizer
@@ -39,6 +42,9 @@
                 break;
             case IMAGETYPE_WEBP:
                 $source = imagecreatefromwebp($srcPath);
+                break;
+            case IMAGETYPE_AVIF:
+                $source = imagecreatefromavif($srcPath);
                 break;
             default:
                 return false;
