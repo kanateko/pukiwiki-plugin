@@ -2,12 +2,13 @@
 /**
  * フォーム形式のページテンプレートプラグイン
  *
- * @version 1.4.3
+ * @version 1.4.4
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * @todo 非同期バリデーション + プレビュー
  * -- Updates --
+ * 2025-09-01 v1.4.4 textareaのdefaultで改行 (\n) が使用できるよう改善
  * 2025-08-28 v1.4.3 AVIF画像に対応
  * 2025-08-06 v1.4.2 予約済みのキーとしてUnixタイムスタンプを追加
  * 2025-07-29 v1.4.1 親ページ指定周りのバグを修正
@@ -510,7 +511,7 @@ class NewtplForm
                     $default = $cfg['default'] ? ' value="' . $cfg['default'] . '"' : '';
                     break;
                 case 'textarea':
-                    $default = $cfg['default'] ?: '';
+                    $default = $cfg['default'] ? Newtpl::replace_meta_chars($cfg['default'], false) : '';
                     break;
                 default:
                     break;
@@ -899,8 +900,7 @@ class NewtplPage
             if (($type === 'file' && empty($_FILES[$name]['name'])) || ($type !== 'file' && $vars[$name] === '')) {
                 // 未入力の場合に表示する内容
                 if (isset($cfg['null'])) {
-                    $null = str_replace('\\s', ' ', htmlspecialchars_decode($cfg['null']));
-                    $null = str_replace('\\n', "\n", $null);
+                    $null = Newtpl::replace_meta_chars($cfg['null']);
                     $postdata = $this->replace($name, $null, $postdata);
                 } else {
                     $postdata = $this->replace($name, '', $postdata);
@@ -932,7 +932,7 @@ class NewtplPage
                         }
                         if (isset($cfg['filled']) && count($vars[$name]) > 0) {
                             // 入力内容を装飾
-                            $filled = str_replace('\\n', "\n", htmlspecialchars_decode($cfg['filled']));
+                            $filled = Newtpl::replace_meta_chars($cfg['filled']);
 
                             foreach ($vars[$name] as $i => $val) {
                                 $vars[$name][$i] = str_replace('%s', $val, $filled);
@@ -941,8 +941,7 @@ class NewtplPage
                         }
                         if (isset($cfg['separator'])) {
                             // 複数項目を表示する際のセパレータを変更
-                            $separator = str_replace('\\s', ' ', htmlspecialchars_decode($cfg['separator']));
-                            $separator = str_replace('\\n', "\n", $separator);
+                            $separator = Newtpl::replace_meta_chars($cfg['separator']);
                             $vars[$name] = implode($separator, $vars[$name]);
                         } else {
                             $vars[$name] = implode(',', $vars[$name]);
@@ -953,8 +952,7 @@ class NewtplPage
                         // その他項目
                         if ($cfg['link'] === 'true' && is_page($vars[$name])) $vars[$name] = '[[' . $vars[$name] . ']]';
                         if (isset($cfg['filled']) && isset($vars[$name])) {
-                            $filled = str_replace('\\s', ' ', htmlspecialchars_decode($cfg['filled']));
-                            $filled = str_replace('\\n', "\n", $filled);
+                            $filled = Newtpl::replace_meta_chars($cfg['filled']);
                             $vars[$name] = str_replace('%s', $vars[$name],  $filled);
                         }
                         $postdata = $this->replace($name, $vars[$name], $postdata);
@@ -1204,6 +1202,21 @@ class Newtpl
         }
 
         return [$items, $settings];
+    }
+
+    /**
+     * メタ文字 (\sと\n) を置換する
+     *
+     * @param string $str 置換する文字列
+     * @return string
+     */
+    public static function replace_meta_chars(string $str, bool $decode = true): string
+    {
+        $str = $decode ? htmlspecialchars_decode($str) : $str;
+        $str = str_replace('\\s', ' ', $str);
+        $str = str_replace('\\n', "\n", $str);
+
+        return $str;
     }
 
     /**
