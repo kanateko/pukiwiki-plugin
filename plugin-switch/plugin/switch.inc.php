@@ -2,11 +2,12 @@
 /**
 * プルダウンやスライダーと連動して表示内容を切り替えるプラグイン
 *
-* @version 1.0.1
+* @version 1.0.2
 * @author kanateko
 * @link https://jpngamerswiki.com/?f51cd63681
 * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
 * -- Updates --
+* 2025-09-01 v1.0.2 オプションが空の場合に、表示要素があってもエラーが出る問題を修正
 * 2024-09-09 v1.0.1 マルチライン内のテーブルが正しく変換されない問題を修正
 * 2024-08-25 v1.0.0 初版作成
 */
@@ -92,7 +93,7 @@ class PluginSwitchBase
         $this->group = static::DEFAULT_GROUP;
         $this->tag_type = static::DEFAULT_TYPE;
 
-        if (count($args) > 1) {
+        if (count($args) > 0 && ! empty(end($args))) {
             $items_str = array_pop($args);
             $this->parse_options($args);
             $this->parse_items($items_str);
@@ -301,7 +302,7 @@ class PluginSwitchBase
                         $this->err = ['err_unknown' => $arg];
                         break;
                     }
-                } elseif ($key == 'select' || $key == 'range') {
+                } elseif ($key == 'select' || $key == 'range' || $key == 'default') {
                     // 表示タイプ
                     $this->tag_type = $key;
                 } elseif ($key == 'transparent' || $key == 'disable' || $key == 'rtl') {
