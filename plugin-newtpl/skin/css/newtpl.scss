@@ -80,7 +80,7 @@
 .newtpl-post {
     display: flex;
     flex-direction: column;
-    input:not([type=range]),
+    input:not([type=range]):not([type=file]),
     select,
     textarea {
         background-color: var(--color-input-bg);

@@ -2,12 +2,13 @@
 /**
  * フォーム形式のページテンプレートプラグイン
  *
- * @version 1.4.4
+ * @version 1.4.5
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * @todo 非同期バリデーション + プレビュー
  * -- Updates --
+ * 2025-09-02 v1.4.5 fileでfilledの処理が抜けていたのを修正
  * 2025-09-01 v1.4.4 textareaのdefaultで改行 (\n) が使用できるよう改善
  * 2025-08-28 v1.4.3 AVIF画像に対応
  * 2025-08-06 v1.4.2 予約済みのキーとしてUnixタイムスタンプを追加
@@ -919,6 +920,10 @@ class NewtplPage
                         }
                         if (! file_exists(UPLOAD_DIR . $attach_name)) {
                             move_uploaded_file($file['tmp_name'], UPLOAD_DIR . $attach_name);
+                        }
+                        if (isset($cfg['filled'])) {
+                            $filled = Newtpl::replace_meta_chars($cfg['filled']);
+                            $filename = str_replace('%s', $filename, $filled);
                         }
                         $postdata = $this->replace($name, $filename, $postdata);
                         break;
