@@ -2,12 +2,15 @@
 /**
  * フォーム形式のページテンプレートプラグイン
  *
- * @version 1.4.5
+ * @version 1.5.0
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * @todo 非同期バリデーション + プレビュー
  * -- Updates --
+ * 2025-09-07 v1.5.0 デフォルト値にCookieに保存された値を使用する機能を追加
+ *                   textとnumberでのEnter送信を無効化
+ *                   JavaScriptを別ファイルに分離
  * 2025-09-02 v1.4.5 fileでfilledの処理が抜けていたのを修正
  * 2025-09-01 v1.4.4 textareaのdefaultで改行 (\n) が使用できるよう改善
  * 2025-08-28 v1.4.3 AVIF画像に対応
@@ -39,6 +42,8 @@
 
 // スタイルシート
 define('PLUGIN_NEWTPL_CSS', SKIN_DIR . 'css/newtpl.min.css');
+// JavaScript
+define('PLUGIN_NEWTPL_JS', SKIN_DIR . 'js/newtpl.min.js');
 // テンプレートの親ページ
 define('PLUGIN_NEWTPL_ROOT', ':config/plugin/newtpl/');
 // 管理者のみ
@@ -55,6 +60,8 @@ define('PLUGIN_NEWTPL_ENABLE_UPLOADTO', true);
 define('PLUGIN_NEWTPL_UPLOADTO_EXCEPTION', '/^(FrontPage|MenuBar|トップページ)$/');
 // autoComplete (入力サジェスト) の有効/無効
 define('PLUGIN_NEWTPL_ENABLE_AUTOCOMPLETE', true);
+// cookieの仕様を許可する
+define('PLUGIN_NEWTPL_USE_COOKIE', true);
 
 // 連携プラグインの読み込み
 require_once(PLUGIN_DIR . 'newpage.inc.php');
@@ -102,6 +109,16 @@ function plugin_newtpl_init(): void
     set_plugin_messages($msg);
 
     $head_tags[] = '<link rel="stylesheet" href="' . PLUGIN_NEWTPL_CSS . '?t=' . filemtime(PLUGIN_NEWTPL_CSS) . '">';
+    $src = './' . PLUGIN_NEWTPL_JS . '?t=' . filemtime(PLUGIN_NEWTPL_JS);
+    $head_tags[] = <<<EOD
+    <script type="importmap">
+        {
+            "imports": {
+                "newtpl": "$src"
+            }
+        }
+    </script>
+    EOD;
 }
 
 function plugin_newtpl_inline(...$args): string
@@ -350,7 +367,12 @@ class NewtplForm
         $token = $_SESSION['token'] = Newtpl::token(16);
         $names = ['page' => true, '_date' => true];
         $fields = '';
-        $scripts = '';
+        $scripts = <<<EOD
+        <script defer type="module">
+            import { newtplForm } from 'newtpl';
+            newtplForm();
+        </script>
+        EOD;
 
         foreach ($items as $item => $cfg) {
             // 不正項目をスキップ
@@ -374,33 +396,34 @@ class NewtplForm
                 if ($field === '') continue;
 
                 $desc = isset($cfg['desc']) ? '<p class="newtpl-desc">' . make_link(htmlspecialchars_decode($cfg['desc'])) . '</p>' : '';
+                $group = $cfg['type'] === 'checkbox' ? ' data-group="' . $cfg['name'] . '"' : '';
                 $fields .= <<<EOD
                 <fieldset class="newtpl-item" data-require="{$cfg['required']}">
                     <legend class="newtpl-label">$item</legend>
                     $desc
-                    <div class="newtpl-post">
+                    <div class="newtpl-post"$group>
                         $field
                     </div>
                 </fieldset>
                 EOD;
 
                 // 入力サジェスト用スクリプト
-                if (isset($cfg['suggest'])) {
+                if (PLUGIN_NEWTPL_ENABLE_AUTOCOMPLETE && isset($cfg['suggest'])) {
                     $id = self::$ac_id++;
                     $array = [];
-                    $getsuggets = new NewtplGetSuggestList;
+                    $autocomp = new NewtplAutoComplete;
 
                     if ($cfg['suggest'] === 'all') {
                         // 全ページ
-                        $array = $getsuggets->get_pages();
+                        $array = $autocomp->get_pages();
                     } elseif (preg_match('/^tag:(.+)$/', $cfg['suggest'], $m)) {
-                        $array = $getsuggets->get_pages_by_tag($m[1]);
+                        $array = $autocomp->get_pages_by_tag($m[1]);
                     } elseif (preg_match('/^root:(.+)$/', $cfg['suggest'], $m)) {
-                        $array = $getsuggets->get_pages_from_root($m[1]);
+                        $array = $autocomp->get_pages_from_root($m[1]);
                     } elseif (preg_match('/^regexp:(.+)$/', $cfg['suggest'], $m)) {
-                        $array = $getsuggets->get_pages_by_regexp($m[1]);
+                        $array = $autocomp->get_pages_by_regexp($m[1]);
                     } elseif (preg_match('/^file(path)?:(.+)$/', $cfg['suggest'], $m)) {
-                        $array = $getsuggets->get_files_by_page($m[2], !! $m[1]);
+                        $array = $autocomp->get_files_by_page($m[2], !! $m[1]);
                     } else {
                         $array = explode('|', $cfg['suggest']);
                         $array = array_map('htmlsc', $array);
@@ -408,28 +431,9 @@ class NewtplForm
 
                     $src = json_encode($array, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES);
                     $scripts .= <<<EOD
-                    <script>
-                        const autoComplete{$id} = new autoComplete({
-                            selector: "#autoComplete{$id}",
-                            data: {
-                                src: $src,
-                                cache: true,
-                            },
-                            resultsList: {
-                                maxResults: 25
-                            },
-                            resultItem: {
-                                highlight: true
-                            },
-                            events: {
-                                input: {
-                                    selection: (event) => {
-                                        const selection = event.detail.selection.value;
-                                        autoComplete{$id}.input.value = selection;
-                                    }
-                                }
-                            }
-                        });
+                    <script defer type="module">
+                        import { addAutoComplete } from 'newtpl';
+                        addAutoComplete($id, $src);
                     </script>
                     EOD;
                 }
@@ -503,20 +507,15 @@ class NewtplForm
         $holder = $cfg['placeholder'] ? ' placeholder="' . $cfg['placeholder'] . '"' : '';
         $max = $cfg['max'] > 0 ? ' maxlength="' . $cfg['max'] . '" data-max="' . $cfg['max'] . '"' : '';
         $require = $cfg['required'] === 'true' ? ' required' : '';
+        $default = $this->get_default_value($cfg);
 
         if ($vars[$name]) {
             $default = $cfg['type'] === 'text' ? ' value="' . htmlsc($vars[$name]) . '"' : htmlsc($vars[$name]);
         } else {
-            switch ($cfg['type']) {
-                case 'text':
-                    $default = $cfg['default'] ? ' value="' . $cfg['default'] . '"' : '';
-                    break;
-                case 'textarea':
-                    $default = $cfg['default'] ? Newtpl::replace_meta_chars($cfg['default'], false) : '';
-                    break;
-                default:
-                    break;
-            }
+            $default = match ($cfg['type']) {
+                'text' => $default ? ' value="' . $default . '"' : '',
+                'textarea' => $default ? Newtpl::replace_meta_chars($default, false) : '',
+            };
         }
 
         if ($cfg['type'] === 'text') {
@@ -546,44 +545,21 @@ class NewtplForm
         $min = isset($cfg['min']) ? ' min="' . $cfg['min'] . '" data-min="' . $cfg['min'] . '"' : '';
         $step = isset($cfg['step']) ? ' step="' . $cfg['step'] . '"' : '';
         $require = $cfg['required'] === 'true' ? ' required' : '';
+        $default = $this->get_default_value($cfg);
+        $output = $type === 'range' ? "<i class=\"$name-val\"></i>\n" : '';
 
         if ($vars[$name]) {
             $default = ' value="' . htmlsc($vars[$name]) . '"';
         } else {
-            $default = $cfg['default'] ? ' value="' . $cfg['default'] . '"' : '';
+            $default = $default ? ' value="' . $default . '"' : '';
         }
 
-        $field = "<input type=\"$type\" name=\"$name\"$default$min$max$step$require>\n";
+        $field = "<input type=\"$type\" name=\"$name\"$default$min$max$step$require>\n$output";
         /*
         $field = $type === 'number' ? "<input type=\"text\" inputmode=\"numeric\" pattern=\"[\d\-]*\"" : "<input type=\"$type\"";
         $field .= " name=\"$name\"$default$min$max$step$require>\n";
         */
 
-        if ($type === 'range') {
-            $field .= "<i class=\"$name-val\"></i>\n";
-            // rangeの数値表示用スクリプト
-            if (! self::$script['range']) {
-                self::$script['range'] = true;
-                $field .= <<<EOD
-                <script>
-                    document.addEventListener('DOMContentLoaded', () => {
-                        const rngs = document.querySelectorAll('.newtpl-post input[type="range"]');
-                        for (const rng of rngs) {
-                            showRangeValue(rng);
-                            rng.addEventListener('input', () => {
-                                showRangeValue(rng);
-                            });
-                        }
-                    });
-                    function showRangeValue(rng) {
-                        const rngval = rng.value;
-                        const display = rng.nextElementSibling;
-                        display.innerText = rngval;
-                    }
-                </script>
-                EOD;
-            }
-        }
         return $field;
     }
 
@@ -603,52 +579,25 @@ class NewtplForm
         $name = $type ==='radio' ? $cfg['name'] : $cfg['name'] . '[]';
         $options = explode('|', $cfg['option']);
         $require = $cfg['required'] === 'true' ? ' required' : '';
+        $default = $this->get_default_value($cfg);
 
         $field = '';
         foreach ($options as $i => $option) {
+            $check = '';
             $id = $cfg['name'] . $i;
             if ($vars[$cfg['name']]) {
-                switch ($type) {
-                    case 'radio':
-                        $check = $vars[$name] === $option ? ' checked' : '';
-                        break;
-                    case 'checkbox':
-                        $post = array_flip($vars[$cfg['name']]);
-                        $check = isset($post[$option]) ? ' checked' : '';
-                        break;
-                    default:
-                        break;
-                }
+                $check = match ($type) {
+                    'radio' => $vars[$name] === $option ? ' checked' : '',
+                    'checkbox' => in_array($option, $vars[$cfg['name']]) ? ' checked' : ''
+                };
             } else {
-                $check = $cfg['default'] === $option ? ' checked' : '';
+                if ($type === 'checkbox' && is_array($default)) {
+                    foreach ($default as $defval) if ($defval === $option) $check = ' checked';
+                } else {
+                    $check = $default === $option ? ' checked' : '';
+                }
             }
             $field .= "<input type=\"$type\" name=\"$name\" id=\"$id\" value=\"$option\"$check$require><label for=\"$id\">$option</label>\n";
-        }
-
-         // チェックボックス用のrequired切り替え用スクリプト
-         if ($type === 'checkbox' && $require && ! self::$script['chk']) {
-            self::$script['chk'] = true;
-            $field .= <<<EOD
-            <script>
-                document.addEventListener('DOMContentLoaded', () => {
-                    const chks = document.querySelectorAll('.newtpl-post input[type="checkbox"]');
-                    for (const chk of chks) {
-                        toggleReq(chk);
-                        chk.addEventListener('change', () => {
-                            toggleReq(chk);
-                        });
-                    }
-                });
-                function toggleReq(chk) {
-                    const group = document.querySelectorAll('input[name="' + chk.name + '"]');
-                    const checked = document.querySelectorAll('input[name="' + chk.name + '"]:checked');
-                    const stats = checked.length > 0 ? false : true;
-                    for (const t of group) {
-                        t.required = stats;
-                    }
-                }
-            </script>
-            EOD;
         }
 
         return $field;
@@ -669,13 +618,14 @@ class NewtplForm
         $name = $cfg['name'];
         $options = explode('|', $cfg['option']);
         $require = $cfg['required'] === 'true' ? ' required' : '';
+        $default = $this->get_default_value($cfg);
 
         $field = "<select name=\"$name\"$require>\n";
         foreach ($options as $option) {
             if ($vars[$name]) {
                 $select = $vars[$name] === $option ? ' selected' : '';
             } else {
-                $select = $cfg['default'] === $option ? ' selected' : '';
+                $select = $default === $option ? ' selected' : '';
             }
             $field .= "<option value=\"$option\"$select>$option</option>\n";
         }
@@ -710,6 +660,29 @@ class NewtplForm
         $field = "<i class=\"small\">$size</i><br><input type=\"file\" name=\"$name\" accept=\"$format\"$require>\n";
 
         return $field;
+    }
+
+    /**
+     * デフォルト値を取得
+     *
+     * @param array $cfg
+     * @return string|array
+     */
+    private function get_default_value($cfg): string|array
+    {
+        $value = '';
+
+        if (PLUGIN_NEWTPL_USE_COOKIE && $cfg['cookie'] === 'true') {
+            // Cookieから値を取得
+            $key = Newtpl::cookie_key($this->tplname, $cfg['name']);
+            $cookie = $_COOKIE[$key];
+            if ($cookie !== null && $cfg['type'] === 'checkbox') $cookie = json_decode($cookie, true);
+            $value = $cookie ?? $cfg['default'] ?? $value;
+        } else {
+            $value = $cfg['default'] ?? $value;
+        }
+
+        return $value;
     }
 }
 
@@ -929,6 +902,7 @@ class NewtplPage
                         break;
                     case 'checkbox':
                         // チェックボックス
+                        if (PLUGIN_NEWTPL_USE_COOKIE && $cfg['cookie'] === 'true') $this->save_default_value($name, $vars[$name], true);
                         if ($cfg['link'] === 'true') {
                             // 項目ごとにリンク化
                             foreach ($vars[$name] as $i => $val) {
@@ -942,7 +916,6 @@ class NewtplPage
                             foreach ($vars[$name] as $i => $val) {
                                 $vars[$name][$i] = str_replace('%s', $val, $filled);
                             }
-
                         }
                         if (isset($cfg['separator'])) {
                             // 複数項目を表示する際のセパレータを変更
@@ -955,6 +928,7 @@ class NewtplPage
                         break;
                     default:
                         // その他項目
+                        if (PLUGIN_NEWTPL_USE_COOKIE && $cfg['cookie'] === 'true') $this->save_default_value($name, $vars[$name], false);
                         if ($cfg['link'] === 'true' && is_page($vars[$name])) $vars[$name] = '[[' . $vars[$name] . ']]';
                         if (isset($cfg['filled']) && isset($vars[$name])) {
                             $filled = Newtpl::replace_meta_chars($cfg['filled']);
@@ -972,6 +946,22 @@ class NewtplPage
         page_write($this->pagename, $postdata);
         header('Location:' . get_page_uri($this->pagename));
         exit;
+    }
+
+    /**
+     * Cookieにデフォルト値を保存
+     *
+     * @param string $name 項目のname属性
+     * @param string|array $value 保存する値
+     * @param bool $is_array 値が配列かどうか
+     * @return boolean
+     */
+    private function save_default_value($name, $value, $is_array): bool
+    {
+        $key = Newtpl::cookie_key($this->tplname, $name);
+        if ($is_array === true) $value = json_encode($value, JSON_UNESCAPED_UNICODE);
+
+        return setcookie($key, $value);
     }
 
     /**
@@ -999,7 +989,7 @@ class NewtplPage
  * @property array $existpages
  * @property bool $tag_available
  */
-class NewtplGetSuggestList
+class NewtplAutoComplete
 {
     private $existpages;
     private $tag_available;
@@ -1215,13 +1205,25 @@ class Newtpl
      * @param string $str 置換する文字列
      * @return string
      */
-    public static function replace_meta_chars(string $str, bool $decode = true): string
+    public static function replace_meta_chars($str, $decode = true): string
     {
         $str = $decode ? htmlspecialchars_decode($str) : $str;
         $str = str_replace('\\s', ' ', $str);
         $str = str_replace('\\n', "\n", $str);
 
         return $str;
+    }
+
+    /**
+     * Cookieのキーを取得
+     *
+     * @param string $tplname
+     * @param string $name
+     * @return string
+     */
+    public static function cookie_key($tplname, $name): string
+    {
+        return 'newtpl_' . encode($tplname) . '_' . $name;
     }
 
     /**
