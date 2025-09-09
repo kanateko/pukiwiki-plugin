@@ -36,6 +36,10 @@ span.plugin-spoiler {
 }
 .plugin-spoiler[data-mode=hover]:hover::before, .plugin-spoiler[data-mode=hover]:hover::after {
   opacity: 0;
+  pointer-events: none;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
 }
 .plugin-spoiler.open::before, .plugin-spoiler.open::after {
   opacity: 0;

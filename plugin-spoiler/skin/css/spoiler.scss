@@ -37,6 +37,8 @@ span.plugin-spoiler {
             &::before,
             &::after {
                 opacity: 0;
+                pointer-events: none;
+                user-select: none;
             }
         }
     }
