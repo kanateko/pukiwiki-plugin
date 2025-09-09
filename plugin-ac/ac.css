@@ -3,7 +3,6 @@
   padding-left: calc(1em + 5px) !important;
   -webkit-user-select: none;
      -moz-user-select: none;
-      -ms-user-select: none;
           user-select: none;
   cursor: pointer;
 }
@@ -53,7 +52,6 @@
   font-weight: bold;
   -webkit-user-select: none;
      -moz-user-select: none;
-      -ms-user-select: none;
           user-select: none;
   cursor: pointer;
 }

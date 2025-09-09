@@ -17,7 +17,6 @@
 }
 
 .swiper-slide {
-  width: -webkit-fit-content;
   width: -moz-fit-content;
   width: fit-content;
 }
@@ -29,7 +28,6 @@
 }
 
 .swiper-vertical.swiper-autoheight .swiper-slide {
-  height: -webkit-fit-content !important;
   height: -moz-fit-content !important;
   height: fit-content !important;
 }

@@ -7,20 +7,6 @@
   --color-link-visited-dark: hsl(0 45% 55%);
 }
 
-@-webkit-keyframes popup {
-  0% {
-    opacity: 0;
-  }
-  80% {
-    opacity: 1;
-    transform: translateY(-50%);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-80%);
-  }
-}
-
 @keyframes popup {
   0% {
     opacity: 0;
@@ -42,13 +28,11 @@
   -webkit-user-select: none;
      -moz-user-select: none;
           user-select: none;
-  width: -webkit-fit-content;
   width: -moz-fit-content;
   width: fit-content;
 }
 .clipboard-button::after {
-  -webkit-animation: popup 2s;
-          animation: popup 2s;
+  animation: popup 2s;
   background-color: var(--color-background-dark-lighter-2);
   border-radius: 4px;
   color: var(--color-light);
@@ -59,7 +43,6 @@
   padding: 2px 8px;
   position: absolute;
   top: -16px;
-  width: -webkit-max-content;
   width: -moz-max-content;
   width: max-content;
 }
@@ -100,7 +83,6 @@
   max-width: 100%;
   min-width: 300px;
   padding: 4px 4px 8px 4px;
-  width: -webkit-fit-content;
   width: -moz-fit-content;
   width: fit-content;
 }

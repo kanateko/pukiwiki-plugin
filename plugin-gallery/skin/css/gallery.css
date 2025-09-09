@@ -92,7 +92,6 @@
 .gallery-item {
   border-radius: 4px;
   filter: drop-shadow(2px 2px 4px rgba(20, 20, 20, 0.6));
-  height: -webkit-fit-content;
   height: -moz-fit-content;
   height: fit-content;
   margin: 0;
@@ -100,7 +99,6 @@
   overflow: hidden;
   padding: 0;
   position: relative;
-  width: -webkit-fit-content;
   width: -moz-fit-content;
   width: fit-content;
 }

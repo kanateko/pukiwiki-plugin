@@ -21,7 +21,6 @@
   justify-content: left;
 }
 .plugin-flex.flex-scroll > .flex-box {
-  min-width: -webkit-fit-content;
   min-width: -moz-fit-content;
   min-width: fit-content;
 }

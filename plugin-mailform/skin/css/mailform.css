@@ -29,7 +29,6 @@
 }
 .plugin-mailform label {
   min-width: 200px;
-  width: -webkit-fit-content;
   width: -moz-fit-content;
   width: fit-content;
   padding: 8px 16px 8px 32px;
@@ -229,7 +228,7 @@
   left: 0;
   top: 0;
   color: #ffffff;
-  background-color: #00000080;
+  background-color: rgba(0, 0, 0, 0.5019607843);
   -webkit-backdrop-filter: blur(5px);
           backdrop-filter: blur(5px);
   opacity: 0;
