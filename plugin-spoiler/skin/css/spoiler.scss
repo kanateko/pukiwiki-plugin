@@ -4,25 +4,48 @@ span.plugin-spoiler {
 
 .plugin-spoiler {
     position: relative;
-    &[data-mode=hover] {
-        filter: blur(4px);
-        &:hover {
-            filter: blur(0);
-        }
-    }
-    .spoiler-overlay {
+    z-index: 0;
+    &::before,
+    &::after {
+        cursor: pointer;
         display: block;
         position: absolute;
-        top: 0;
-        left: 0;
+        opacity: 1;
+        transition: opacity .3s;
+    }
+    &::before {
+        content: '';
+        backdrop-filter: blur(var(--spoiler-blur)) contrast(var(--spoiler-contrast));
         width: 100%;
         height: 100%;
-        backdrop-filter: blur(4px);
+        top: 0;
+        left: 0;
+        z-index: 1;
     }
-    .spoiler-check:checked + .spoiler-overlay {
-        display: none;
+    &::after {
+        content: attr(data-text);
+        font-size: var(--spoiler-text-size);
+        color: var(--spoiler-text-color);
+        width: max-content;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 2;
     }
-    > p {
-        padding: 0 8px;
+    &[data-mode=hover] {
+        &:hover {
+            &::before,
+            &::after {
+                opacity: 0;
+            }
+        }
+    }
+    &.open {
+        &::before,
+        &::after {
+            opacity: 0;
+            pointer-events: none;
+            user-select: none;
+        }
     }
 }
