@@ -2,12 +2,13 @@
 /**
  * ネタバレ防止用プラグイン
  *
- * @version 1.1.0
+ * @version 1.1.1
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Updates --
- * 2025-09-10 1.1.0 JavaScriptで制御を行うよう変更
+ * 2025-09-10 1.1.1 ページで1回のみ呼び出した場合に正常に動作しなかった問題を修正
+ *            1.1.0 JavaScriptで制御を行うよう変更
  *                  ぼかしの上に表示するテキストを変更する機能を追加
  *                  ぼかし強度を変更する機能を追加
  *                  ぼかす範囲のコントラストを変更する機能を追加
@@ -71,7 +72,7 @@ Class PluginSpoiler
         $class = $this->options['class'] ?: '';
         $tag = $this->type === 'inline' ? 'span' : 'div';
         $id = self::$id++;
-        $script = $id !== 1 ? '' : <<<EOD
+        $script = $id !== 0 ? '' : <<<EOD
         <script>
             document.addEventListener('DOMContentLoaded', () => {
                 if (typeof spoilers === 'undefined') {
