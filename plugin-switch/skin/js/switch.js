@@ -32,7 +32,7 @@ const switchByRange = range => {
         const index = (ct.value - min) / step;
 
         // 表示される数字を変更する
-        output.innerHTML = ct.value;
+        output.innerHTML = Number(ct.value).toLocaleString();
 
         // 同グループの表示を切り替える
         for (const el of groupedElements) {
@@ -62,16 +62,16 @@ const switchSelectedElement = (el, index) => {
     if (el.classList.contains('switch-range')) {
         // range
         el.value = Number(el.dataset.step) * index + Number(el.dataset.min);
-        el.nextElementSibling.innerHTML = el.value;
+        el.nextElementSibling.innerHTML = Number(el.value).toLocaleString();
     } else if (el.classList.contains('switch-number')) {
         // number
         const numMin = Number(el.dataset.min);
-        const numMax = Number(el.dataset.max);
+        const numMax = el.dataset.max === 'INF' ? Infinity : Number(el.dataset.max);
         const numStep = Number(el.dataset.step);
         let currentValue = numMin + numStep * index;
 
         currentValue = currentValue < numMin ? numMin : currentValue > numMax ? numMax : currentValue;
-        el.innerHTML = currentValue;
+        el.innerHTML = currentValue.toLocaleString();
     } else {
         // select, default
         const items = el.querySelectorAll('.switch-item');

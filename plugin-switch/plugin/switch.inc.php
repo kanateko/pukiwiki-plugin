@@ -2,12 +2,14 @@
 /**
 * プルダウンやスライダーと連動して表示内容を切り替えるプラグイン
 *
-* @version 1.1.0
+* @version 1.1.1
 * @author kanateko
 * @link https://jpngamerswiki.com/?f51cd63681
 * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
 * -- Updates --
-* 2025-09-11 v1.1.0 numberタイプを追加
+* 2025-09-11 v1.1.1 numberで出力される数字を千の位ごとにカンマで区切るように調整
+*                   numberで最大値が未指定の場合の処理を追加
+*            v1.1.0 numberタイプを追加
 * 2025-09-01 v1.0.2 オプションが空の場合に、表示要素があってもエラーが出る問題を修正
 * 2024-09-09 v1.0.1 マルチライン内のテーブルが正しく変換されない問題を修正
 * 2024-08-25 v1.0.0 初版作成
@@ -212,7 +214,7 @@ class PluginSwitchBase
     {
         $html = '';
         $index = self::$start_index[$this->group];
-        [$min, $max, $step] = $this->get_range_attributes();
+        [$min, $max, $step] = $this->get_range_attributes(true);
         $initial_value =  $min + $index * $step;
 
         // 最小最大の検証
@@ -267,10 +269,10 @@ class PluginSwitchBase
      *
      * @return array
      */
-    public function get_range_attributes(): array
+    public function get_range_attributes(bool $accept_inf = false): array
     {
         $min = $this->items[0] ?? static::DEFAULT_RANGE_ATTRS[0];
-        $max = $this->items[1] ?? static::DEFAULT_RANGE_ATTRS[1];
+        $max = $this->items[1] === '' && $accept_inf ? INF : $this->items[1] ?? static::DEFAULT_RANGE_ATTRS[1];
         $step = $this->items[2] ?? static::DEFAULT_RANGE_ATTRS[2];
 
         return [(float)$min, (float)$max, (float)$step];
