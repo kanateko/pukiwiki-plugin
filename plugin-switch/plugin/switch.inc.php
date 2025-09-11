@@ -2,11 +2,12 @@
 /**
 * プルダウンやスライダーと連動して表示内容を切り替えるプラグイン
 *
-* @version 1.0.2
+* @version 1.1.0
 * @author kanateko
 * @link https://jpngamerswiki.com/?f51cd63681
 * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
 * -- Updates --
+* 2025-09-11 v1.1.0 numberタイプを追加
 * 2025-09-01 v1.0.2 オプションが空の場合に、表示要素があってもエラーが出る問題を修正
 * 2024-09-09 v1.0.1 マルチライン内のテーブルが正しく変換されない問題を修正
 * 2024-08-25 v1.0.0 初版作成
@@ -114,8 +115,9 @@ class PluginSwitchBase
         $id = 'switch' . self::$counts++;
         $html = match($this->tag_type) {
             'select' => $this->convert_select($id),
-            'range' => $this->convert_range($id),
-            default => $this->convert_default($id)
+            'range'  => $this->convert_range($id),
+            'number' => $this->convert_number($id),
+            default  => $this->convert_default($id)
         };
 
         // 最初の呼び出しでスクリプトを挿入
@@ -182,17 +184,8 @@ class PluginSwitchBase
         [$min, $max, $step] = $this->get_range_attributes();
         $value =  $index * $step + $min;
 
-        // 属性の検証
-        if ($min > $max) {
-            $this->err = ['err_invalid' => 'min:' . $min . ' > max:' . $max];
-            return $this->show_msg();
-        } elseif ($value < $min) {
-            $this->err = ['err_invalid' => 'start:' . $value . ' < min:' . $min];
-            return $this->show_msg();
-        } elseif ($value > $max) {
-            $this->err = ['err_invalid' => 'start:' . $value . ' > max:' . $max];
-            return $this->show_msg();
-        }
+        // 最小最大の検証
+        if (! $this->is_valid_minmax($min, $max, $value)) return $this->show_msg();
 
         $class = $this->class . ' switch-range switch-controller';
         $style = $this->options['slider-width'] != null ? ' style="' . $this->options['slider-width'] . '"' : '';
@@ -205,6 +198,30 @@ class PluginSwitchBase
         $label
         <input type="range" name="$id" id="$id" class="$class"$style$attr value="$value" data-group="{$this->group}" /><output>$value</output>
         EOD;
+
+        return $html;
+    }
+
+    /**
+     * numberタイプの作成
+     *
+     * @param string $id
+     * @return string
+     */
+    public function convert_number(string $id): string
+    {
+        $html = '';
+        $index = self::$start_index[$this->group];
+        [$min, $max, $step] = $this->get_range_attributes();
+        $initial_value =  $min + $index * $step;
+
+        // 最小最大の検証
+        if (! $this->is_valid_minmax($min, $max, $initial_value)) return $this->show_msg();
+
+        $tag = static::DEFAULT_HTML_TAG;
+        $class = $this->class . ' switch-number';
+        $attr = 'data-min="'. $min . '" data-max="'. $max . '" data-step="'. $step . '"';
+        $html = "<$tag id=\"$id\" class=\"$class\" data-group=\"{$this->group}\"$attr>$initial_value</$tag>";
 
         return $html;
     }
@@ -260,6 +277,32 @@ class PluginSwitchBase
     }
 
     /**
+     * 最小最大の検証
+     *
+     * @param float $min
+     * @param float $max
+     * @param float $value
+     * @return boolean
+     */
+    public function is_valid_minmax(float $min, float $max, float $initial_value): bool
+    {
+        $is_valid = true;
+
+        if ($min > $max) {
+            $this->err = ['err_invalid' => 'min:' . $min . ' > max:' . $max];
+            $is_valid = false;
+        } elseif ($initial_value < $min) {
+            $this->err = ['err_invalid' => 'start:' . $initial_value . ' < min:' . $min];
+            $is_valid = false;
+        } elseif ($initial_value > $max) {
+            $this->err = ['err_invalid' => 'start:' . $initial_value . ' > max:' . $max];
+            $is_valid = false;
+        }
+
+        return $is_valid;
+    }
+
+    /**
      * オプションの判別
      *
      * @param array $args
@@ -302,7 +345,7 @@ class PluginSwitchBase
                         $this->err = ['err_unknown' => $arg];
                         break;
                     }
-                } elseif ($key == 'select' || $key == 'range' || $key == 'default') {
+                } elseif ($key == 'select' || $key == 'range' || $key == 'number' || $key == 'default') {
                     // 表示タイプ
                     $this->tag_type = $key;
                 } elseif ($key == 'transparent' || $key == 'disable' || $key == 'rtl') {

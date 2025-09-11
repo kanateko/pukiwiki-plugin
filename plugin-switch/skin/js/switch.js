@@ -61,16 +61,25 @@ const switchBySelect = select => {
 const switchSelectedElement = (el, index) => {
     if (el.classList.contains('switch-range')) {
         // range
-        el.value = el.dataset.step * index + Number(el.dataset.min);
+        el.value = Number(el.dataset.step) * index + Number(el.dataset.min);
         el.nextElementSibling.innerHTML = el.value;
+    } else if (el.classList.contains('switch-number')) {
+        // number
+        const numMin = Number(el.dataset.min);
+        const numMax = Number(el.dataset.max);
+        const numStep = Number(el.dataset.step);
+        let currentValue = numMin + numStep * index;
+
+        currentValue = currentValue < numMin ? numMin : currentValue > numMax ? numMax : currentValue;
+        el.innerHTML = currentValue;
     } else {
         // select, default
         const items = el.querySelectorAll('.switch-item');
-        const length = items.length
+        const lastIndex = items.length - 1
 
         // 要素数の最大を上限に
-        if (index > length - 1) {
-            index = length - 1;
+        if (index > lastIndex) {
+            index = lastIndex;
         }
 
         for (let i = 0; i < items.length; i++) {
