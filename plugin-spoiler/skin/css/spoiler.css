@@ -4,6 +4,7 @@ span.plugin-spoiler {
 
 .plugin-spoiler {
   position: relative;
+  overflow: hidden;
   z-index: 0;
 }
 .plugin-spoiler::before, .plugin-spoiler::after {
