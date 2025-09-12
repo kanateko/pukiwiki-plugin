@@ -2,12 +2,13 @@
 /**
  * フォーム形式のページテンプレートプラグイン
  *
- * @version 1.5.0
+ * @version 1.5.1
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * @todo 非同期バリデーション + プレビュー
  * -- Updates --
+ * 2025-09-10 v1.5.1 テンプレートリストをソートするように変更
  * 2025-09-07 v1.5.0 デフォルト値にCookieに保存された値を使用する機能を追加
  *                   textとnumberでのEnter送信を無効化
  *                   JavaScriptを別ファイルに分離
@@ -62,6 +63,8 @@ define('PLUGIN_NEWTPL_UPLOADTO_EXCEPTION', '/^(FrontPage|MenuBar|トップペー
 define('PLUGIN_NEWTPL_ENABLE_AUTOCOMPLETE', true);
 // cookieの仕様を許可する
 define('PLUGIN_NEWTPL_USE_COOKIE', true);
+// テンプレートのリストをソートする
+define('PLUGIN_NEWTPL_SORT_LIST', true);
 
 // 連携プラグインの読み込み
 require_once(PLUGIN_DIR . 'newpage.inc.php');
@@ -286,12 +289,15 @@ class NewtplList
         $root = encode(PLUGIN_NEWTPL_ROOT);
         $dh = opendir(DATA_DIR);
         $pages = [];
+
         while (($file = readdir($dh)) !== false) {
             if (strpos($file, $root) !== false) {
                 $pages[] = decode(str_replace('.txt', '', $file));
             }
         }
+
         closedir($dh);
+        if (PLUGIN_NEWTPL_SORT_LIST) natsort($pages);
 
         return $pages;
     }
