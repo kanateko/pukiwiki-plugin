@@ -1,64 +1,65 @@
 <?php
 /**
- * photoswipe版 画像のギャラリー表示プラグイン (配布版)
+ * photoswipe版 画像のギャラリー表示プラグイン
  *
- * @version 2.9
+ * @version 2.10
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Updates --
- * 2025-08-28 v2.9 AVIF画像に対応
- * 2024-09-09 v2.8 画像同士の余白を指定するオプション (gap) を追加
- * 2023-06-10 v2.7 all指定時、キャプションの投稿時間が正しくなかった問題を修正
- *                 sortとnocapを同時指定した際にキャプションが表示されてしまう問題を修正
- * 2023-05-27 v2.6 キャプションの検索とソートを追加
- * 2023-05-24 v2.5 参照するページを指定するオプション (page) を追加
- * 2022-11-16 v2.4 ソートオプションを追加
- *            v2.3 添付されたすべての画像を表示するオプション (all) を追加
- * 2022-07-09 v2.2 画像の挿入位置を変更するオプションを追加
- *                 アクション型の脆弱性を修正
- *                 各オプションの初期値と初期化のタイミングを変更
- *                 画像サイズ計算時の0の扱いを変更
- *            v2.1 サムネイルの折り返しの有無を指定するオプションを追加
- * 2022-07-08 v2.0 Photoswipeのバージョンアップに対応
- *                 全体的にコードを改良
- *                 画像追加時、ページ上に全く同じギャラリーがあるとその全てが書き換えの対象になる問題を修正
- *                 キャプションでPukiWiki記法を利用可能に
- * 2022-05-18 v1.8 1.5.4のURLカスタマイズに対応
- *                 v1.7以前に使用していたURL短縮プラグインへの対応を終了
- * 2021-09-29 v1.7 ファイルとキャプションのセパレータを変更するための設定を追加
- * 2021-07-26 v1.6 対応する拡張子にwebpを追加 (一覧表示のみ)
- *                 初期化用コードの挿入部分を少し変更
- * 2021-07-11 v1.5 初期化用コードの呼び出しを1回のみに変更
- * 2021-07-01 v1.4 階層化されたページの添付ファイルを正常に表示できなかった問題を修正
- * 2021-06-22 v1.3 短縮URLを導入してあるかどうかで処理を変えるよう変更
- *                 一覧画像の高さ指定機能を追加
- *            v1.2 アップロード後元のページに戻る際にFatalErrorが出る問題を修正
- *                 一覧画像の高さが自動調整されなかった問題を修正
- * 2021-06-21 v1.1 画像の縁取り無効オプションを追加
- *                 切り抜きがsquareの場合はキャプションを表示するよう変更
- * 2021-06-20 v1.0 ページの編集権限をチェックする機能を追加
- *                 画像追加ボタンのデザインを調整
- *                 画像一覧の左寄せ・中央・右寄せを設定する機能を追加
- *                 画像一覧の画像を正方形・円に切り抜いて表示する機能を追加
- *                 画像一覧でキャプションを非表示にする機能を追加
- * 2021-06-19 v0.7 添付されたファイルのフォーマット判別を厳正化
- * 2021-06-18 v0.6 使用するライブラリをlightnox.jsからphotoswipe.jsに変更
- * 2021-06-17 v0.5 画像追加機能を追加
- *                 画像追加ボタンの表示/非表示切り替え機能を追加
- *            v0.2 他のページの添付画像を表示する機能を追加
- *                 画像の横幅を指定する機能を追加
- * 2021-06-16 v0.1 初版作成
+ * 2025-09-12 v2.10 ページ名の相対指定に対応
+ * 2025-08-28 v2.9  AVIF画像に対応
+ * 2024-09-09 v2.8  画像同士の余白を指定するオプション (gap) を追加
+ * 2023-06-10 v2.7  all指定時、キャプションの投稿時間が正しくなかった問題を修正
+ *                  sortとnocapを同時指定した際にキャプションが表示されてしまう問題を修正
+ * 2023-05-27 v2.6  キャプションの検索とソートを追加
+ * 2023-05-24 v2.5  参照するページを指定するオプション (page) を追加
+ * 2022-11-16 v2.4  ソートオプションを追加
+ *            v2.3  添付されたすべての画像を表示するオプション (all) を追加
+ * 2022-07-09 v2.2  画像の挿入位置を変更するオプションを追加
+ *                  アクション型の脆弱性を修正
+ *                  各オプションの初期値と初期化のタイミングを変更
+ *                  画像サイズ計算時の0の扱いを変更
+ *            v2.1  サムネイルの折り返しの有無を指定するオプションを追加
+ * 2022-07-08 v2.0  Photoswipeのバージョンアップに対応
+ *                  全体的にコードを改良
+ *                  画像追加時、ページ上に全く同じギャラリーがあるとその全てが書き換えの対象になる問題を修正
+ *                  キャプションでPukiWiki記法を利用可能に
+ * 2022-05-18 v1.8  1.5.4のURLカスタマイズに対応
+ *                  v1.7以前に使用していたURL短縮プラグインへの対応を終了
+ * 2021-09-29 v1.7  ファイルとキャプションのセパレータを変更するための設定を追加
+ * 2021-07-26 v1.6  対応する拡張子にwebpを追加 (一覧表示のみ)
+ *                  初期化用コードの挿入部分を少し変更
+ * 2021-07-11 v1.5  初期化用コードの呼び出しを1回のみに変更
+ * 2021-07-01 v1.4  階層化されたページの添付ファイルを正常に表示できなかった問題を修正
+ * 2021-06-22 v1.3  短縮URLを導入してあるかどうかで処理を変えるよう変更
+ *                  一覧画像の高さ指定機能を追加
+ *            v1.2  アップロード後元のページに戻る際にFatalErrorが出る問題を修正
+ *                  一覧画像の高さが自動調整されなかった問題を修正
+ * 2021-06-21 v1.1  画像の縁取り無効オプションを追加
+ *                  切り抜きがsquareの場合はキャプションを表示するよう変更
+ * 2021-06-20 v1.0  ページの編集権限をチェックする機能を追加
+ *                  画像追加ボタンのデザインを調整
+ *                  画像一覧の左寄せ・中央・右寄せを設定する機能を追加
+ *                  画像一覧の画像を正方形・円に切り抜いて表示する機能を追加
+ *                  画像一覧でキャプションを非表示にする機能を追加
+ * 2021-06-19 v0.7  添付されたファイルのフォーマット判別を厳正化
+ * 2021-06-18 v0.6  使用するライブラリをlightnox.jsからphotoswipe.jsに変更
+ * 2021-06-17 v0.5  画像追加機能を追加
+ *                  画像追加ボタンの表示/非表示切り替え機能を追加
+ *            v0.2  他のページの添付画像を表示する機能を追加
+ *                  画像の横幅を指定する機能を追加
+ * 2021-06-16 v0.1  初版作成
  */
 
 // Photoswipeの必要ファイル
-define('PLUGIN_GALLERY_PSWP_CORE', 'https://unpkg.com/photoswipe/dist/photoswipe.esm.min.js');
-define('PLUGIN_GALLERY_PSWP_LIGHTBOX', 'https://unpkg.com/photoswipe/dist/photoswipe-lightbox.esm.min.js');
-define('PLUGIN_GALLERY_PSWP_CSS', 'https://unpkg.com/photoswipe/dist/photoswipe.css');
+define('PLUGIN_GALLERY_PSWP_CORE', 'https://cdn.jsdelivr.net/npm/photoswipe@5/dist/photoswipe.esm.min.js');
+define('PLUGIN_GALLERY_PSWP_LIGHTBOX', 'https://cdn.jsdelivr.net/npm/photoswipe@5/dist/photoswipe-lightbox.esm.min.js');
+define('PLUGIN_GALLERY_PSWP_CSS', 'https://cdn.jsdelivr.net/npm/photoswipe@5/dist/photoswipe.min.css');
 // ソート用ライブラリ (List.js)
-define('PLUGIN_GALLERY_SORT_JS', 'https://cdnjs.cloudflare.com/ajax/libs/list.js/2.3.1/list.min.js');
+define('PLUGIN_GALLERY_SORT_JS', 'https://cdn.jsdelivr.net/npm/list.js@2/dist/list.min.js');
 // PukiWiki用CSS
-define('PLUGIN_GALLERY_CSS', SKIN_DIR . 'css/gallery.css');
+define('PLUGIN_GALLERY_CSS', SKIN_DIR . 'css/gallery.min.css');
 // ファイルとキャプションのセパレータ
 define('PLUGIN_GALLERY_SEPARATOR', '>');
 // 対応フォーマット (参考：https://www.php.net/manual/ja/function.exif-imagetype.php)
@@ -378,7 +379,7 @@ class PluginGallery
      */
     private function array_options($args): void
     {
-        global $_gallery_messages;
+        global $vars, $_gallery_messages;
 
         foreach ($args as $arg) {
             $arg = htmlsc($arg);
@@ -401,8 +402,12 @@ class PluginGallery
                 $this->options[$m[2]] = $m[1] ? false : true;
             } elseif (preg_match('/^page=(.+)$/', $arg, $m)) {
                 // 参照ページの指定
-                if (is_page($m[1])){
-                    $this->options['page'] = $m[1];
+                $page = $m[1];
+                if (strpos($m[1], './') !== false) {
+                    $page = get_fullname($page, $vars['page']);
+                }
+                if (is_page($page)){
+                    $this->options['page'] = $page;
                 } else {
                     $this->err = str_replace('$1', $arg, $_gallery_messages['err_nopage']);
                 }
