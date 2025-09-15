@@ -2,12 +2,14 @@
 /**
 * プルダウンやスライダーと連動して表示内容を切り替えるプラグイン
 *
-* @version 1.1.1
+* @version 1.1.2
 * @author kanateko
 * @link https://jpngamerswiki.com/?f51cd63681
 * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
 * -- Updates --
-* 2025-09-11 v1.1.1 numberで最大値が未指定の場合の処理を追加
+* 2025-09-15 v1.1.2 numberで負の値のステップに対応
+*                   numberで最小値が未指定の場合の処理を追加 (-INF)
+* 2025-09-11 v1.1.1 numberで最大値が未指定の場合の処理を追加 (INF)
 *                   表示する数字を千の位ごとに区切るように調整
 *            v1.1.0 numberタイプを追加
 * 2025-09-01 v1.0.2 オプションが空の場合に、表示要素があってもエラーが出る問題を修正
@@ -215,7 +217,7 @@ class PluginSwitchBase
         $html = '';
         $index = self::$start_index[$this->group];
         [$min, $max, $step] = $this->get_range_attributes(true);
-        $initial_value =  $min + $index * $step;
+        $initial_value = $step > 0 ? $min + $index * $step : $max + $index * $step;
 
         // 最小最大の検証
         if (! $this->is_valid_minmax($min, $max, $initial_value)) return $this->show_msg();
@@ -271,7 +273,7 @@ class PluginSwitchBase
      */
     public function get_range_attributes(bool $accept_inf = false): array
     {
-        $min = $this->items[0] ?? static::DEFAULT_RANGE_ATTRS[0];
+        $min = $this->items[0] === '' && $accept_inf ? -INF : $this->items[0] ?? static::DEFAULT_RANGE_ATTRS[0];
         $max = $this->items[1] === '' && $accept_inf ? INF : $this->items[1] ?? static::DEFAULT_RANGE_ATTRS[1];
         $step = $this->items[2] ?? static::DEFAULT_RANGE_ATTRS[2];
 

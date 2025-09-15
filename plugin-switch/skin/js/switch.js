@@ -65,10 +65,11 @@ const switchSelectedElement = (el, index) => {
         el.nextElementSibling.innerHTML = Number(el.value).toLocaleString();
     } else if (el.classList.contains('switch-number')) {
         // number
-        const numMin = Number(el.dataset.min);
+        const numMin = el.dataset.min === '-INF' ? -Infinity : Number(el.dataset.min);
         const numMax = el.dataset.max === 'INF' ? Infinity : Number(el.dataset.max);
         const numStep = Number(el.dataset.step);
-        let currentValue = numMin + numStep * index;
+        const isPositive = numStep > 0
+        let currentValue = isPositive ? numMin + numStep * index : numMax + numStep * index;
 
         currentValue = currentValue < numMin ? numMin : currentValue > numMax ? numMax : currentValue;
         el.innerHTML = currentValue.toLocaleString();
