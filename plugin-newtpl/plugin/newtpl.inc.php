@@ -2,12 +2,13 @@
 /**
  * フォーム形式のページテンプレートプラグイン
  *
- * @version 1.5.1
+ * @version 1.5.2
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * @todo 非同期バリデーション + プレビュー
  * -- Updates --
+ * 2025-09-28 v1.5.2 複数ファイルの同時アップロードに対応
  * 2025-09-10 v1.5.1 テンプレートリストをソートするように変更
  * 2025-09-07 v1.5.0 デフォルト値にCookieに保存された値を使用する機能を追加
  *                   textとnumberでのEnter送信を無効化
@@ -65,6 +66,11 @@ define('PLUGIN_NEWTPL_ENABLE_AUTOCOMPLETE', true);
 define('PLUGIN_NEWTPL_USE_COOKIE', true);
 // テンプレートのリストをソートする
 define('PLUGIN_NEWTPL_SORT_LIST', true);
+// 複数の入力内容を表示する際のセパレータ
+define('PLUGIN_NEWTPL_SEPARATOR', [
+    'checkbox' => ',',
+    'file' => '\n'
+]);
 
 // 連携プラグインの読み込み
 require_once(PLUGIN_DIR . 'newpage.inc.php');
@@ -658,12 +664,13 @@ class NewtplForm
             elseif (preg_match(PLUGIN_NEWTPL_UPLOADTO_EXCEPTION, $cfg['uploadto'])) die_message(Newtpl::get_message('err_up_exception', $cfg['uploadto'], false));
         }
 
-        $name = $cfg['name'];
         $size = Newtpl::get_message('label_maxsize', number_format(PLUGIN_NEWTPL_MAX_FILESIZE), false);
         $format = PLUGIN_NEWTPL_AVAILABLE_FORMAT;
         $require = $cfg['required'] === 'true' ? ' required' : '';
+        $multiple = $cfg['multiple'] === 'true' ? '  multiple' : '';
+        $name = $cfg['multiple'] === 'true' ? $cfg['name'] . '[]' : $cfg['name'];
 
-        $field = "<i class=\"small\">$size</i><br><input type=\"file\" name=\"$name\" accept=\"$format\"$require>\n";
+        $field = "<i class=\"small\">$size</i><br><input type=\"file\"$multiple name=\"$name\" accept=\"$format\"$require>\n";
 
         return $field;
     }
@@ -809,20 +816,44 @@ class NewtplPage
                 }
                 // 添付ファイル
                 if ($type === 'file' && isset($_FILES[$name])) {
-                    $file = $_FILES[$name];
-                    if (is_uploaded_file($file['tmp_name'])) {
-                        if ($file['size'] > PLUGIN_NEWTPL_MAX_FILESIZE * 1000) {
-                            // 最大ファイルサイズ
-                            $this->err = Newtpl::get_message('warn_size', $item);
-                            return false;
-                        } else {
-                            // ファイル形式
-                            $availables = str_replace(',', '|', preg_quote(PLUGIN_NEWTPL_AVAILABLE_FORMAT, '/'));
-                            $availables = '/' . $availables . '/i';
-                            $mime = getimagesize($file['tmp_name'])['mime'];
-                            if (! preg_match ($availables, $mime)) {
-                                $this->err = Newtpl::get_message('warn_format', $item);
+                    if ($cfg['multiple'] === 'true') {
+                        // 複数ファイル
+                        $files = $_FILES[$name];
+                        foreach ($files['tmp_name'] as $i => $tmp_name) {
+                            if (is_uploaded_file($tmp_name)) {
+                                if ($files['size'][$i] > PLUGIN_NEWTPL_MAX_FILESIZE * 1000) {
+                                    // 最大ファイルサイズ
+                                    $this->err = Newtpl::get_message('warn_size', $item);
+                                    return false;
+                                } else {
+                                    // ファイル形式
+                                    $availables = str_replace(',', '|', preg_quote(PLUGIN_NEWTPL_AVAILABLE_FORMAT, '/'));
+                                    $availables = '/' . $availables . '/i';
+                                    $mime = getimagesize($tmp_name)['mime'];
+                                    if (! preg_match ($availables, $mime)) {
+                                        $this->err = Newtpl::get_message('warn_format', $item);
+                                        return false;
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        // 単一ファイル
+                        $file = $_FILES[$name];
+                        if (is_uploaded_file($file['tmp_name'])) {
+                            if ($file['size'] > PLUGIN_NEWTPL_MAX_FILESIZE * 1000) {
+                                // 最大ファイルサイズ
+                                $this->err = Newtpl::get_message('warn_size', $item);
                                 return false;
+                            } else {
+                                // ファイル形式
+                                $availables = str_replace(',', '|', preg_quote(PLUGIN_NEWTPL_AVAILABLE_FORMAT, '/'));
+                                $availables = '/' . $availables . '/i';
+                                $mime = getimagesize($file['tmp_name'])['mime'];
+                                if (! preg_match ($availables, $mime)) {
+                                    $this->err = Newtpl::get_message('warn_format', $item);
+                                    return false;
+                                }
                             }
                         }
                     }
@@ -889,22 +920,62 @@ class NewtplPage
                 switch ($type) {
                     case 'file':
                         // 添付ファイル
-                        $file = $_FILES[$name];
-                        if ($cfg['uploadto'] === null || $cfg['uploadto'] === $this->pagename) {
-                            $attach_name = encode($this->pagename) . '_' . encode($file['name']);
-                            $filename = $file['name'];
+                        if ($cfg['multiple'] === 'true') {
+                            // 複数ファイル
+                            $files = $_FILES[$name];
+                            $filenames = [];
+                            // ファイルごとに処理
+                            foreach ($files['name'] as $i => $file_name) {
+                                $attach_name = '';
+                                // 保存名を取得
+                                if ($cfg['uploadto'] === null || $cfg['uploadto'] === $this->pagename) {
+                                    // ページ指定なし
+                                    $attach_name = encode($this->pagename) . '_' . encode($file_name);
+                                } else {
+                                    // ページ指定あり
+                                    $attach_name = encode($cfg['uploadto']) . '_' . encode($file_name);
+                                }
+                                // 同名のファイルが存在していなければ保存する
+                                if (! file_exists(UPLOAD_DIR . $attach_name)) {
+                                    move_uploaded_file($files['tmp_name'][$i], UPLOAD_DIR . $attach_name);
+                                }
+                                // 置き換える内容を格納
+                                if (isset($cfg['filled'])) {
+                                    // 入力内容を装飾
+                                    $filled = Newtpl::replace_meta_chars($cfg['filled']);
+                                    $filenames[] = str_replace('%s', $file_name, $filled);
+                                } else {
+                                    $filenames[] = $file_name;
+                                }
+                            }
+                            // 各項目を区切って文字列に変換
+                            $separator = $this->get_separator($cfg, $type);
+                            $replace = implode($separator, $filenames);
+                            $postdata = $this->replace($name, $replace, $postdata);
                         } else {
-                            $attach_name = encode($cfg['uploadto']) . '_' . encode($file['name']);
-                            $filename = $cfg['fullpath'] === 'true' ? $cfg['uploadto'] . '/' . $file['name'] : $file['name'];
+                            // 単一ファイル
+                            $file = $_FILES[$name];
+                            // 保存名とファイル名を取得
+                            if ($cfg['uploadto'] === null || $cfg['uploadto'] === $this->pagename) {
+                                // ページ指定なし
+                                $attach_name = encode($this->pagename) . '_' . encode($file['name']);
+                                $filename = $file['name'];
+                            } else {
+                                // ページ指定あり
+                                $attach_name = encode($cfg['uploadto']) . '_' . encode($file['name']);
+                                $filename = $cfg['fullpath'] === 'true' ? $cfg['uploadto'] . '/' . $file['name'] : $file['name'];
+                            }
+                            // 同名のファイルが存在していなければ保存する
+                            if (! file_exists(UPLOAD_DIR . $attach_name)) {
+                                move_uploaded_file($file['tmp_name'], UPLOAD_DIR . $attach_name);
+                            }
+                            // filledの設定に応じて置き換え
+                            if (isset($cfg['filled'])) {
+                                $filled = Newtpl::replace_meta_chars($cfg['filled']);
+                                $filename = str_replace('%s', $filename, $filled);
+                            }
+                            $postdata = $this->replace($name, $filename, $postdata);
                         }
-                        if (! file_exists(UPLOAD_DIR . $attach_name)) {
-                            move_uploaded_file($file['tmp_name'], UPLOAD_DIR . $attach_name);
-                        }
-                        if (isset($cfg['filled'])) {
-                            $filled = Newtpl::replace_meta_chars($cfg['filled']);
-                            $filename = str_replace('%s', $filename, $filled);
-                        }
-                        $postdata = $this->replace($name, $filename, $postdata);
                         break;
                     case 'checkbox':
                         // チェックボックス
@@ -923,13 +994,9 @@ class NewtplPage
                                 $vars[$name][$i] = str_replace('%s', $val, $filled);
                             }
                         }
-                        if (isset($cfg['separator'])) {
-                            // 複数項目を表示する際のセパレータを変更
-                            $separator = Newtpl::replace_meta_chars($cfg['separator']);
-                            $vars[$name] = implode($separator, $vars[$name]);
-                        } else {
-                            $vars[$name] = implode(',', $vars[$name]);
-                        }
+                        // 各項目を区切って文字列に変換
+                        $separator = $this->get_separator($cfg, $type);
+                        $vars[$name] = implode($separator, $vars[$name]);
                         $postdata = $this->replace($name, $vars[$name], $postdata);
                         break;
                     default:
@@ -952,6 +1019,20 @@ class NewtplPage
         page_write($this->pagename, $postdata);
         header('Location:' . get_page_uri($this->pagename));
         exit;
+    }
+
+    /**
+     * 複数項目を表示する際のセパレータを取得
+     *
+     * @param array $cfg 設定項目
+     * @param string $type inputのtype
+     * @return string
+     */
+    private function get_separator($cfg, $type): string
+    {
+        $separator = $cfg['separator'] ?? PLUGIN_NEWTPL_SEPARATOR[$type];
+
+        return Newtpl::replace_meta_chars($separator);
     }
 
     /**
