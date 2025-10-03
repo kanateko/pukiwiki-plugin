@@ -2,11 +2,13 @@
 /**
  * photoswipe版 画像のギャラリー表示プラグイン
  *
- * @version 2.11
+ * @version 2.12
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Updates --
+ * 2025-10-04 v2.12 拡張子が大文字だと画像を表示できない問題を修正
+ *                  avifがフォーマット判別用の正規表現から抜けていたのを修正
  * 2025-09-28 v2.11 page指定時にもボタンから画像を追加した際にページの内容が更新されるよう改善
  * 2025-09-12 v2.10 ページ名の相対指定に対応
  * 2025-08-28 v2.9  AVIF画像に対応
@@ -357,7 +359,7 @@ class PluginGallery
         foreach ($lines($multiline) as $line) {
             [$src, $cap] = explode(PLUGIN_GALLERY_SEPARATOR, $line);
             if ($this->options['uploadto']) $src = $this->options['uploadto'] . '/' . $src;
-            if (preg_match('/\.(jpe?g|png|gif|webp)$/', $src)) {
+            if (preg_match('/\.(jpe?g|png|gif|webp|avif)$/i', $src)) {
                 // 暫定的にフォーマットを確認
                 $info = $this->get_image_info(trim(htmlsc($src)));
                 if ($info === null) break;
