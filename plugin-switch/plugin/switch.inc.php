@@ -2,11 +2,15 @@
 /**
 * プルダウンやスライダーと連動して表示内容を切り替えるプラグイン
 *
-* @version 1.1.2
+* @version 1.2.0
 * @author kanateko
 * @link https://jpngamerswiki.com/?f51cd63681
 * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
 * -- Updates --
+* 2025-10-03 v1.2.0 新たに数値入力式のnumberを追加
+*                   従来のnumber→linearに変更
+*                   rangeやlinearで初期表示される数字のフォーマットを改善
+*                   range以外もinput-widthで幅を指定できるよう改善
 * 2025-09-15 v1.1.2 numberで負の値のステップに対応
 *                   numberで最小値が未指定の場合の処理を追加 (-INF)
 * 2025-09-11 v1.1.1 numberで最大値が未指定の場合の処理を追加 (INF)
@@ -98,7 +102,7 @@ class PluginSwitchBase
         $this->group = static::DEFAULT_GROUP;
         $this->tag_type = static::DEFAULT_TYPE;
 
-        if (count($args) > 0 && ! empty(end($args))) {
+        if (count($args) > 0) {
             $items_str = array_pop($args);
             $this->parse_options($args);
             $this->parse_items($items_str);
@@ -120,6 +124,7 @@ class PluginSwitchBase
         $html = match($this->tag_type) {
             'select' => $this->convert_select($id),
             'range'  => $this->convert_range($id),
+            'linear' => $this->convert_linear($id),
             'number' => $this->convert_number($id),
             default  => $this->convert_default($id)
         };
@@ -154,6 +159,7 @@ class PluginSwitchBase
         $data_attr .= $this->options['transparent'] != null ? ' data-transparent' : '';
         $data_attr .= $this->options['disable'] != null ? ' data-disable' : '';
         $data_attr .= $this->options['rtl'] != null ? ' data-rtl' : '';
+        $style = $this->options['input-width'] != null ? ' style="' . $this->options['input-width'] . '"' : '';
         $items = '';
 
         foreach ($this->items as $i => $item) {
@@ -165,7 +171,7 @@ class PluginSwitchBase
         if ($items != '') {
             $html = <<<EOD
             $label
-            <select name="$id" id="$id" class="{$class}" data-group="{$this->group}"$data_attr>
+            <select name="$id" id="$id" class="{$class}"$style data-group="{$this->group}"$data_attr>
             $items
             </select>
             EOD;
@@ -186,13 +192,15 @@ class PluginSwitchBase
         $label = $this->get_label($id);
         $index = self::$start_index[$this->group];
         [$min, $max, $step] = $this->get_range_attributes();
-        $value =  $index * $step + $min;
+        $initial_value =  $index * $step + $min;
 
         // 最小最大の検証
-        if (! $this->is_valid_minmax($min, $max, $value)) return $this->show_msg();
+        if (! $this->is_valid_minmax($min, $max, $initial_value)) return $this->show_msg();
 
+        $decimals = $this->get_decimals($initial_value);
+        $value =  number_format($initial_value, $decimals);
         $class = $this->class . ' switch-range switch-controller';
-        $style = $this->options['slider-width'] != null ? ' style="' . $this->options['slider-width'] . '"' : '';
+        $style = $this->options['input-width'] != null ? ' style="' . $this->options['input-width'] . '"' : '';
         $attr = '';
         $attr .= ' min="' . $min . '" data-min="'. $min . '"';
         $attr .= ' max="' . $max . '" data-max="'. $max . '"';
@@ -200,8 +208,34 @@ class PluginSwitchBase
 
         $html = <<<EOD
         $label
-        <input type="range" name="$id" id="$id" class="$class"$style$attr value="$value" data-group="{$this->group}" /><output>$value</output>
+        <input type="range" name="$id" id="$id" class="$class"$style$attr value="$initial_value" data-group="{$this->group}" /><output>$value</output>
         EOD;
+
+        return $html;
+    }
+
+    /**
+     * linearタイプの作成
+     *
+     * @param string $id
+     * @return string
+     */
+    public function convert_linear(string $id): string
+    {
+        $html = '';
+        $index = self::$start_index[$this->group];
+        [$min, $max, $step] = $this->get_range_attributes(true);
+        $initial_value = $this->calcurate_initial_value($index, $min, $max, $step);
+
+        // 最小最大の検証
+        if (! $this->is_valid_minmax($min, $max, $initial_value)) return $this->show_msg();
+
+        $decimals = $this->get_decimals($initial_value);
+        $initial_value =  number_format($initial_value, $decimals);
+        $tag = static::DEFAULT_HTML_TAG;
+        $class = $this->class . ' switch-linear';
+        $attr = 'data-min="'. $min . '" data-max="'. $max . '" data-step="'. $step . '" data-initval="' . $initial_value . '"';
+        $html = "<$tag id=\"$id\" class=\"$class\" data-group=\"{$this->group}\"$attr>$initial_value</$tag>";
 
         return $html;
     }
@@ -215,17 +249,26 @@ class PluginSwitchBase
     public function convert_number(string $id): string
     {
         $html = '';
+        $label = $this->get_label($id);
         $index = self::$start_index[$this->group];
         [$min, $max, $step] = $this->get_range_attributes(true);
-        $initial_value = $step > 0 ? $min + $index * $step : $max + $index * $step;
+        $initial_value = $this->calcurate_initial_value($index, $min, $max, $step);
 
         // 最小最大の検証
         if (! $this->is_valid_minmax($min, $max, $initial_value)) return $this->show_msg();
 
-        $tag = static::DEFAULT_HTML_TAG;
-        $class = $this->class . ' switch-number';
-        $attr = 'data-min="'. $min . '" data-max="'. $max . '" data-step="'. $step . '"';
-        $html = "<$tag id=\"$id\" class=\"$class\" data-group=\"{$this->group}\"$attr>$initial_value</$tag>";
+        $class = $this->class . ' switch-number switch-controller';
+        $style = $this->options['input-width'] != null ? ' style="' . $this->options['input-width'] . '"' : '';
+        $attr = '';
+        $attr .= ' min="' . $min . '" data-min="'. $min . '"';
+        $attr .= ' max="' . $max . '" data-max="'. $max . '"';
+        $attr .= ' step="' . $step . '" data-step="'. $step . '"';
+        $attr .= '" data-initval="'. $initial_value . '"';
+
+        $html = <<<EOD
+        $label
+        <input type="number" name="$id" id="$id" class="$class"$style$attr value="$initial_value" data-group="{$this->group}" />
+        EOD;
 
         return $html;
     }
@@ -256,6 +299,43 @@ class PluginSwitchBase
     }
 
     /**
+     * 表示する初期値を計算する
+     *
+     * @param integer $index
+     * @param float $min
+     * @param float $max
+     * @param float $step
+     * @return float
+     */
+    public function calcurate_initial_value(int $index, float $min, float $max, float $step): float
+    {
+        $initial_value = $step > 0 ? $min + $index * $step : $max + $index * $step;
+        $initial_value = is_infinite($initial_value) ? 0 + $index * $step : $initial_value;
+
+        return $initial_value;
+    }
+
+    /**
+     * 小数点以下の桁数を取得
+     *
+     * @param float $value
+     * @return integer
+     */
+    public function get_decimals(float $value): int
+    {
+        $decimals = 0;
+
+        $str_num = (string)$value;
+        $place = strpos($str_num, '.');
+
+        if ($place !== false) {
+            $decimals = strlen($str_num) - $place - 1;
+        }
+
+        return $decimals;
+    }
+
+    /**
      * ラベル要素の作成
      *
      * @param string $id
@@ -267,7 +347,7 @@ class PluginSwitchBase
     }
 
     /**
-     * rangeのmin,max,stepを取得
+     * min,max,stepを取得
      *
      * @return array
      */
@@ -341,15 +421,15 @@ class PluginSwitchBase
                     } elseif ($key == 'class') {
                         // クラス
                         $this->class .= ' ' . $val;
-                    } elseif ($key == 'slider-width' && preg_match('/(\d+)(px|%|em|rem|[lsd]?v([wh]|min|max))?/', $val, $m)) {
-                        //rangeスライダーの幅
+                    } elseif (($key == 'input-width' || $key == 'slider-width') && preg_match('/(\d+)(px|%|em|rem|[lsd]?v([wh]|min|max))?/', $val, $m)) {
+                        // input要素の幅
                         $unit = $m[2] ?? 'px';
-                        $this->options[$key] = 'width:' . $m[1] . $unit;
+                        $this->options['input-width'] = 'width:' . $m[1] . $unit;
                     } else {
                         $this->err = ['err_unknown' => $arg];
                         break;
                     }
-                } elseif ($key == 'select' || $key == 'range' || $key == 'number' || $key == 'default') {
+                } elseif ($key == 'select' || $key == 'range' || $key == 'linear' || $key === 'number' || $key == 'default') {
                     // 表示タイプ
                     $this->tag_type = $key;
                 } elseif ($key == 'transparent' || $key == 'disable' || $key == 'rtl') {
@@ -385,6 +465,16 @@ class PluginSwitchBase
      */
     public function parse_items(string $items_str): void
     {
+        if ($items_str === '') {
+            if ($this->tag_type === 'number' or $this->tag_type === 'linear') {
+                $this->items =  ['', '', static::DEFAULT_RANGE_ATTRS[2]];
+            } else {
+                $this->err = ['err_empty'];
+            }
+
+            return;
+        }
+
         $evac = [];
 
         // htmlタグを一時退避
