@@ -2,20 +2,21 @@
 /**
  * 折りたたみ可能な見出しを作成するプラグイン
  *
- * @version 1.6
+ * @version 1.6.0
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Updates --
- * 2021-07-26 プラグインの呼び出し毎に挿入されていたスクリプトを大幅に削減
- *            h使用時に元々ある疑似要素と開閉アイコンが干渉しないよう、アイコン表示用の要素を追加
- * 2021-07-07 全開閉ボタンにも状態に合わせてクラスを切り替える機能を追加
- *            全開閉ボタンが連打できたバグを修正
- *            全開閉ボタンの制御範囲の終了位置を作成する機能を追加
- * 2021-07-06 全開閉ボタン作成機能を追加。設置位置以降の同階層にある全てのアコーディオンが対象となる
- * 2021-07-05 ヘッダーに見出しを指定する場合はオプションで明示するように変更
- * 2021-07-04 インライン型を追加
- * 2021-04-02 初版作成
+ * 2025-10-04 v1.6.0 jQueryへの依存を解消
+ * 2021-07-26 v1.5.0 プラグインの呼び出し毎に挿入されていたスクリプトを大幅に削減
+ *                   h使用時に元々ある疑似要素と開閉アイコンが干渉しないよう、アイコン表示用の要素を追加
+ * 2021-07-07 v1.4.0 全開閉ボタンにも状態に合わせてクラスを切り替える機能を追加
+ *                   全開閉ボタンが連打できたバグを修正
+ *                   全開閉ボタンの制御範囲の終了位置を作成する機能を追加
+ * 2021-07-06 v1.3.0 全開閉ボタン作成機能を追加。設置位置以降の同階層にある全てのアコーディオンが対象となる
+ * 2021-07-05 v1.2.0 ヘッダーに見出しを指定する場合はオプションで明示するように変更
+ * 2021-07-04 v1.1.0 インライン型を追加
+ * 2021-04-02 v1.0.0 初版作成
  */
 
 // 折りたたみ時に変わりに表示するメッセージ
@@ -209,7 +210,7 @@ Class PluginAc
         if (self::$ac_counts === 1) {
             $script_once = <<<EOD
             <script>
-                $(function(){ $script_min });
+                document.addEventListener('DOMContentLoaded', function(){ $script_min });
             </script>
             EOD;
         }
@@ -218,7 +219,12 @@ Class PluginAc
         if ($this->options['open']) {
             $script_open = <<<EOD
             <script>
-                $(function(){ $("#$id").prev().addClass("open"); });
+                document.addEventListener('DOMContentLoaded', function(){
+                    var content = document.getElementById('$id');
+                    if (content && content.previousElementSibling) {
+                        content.previousElementSibling.classList.add('open');
+                    }
+                });
             </script>
             EOD;
         }
@@ -250,7 +256,7 @@ Class PluginAc
         if (self::$ac_ctrl_counts === 1) {
             $script_once = <<<EOD
             <script>
-                $(function(){ $script_min });
+                document.addEventListener('DOMContentLoaded', function(){ $script_min });
             </script>
             EOD;
         }
@@ -286,35 +292,274 @@ Class PluginAc
         if (! $is_ctrl) {
             // 通常の折りたたみ開閉用スクリプト
             $base_script = <<<EOD
-            $('.$class_contents').prev().addClass('$class_header').prepend('<i class=\"ac-icon\"></i>');
-            $('.$class_contents').next('.$class_alt').show();
-            $('.$class_header').on('click', function() {
-                $(this).toggleClass('open');
-                $(this).next().stop().slideToggle(500);
-            });
+            (function(){
+                var headerClass = '$class_header';
+                var contentsClass = '$class_contents';
+                var altClass = '$class_alt';
+
+                if (!window.pluginAcSlide) {
+                    window.pluginAcSlide = function(element, open) {
+                        if (!element) { return; }
+
+                        if (element._pluginAcAnimation) {
+                            cancelAnimationFrame(element._pluginAcAnimation.id);
+                            var runningHeight = parseFloat(window.getComputedStyle(element).height);
+                            if (isNaN(runningHeight)) { runningHeight = 0; }
+                            element.style.height = runningHeight + 'px';
+                            element.style.display = 'block';
+                            element.style.overflow = 'hidden';
+                            element._pluginAcAnimation = null;
+                        }
+
+                        var computed = window.getComputedStyle(element);
+                        var startHeight = computed.display === 'none' ? 0 : element.getBoundingClientRect().height;
+                        if (isNaN(startHeight)) { startHeight = 0; }
+
+                        var endHeight;
+                        if (open) {
+                            element.style.display = 'block';
+                            endHeight = element.scrollHeight;
+                        } else {
+                            if (computed.display === 'none' && startHeight === 0) {
+                                element.style.display = 'none';
+                                element.style.height = '';
+                                element.style.overflow = '';
+                                return;
+                            }
+                            endHeight = 0;
+                        }
+
+                        if (startHeight === endHeight) {
+                            element.style.display = open ? 'block' : 'none';
+                            element.style.height = '';
+                            element.style.overflow = '';
+                            return;
+                        }
+
+                        element.style.overflow = 'hidden';
+                        element.style.height = startHeight + 'px';
+
+                        var duration = 500;
+                        var startTime = null;
+
+                        function ease(t) {
+                            return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+                        }
+
+                        var animation = {};
+
+                        function finish() {
+                            element.style.height = '';
+                            element.style.overflow = '';
+                            element.style.display = open ? 'block' : 'none';
+                            element._pluginAcAnimation = null;
+                        }
+
+                        function step(timestamp) {
+                            if (!startTime) { startTime = timestamp; }
+                            var progress = Math.min((timestamp - startTime) / duration, 1);
+                            var eased = ease(progress);
+                            if (open) {
+                                var dynamicHeight = element.scrollHeight;
+                                if (dynamicHeight !== endHeight) {
+                                    endHeight = dynamicHeight;
+                                }
+                            }
+                            var current = startHeight + (endHeight - startHeight) * eased;
+                            element.style.height = current + 'px';
+                            if (progress < 1) {
+                                animation.id = requestAnimationFrame(step);
+                            } else {
+                                finish();
+                            }
+                        }
+
+                        animation.id = requestAnimationFrame(step);
+                        animation.finish = finish;
+                        element._pluginAcAnimation = animation;
+                    };
+                }
+
+                Array.prototype.forEach.call(document.querySelectorAll('.' + contentsClass), function(content) {
+                    var header = content.previousElementSibling;
+                    if (!header) { return; }
+
+                    if (!header.classList.contains(headerClass)) {
+                        header.classList.add(headerClass);
+                    }
+
+                    if (!header.querySelector('.ac-icon')) {
+                        var icon = document.createElement('i');
+                        icon.className = 'ac-icon';
+                        header.insertBefore(icon, header.firstChild);
+                    }
+
+                    var alt = content.nextElementSibling;
+                    if (alt && alt.classList.contains(altClass)) {
+                        alt.style.display = 'block';
+                    }
+
+                    if (!header.hasAttribute('data-plugin-ac-bound')) {
+                        header.setAttribute('data-plugin-ac-bound', '1');
+                        header.addEventListener('click', function() {
+                            var isOpen = header.classList.toggle('open');
+                            window.pluginAcSlide(content, isOpen);
+                        });
+                    }
+
+                    if (window.getComputedStyle(content).display !== 'none') {
+                        header.classList.add('open');
+                        content.style.display = 'block';
+                    } else {
+                        header.classList.remove('open');
+                        content.style.display = 'none';
+                    }
+                });
+            })();
             EOD;
         } else {
             // 複数開閉用のスクリプト
             $base_script = <<<EOD
-            $('.$class_ctrl').on('click', function() {
-                var btnText = $('span', this);
-                var allH = $(this).nextUntil('.$class_ctrl', '.$class_header');
-                var allC = $(this).nextUntil('.$class_ctrl', '.$class_contents');
-                $(this).toggleClass('open');
-                if (btnText.text() === '全て開く') {
-                    $(allH).not('.open').toggleClass('open');
-                    $(allC).stop().slideDown(500);
-                    $(btnText).text('全て閉じる');
-                } else {
-                    $(allH).filter('.open').toggleClass('open');
-                    $(allC).stop().slideUp(500);
-                    $(btnText).text('全て開く');
+            (function(){
+                var headerClass = '$class_header';
+                var contentsClass = '$class_contents';
+                var ctrlClass = '$class_ctrl';
+                var openText = '全て開く';
+                var closeText = '全て閉じる';
+
+                if (!window.pluginAcSlide) {
+                    window.pluginAcSlide = function(element, open) {
+                        if (!element) { return; }
+
+                        if (element._pluginAcAnimation) {
+                            cancelAnimationFrame(element._pluginAcAnimation.id);
+                            var runningHeight = parseFloat(window.getComputedStyle(element).height);
+                            if (isNaN(runningHeight)) { runningHeight = 0; }
+                            element.style.height = runningHeight + 'px';
+                            element.style.display = 'block';
+                            element.style.overflow = 'hidden';
+                            element._pluginAcAnimation = null;
+                        }
+
+                        var computed = window.getComputedStyle(element);
+                        var startHeight = computed.display === 'none' ? 0 : element.getBoundingClientRect().height;
+                        if (isNaN(startHeight)) { startHeight = 0; }
+
+                        var endHeight;
+                        if (open) {
+                            element.style.display = 'block';
+                            endHeight = element.scrollHeight;
+                        } else {
+                            if (computed.display === 'none' && startHeight === 0) {
+                                element.style.display = 'none';
+                                element.style.height = '';
+                                element.style.overflow = '';
+                                return;
+                            }
+                            endHeight = 0;
+                        }
+
+                        if (startHeight === endHeight) {
+                            element.style.display = open ? 'block' : 'none';
+                            element.style.height = '';
+                            element.style.overflow = '';
+                            return;
+                        }
+
+                        element.style.overflow = 'hidden';
+                        element.style.height = startHeight + 'px';
+
+                        var duration = 500;
+                        var startTime = null;
+
+                        function ease(t) {
+                            return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+                        }
+
+                        var animation = {};
+
+                        function finish() {
+                            element.style.height = '';
+                            element.style.overflow = '';
+                            element.style.display = open ? 'block' : 'none';
+                            element._pluginAcAnimation = null;
+                        }
+
+                        function step(timestamp) {
+                            if (!startTime) { startTime = timestamp; }
+                            var progress = Math.min((timestamp - startTime) / duration, 1);
+                            var eased = ease(progress);
+                            if (open) {
+                                var dynamicHeight = element.scrollHeight;
+                                if (dynamicHeight !== endHeight) {
+                                    endHeight = dynamicHeight;
+                                }
+                            }
+                            var current = startHeight + (endHeight - startHeight) * eased;
+                            element.style.height = current + 'px';
+                            if (progress < 1) {
+                                animation.id = requestAnimationFrame(step);
+                            } else {
+                                finish();
+                            }
+                        }
+
+                        animation.id = requestAnimationFrame(step);
+                        animation.finish = finish;
+                        element._pluginAcAnimation = animation;
+                    };
                 }
-            });
+
+                Array.prototype.forEach.call(document.querySelectorAll('.' + ctrlClass), function(button) {
+                    if (!button || button.hasAttribute('data-plugin-ac-ctrl-bound')) { return; }
+                    button.setAttribute('data-plugin-ac-ctrl-bound', '1');
+
+                    button.addEventListener('click', function() {
+                        var span = button.querySelector('span');
+                        var label = span ? span.textContent.trim() : '';
+                        var willOpen = span ? label === openText : !button.classList.contains('open');
+
+                        button.classList.toggle('open');
+
+                        var headers = [];
+                        var contents = [];
+                        var node = button.nextElementSibling;
+
+                        while (node && !(node.classList && node.classList.contains(ctrlClass))) {
+                            if (node.classList && node.classList.contains(headerClass)) {
+                                headers.push(node);
+                                var content = node.nextElementSibling;
+                                if (content && content.classList.contains(contentsClass)) {
+                                    contents.push(content);
+                                }
+                            }
+                            node = node.nextElementSibling;
+                        }
+
+                        if (willOpen) {
+                            for (var i = 0; i < headers.length; i++) {
+                                headers[i].classList.add('open');
+                            }
+                            for (var j = 0; j < contents.length; j++) {
+                                window.pluginAcSlide(contents[j], true);
+                            }
+                            if (span) { span.textContent = closeText; }
+                        } else {
+                            for (var i2 = 0; i2 < headers.length; i2++) {
+                                headers[i2].classList.remove('open');
+                            }
+                            for (var j2 = 0; j2 < contents.length; j2++) {
+                                window.pluginAcSlide(contents[j2], false);
+                            }
+                            if (span) { span.textContent = openText; }
+                        }
+                    });
+                });
+            })();
             EOD;
         }
-        // スクリプトを一行にまとめる
-        $minified_script = preg_replace('/\r{\n|\r\n/', '', $base_script);
+
+        $minified_script = preg_replace("/\r?\n/", ' ', $base_script);
         $minified_script = preg_replace('/\s+/', ' ', $minified_script);
 
         return $minified_script;
