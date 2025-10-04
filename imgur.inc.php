@@ -147,9 +147,6 @@ function plugin_imgur_render(bool $isInline, mixed ...$args): string
                 if ($className === '') {
                     continue;
                 }
-                if (preg_match('/^[A-Za-z0-9-]+$/', $className) !== 1) {
-                    return $errors['arg'];
-                }
                 $additionalClasses[$className] = true;
             }
             continue;
