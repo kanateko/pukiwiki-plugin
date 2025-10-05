@@ -65,6 +65,7 @@ const switchBySelect = select => {
 
 // numberによる操作
 const switchByNumber = number => {
+    const min = number.dataset.min;
     const step = number.dataset.step;
     const group = number.dataset.group;
     const groupedElements = getGroupedElements(group, number.id);
@@ -72,7 +73,8 @@ const switchByNumber = number => {
     // 操作があった際
     number.addEventListener('input', (e) => {
         const ct = e.currentTarget;
-        const index = ct.value / step;
+        const diff = isFinite(min) ? min : 0;
+        const index = (ct.value - diff) / step;
 
         // 同グループの表示を切り替える
         for (const el of groupedElements) {

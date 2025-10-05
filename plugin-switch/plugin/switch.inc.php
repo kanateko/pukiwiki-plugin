@@ -2,11 +2,13 @@
 /**
 * プルダウンやスライダーと連動して表示内容を切り替えるプラグイン
 *
-* @version 1.2.0
+* @version 1.2.1
 * @author kanateko
 * @link https://jpngamerswiki.com/?f51cd63681
 * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
 * -- Updates --
+* 2025-10-05 v1.2.1 numberでminを指定した場合にindexがズレる問題を修正
+*                   rangeやnumberに0以下のstepを設定できないように変更
 * 2025-10-03 v1.2.0 新たに数値入力式のnumberを追加
 *                   従来のnumber→linearに変更
 *                   rangeやlinearで初期表示される数字のフォーマットを改善
@@ -38,7 +40,8 @@ function plugin_switch_init()
     $messages['_switch_messages'] = [
         'err_unknown' => '#switch Error: Unknown Argument (%s)',
         'err_empty'   => '#switch Error: No Contents',
-        'err_invalid' => '#switch Error: Invalid Value (%s)'
+        'err_invalid' => '#switch Error: Invalid Value (%s)',
+        'err_step' => '#switch Error: Step must be 1 or higher'
     ];
 
     set_plugin_messages($messages);
@@ -192,6 +195,12 @@ class PluginSwitchBase
         $label = $this->get_label($id);
         $index = self::$start_index[$this->group];
         [$min, $max, $step] = $this->get_range_attributes();
+
+        if (! $step > 0) {
+            $this->err = ['err_step'];
+            return $this->show_msg();
+        }
+
         $initial_value =  $index * $step + $min;
 
         // 最小最大の検証
@@ -252,6 +261,12 @@ class PluginSwitchBase
         $label = $this->get_label($id);
         $index = self::$start_index[$this->group];
         [$min, $max, $step] = $this->get_range_attributes(true);
+
+        if (! $step > 0) {
+            $this->err = ['err_step'];
+            return $this->show_msg();
+        }
+
         $initial_value = $this->calcurate_initial_value($index, $min, $max, $step);
 
         // 最小最大の検証
