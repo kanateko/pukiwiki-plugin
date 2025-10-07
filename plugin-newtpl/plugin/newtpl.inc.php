@@ -2,12 +2,13 @@
 /**
  * フォーム形式のページテンプレートプラグイン
  *
- * @version 1.5.2
+ * @version 1.5.3
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * @todo 非同期バリデーション + プレビュー
  * -- Updates --
+ * 2025-10-08 v1.5.3 フォームが再表示された際に親ページの指定が無効になる問題を修正
  * 2025-09-28 v1.5.2 複数ファイルの同時アップロードに対応
  * 2025-09-10 v1.5.1 テンプレートリストをソートするように変更
  * 2025-09-07 v1.5.0 デフォルト値にCookieに保存された値を使用する機能を追加
@@ -455,9 +456,10 @@ class NewtplForm
         // 親ページ
         $rootname = '';
 
-        if ($settings['root'] !== null) {
-            $fields .= '<input type="hidden" name="_root" value="' . $settings['root'] . '">' . "\n";
-            $rootname = '<p class="newtpl-desc">' . $_newtpl_messages['label_rootname'] . $settings['root'] . '</p>';
+        if ($settings['root'] !== null || $vars['_root'] !== null) {
+            $root = $settings['root'] ?: htmlsc($vars['_root']);
+            $fields .= '<input type="hidden" name="_root" value="' . $root . '">' . "\n";
+            $rootname = '<p class="newtpl-desc">' . $_newtpl_messages['label_rootname'] . $root . '</p>';
         }
 
 
@@ -760,7 +762,8 @@ class NewtplPage
         // トークンの確認
         if (! isset($_SESSION['token']) || $_SESSION['token'] !== $vars['token']) {
             header('refresh:5');
-            die_message(Newtpl::get_message('err_token', get_base_uri() . '?cmd=newtpl&tpl=' . $this->tplname, false));
+            $root = $vars['_root'] !== null ? '&root=' . rawurlencode($vars['_root']) : '';
+            die_message(Newtpl::get_message('err_token', get_base_uri() . '?cmd=newtpl&tpl=' . $this->tplname . $root, false));
         } else {
             $_SESSION['token'] = null;
         }
