@@ -232,7 +232,7 @@ Class PluginAc
         $html = <<<EOD
         $header
         <div class="{$class['contents']}" id="$id" style="display:{$this->options['display']}">
-            $contents
+        $contents
         </div>
         {$this->options['alt']}
         $script_open
