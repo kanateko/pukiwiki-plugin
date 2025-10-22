@@ -2,11 +2,12 @@
 /**
  * 折りたたみ可能な見出しを作成するプラグイン
  *
- * @version 1.7.0
+ * @version 1.7.1
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * -- Updates --
+ * 2025-10-22 v1.7.1 FontAwesomeへの依存を解消
  * 2025-10-04 v1.7.0 jQueryへの依存を解消
  * 2021-07-26 v1.6.0 プラグインの呼び出し毎に挿入されていたスクリプトを大幅に削減
  *            v1.5.0 h使用時に元々ある疑似要素と開閉アイコンが干渉しないよう、アイコン表示用の要素を追加
@@ -131,6 +132,10 @@ function plugin_ac_inline()
  */
 Class PluginAc
 {
+    private const SVG_ICONS = [
+        'open' => '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px"><path d="M440-280h80v-160h160v-80H520v-160h-80v160H280v80h160v160ZM200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm0-560v560-560Z"/></svg>',
+        'close' => '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px"><path d="M280-440h400v-80H280v80Zm-80 320q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm0-80h560v-560H200v560Zm0-560v560-560Z"/></svg>'
+    ];
     private static $ac_counts = 0;
     private static $ac_ctrl_counts = 0;
 
@@ -291,6 +296,8 @@ Class PluginAc
 
         if (! $is_ctrl) {
             // 通常の折りたたみ開閉用スクリプト
+            $icon_open = self::SVG_ICONS['open'];
+            $icon_close = self::SVG_ICONS['close'];
             $base_script = <<<EOD
             (function(){
                 var headerClass = '$class_header';
@@ -388,10 +395,15 @@ Class PluginAc
                         header.classList.add(headerClass);
                     }
 
-                    if (!header.querySelector('.ac-icon')) {
-                        var icon = document.createElement('i');
-                        icon.className = 'ac-icon';
-                        header.insertBefore(icon, header.firstChild);
+                    if (!header.querySelector('.ac-icon__open')) {
+                        var iconOpen = document.createElement('i');
+                        var iconClose = document.createElement('i');
+                        iconOpen.className = 'ac-icon__open';
+                        iconClose.className = 'ac-icon__close';
+                        iconOpen.innerHTML = '$icon_open';
+                        iconClose.innerHTML = '$icon_close';
+                        header.insertBefore(iconOpen, header.firstChild);
+                        header.insertBefore(iconClose, header.firstChild);
                     }
 
                     var alt = content.nextElementSibling;

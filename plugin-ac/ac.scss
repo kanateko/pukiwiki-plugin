@@ -1,36 +1,39 @@
 .plugin-ac-header {
     position: relative;
-    padding-left: calc(1em + 5px)!important;
+    padding-left: calc(1.1rem + 4px);
     user-select: none;
     cursor: pointer;
     &:hover {
         filter: brightness(1.2);
     }
     .ac-icon {
-        font-style: normal;
-        &::before,
-        &::after {
-            font-family: 'Font Awesome 5 Free';
+        &__open,
+        &__close {
             position: absolute;
-            left: 5px;
+            display: inline-flex;
+            align-items: center;
             top: 50%;
             transform: translateY(-50%);
+            left: 0;
+            svg {
+                fill: currentColor;
+                width: 1.1rem;
+                height: 1.1rem;
+            }
         }
-        &::before {
+        &__open {
             opacity: 1;
-            content: '\f0fe';
         }
-        &::after {
+        &__close {
             opacity: 0;
-            content: '\f146';
         }
     }
     &.open {
         .ac-icon {
-            &::before {
+            &__open {
                 opacity: 0;
             }
-            &::after {
+            &__close {
                 opacity: 1;
             }
         }

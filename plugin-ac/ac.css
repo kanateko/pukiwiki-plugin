@@ -1,6 +1,6 @@
 .plugin-ac-header {
   position: relative;
-  padding-left: calc(1em + 5px) !important;
+  padding-left: calc(1.1rem + 4px);
   -webkit-user-select: none;
      -moz-user-select: none;
           user-select: none;
@@ -9,28 +9,29 @@
 .plugin-ac-header:hover {
   filter: brightness(1.2);
 }
-.plugin-ac-header .ac-icon {
-  font-style: normal;
-}
-.plugin-ac-header .ac-icon::before, .plugin-ac-header .ac-icon::after {
-  font-family: "Font Awesome 5 Free";
+.plugin-ac-header .ac-icon__open, .plugin-ac-header .ac-icon__close {
   position: absolute;
-  left: 5px;
+  display: inline-flex;
+  align-items: center;
   top: 50%;
   transform: translateY(-50%);
+  left: 0;
 }
-.plugin-ac-header .ac-icon::before {
+.plugin-ac-header .ac-icon__open svg, .plugin-ac-header .ac-icon__close svg {
+  fill: currentColor;
+  width: 1.1rem;
+  height: 1.1rem;
+}
+.plugin-ac-header .ac-icon__open {
   opacity: 1;
-  content: "\f0fe";
 }
-.plugin-ac-header .ac-icon::after {
-  opacity: 0;
-  content: "\f146";
-}
-.plugin-ac-header.open .ac-icon::before {
+.plugin-ac-header .ac-icon__close {
   opacity: 0;
 }
-.plugin-ac-header.open .ac-icon::after {
+.plugin-ac-header.open .ac-icon__open {
+  opacity: 0;
+}
+.plugin-ac-header.open .ac-icon__close {
   opacity: 1;
 }
 .plugin-ac-header.open + .plugin-ac + .plugin-ac-altmsg {
