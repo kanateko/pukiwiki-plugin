@@ -2,12 +2,13 @@
 /**
  * フォーム形式のページテンプレートプラグイン
  *
- * @version 1.5.3
+ * @version 1.5.4
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
  * @todo 非同期バリデーション + プレビュー
  * -- Updates --
+ * 2025-11-02 v1.5.4 トークン名を変更
  * 2025-10-08 v1.5.3 フォームが再表示された際に親ページの指定が無効になる問題を修正
  * 2025-09-28 v1.5.2 複数ファイルの同時アップロードに対応
  * 2025-09-10 v1.5.1 テンプレートリストをソートするように変更
@@ -47,6 +48,8 @@
 define('PLUGIN_NEWTPL_CSS', SKIN_DIR . 'css/newtpl.min.css');
 // JavaScript
 define('PLUGIN_NEWTPL_JS', SKIN_DIR . 'js/newtpl.min.js');
+// バリデーション用トークン名
+define('PLUGIN_NEWTPL_TOKEN', 'newtpl_token');
 // テンプレートの親ページ
 define('PLUGIN_NEWTPL_ROOT', ':config/plugin/newtpl/');
 // 管理者のみ
@@ -63,7 +66,7 @@ define('PLUGIN_NEWTPL_ENABLE_UPLOADTO', true);
 define('PLUGIN_NEWTPL_UPLOADTO_EXCEPTION', '/^(FrontPage|MenuBar|トップページ)$/');
 // autoComplete (入力サジェスト) の有効/無効
 define('PLUGIN_NEWTPL_ENABLE_AUTOCOMPLETE', true);
-// cookieの仕様を許可する
+// cookieの使用を許可する
 define('PLUGIN_NEWTPL_USE_COOKIE', true);
 // テンプレートのリストをソートする
 define('PLUGIN_NEWTPL_SORT_LIST', true);
@@ -377,7 +380,7 @@ class NewtplForm
 
         [$items, $settings] = Newtpl::parse_config($this->tplcfg);
         $settings['root'] ??= $this->root;
-        $token = $_SESSION['token'] = Newtpl::token(16);
+        $token = $_SESSION[PLUGIN_NEWTPL_TOKEN] = Newtpl::token(16);
         $names = ['page' => true, '_date' => true];
         $fields = '';
         $scripts = <<<EOD
@@ -476,11 +479,12 @@ class NewtplForm
 
         // フォーム全体
         $p_page = isset($vars['page']) ? htmlsc($vars['page']) : '';
+        $token_name = PLUGIN_NEWTPL_TOKEN;
         $body = <<<EOD
         {$this->notification}
         <form class="plugin-newtpl" method="post" enctype="multipart/form-data">
             <div class="newtpl-fields">
-                <input type="hidden" name="token" value="$token">
+                <input type="hidden" name="$token_name" value="$token">
                 <input type="hidden" name="cmd" value="newtpl">
                 <input type="hidden" name="refer" value="$refer">
                 <input type="hidden" name="_tplname" value="{$this->tplname}">
@@ -760,12 +764,12 @@ class NewtplPage
         global $vars, $edit_auth, $auth_user;
 
         // トークンの確認
-        if (! isset($_SESSION['token']) || $_SESSION['token'] !== $vars['token']) {
+        if (! isset($_SESSION[PLUGIN_NEWTPL_TOKEN]) || $_SESSION[PLUGIN_NEWTPL_TOKEN] !== $vars[PLUGIN_NEWTPL_TOKEN]) {
             header('refresh:5');
             $root = $vars['_root'] !== null ? '&root=' . rawurlencode($vars['_root']) : '';
             die_message(Newtpl::get_message('err_token', get_base_uri() . '?cmd=newtpl&tpl=' . $this->tplname . $root, false));
         } else {
-            $_SESSION['token'] = null;
+            $_SESSION[PLUGIN_NEWTPL_TOKEN] = null;
         }
 
         // 入力内容の確認
