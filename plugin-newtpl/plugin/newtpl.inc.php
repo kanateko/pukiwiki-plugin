@@ -2,12 +2,14 @@
 /**
  * フォーム形式のページテンプレートプラグイン
  *
- * @version 1.5.4
+ * @version 1.6.0
  * @author kanateko
  * @link https://jpngamerswiki.com/?f51cd63681
  * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
- * @todo 非同期バリデーション + プレビュー
  * -- Updates --
+ * 2026-01-18 v1.6.0 編集画面に移行するボタンを追加
+ *                   トークンの確認をデフォルトで無効に変更
+ *                   チェックボックスが未選択で送信された際のエラーを修正
  * 2025-11-02 v1.5.4 トークン名を変更
  * 2025-10-08 v1.5.3 フォームが再表示された際に親ページの指定が無効になる問題を修正
  * 2025-09-28 v1.5.2 複数ファイルの同時アップロードに対応
@@ -48,6 +50,8 @@
 define('PLUGIN_NEWTPL_CSS', SKIN_DIR . 'css/newtpl.min.css');
 // JavaScript
 define('PLUGIN_NEWTPL_JS', SKIN_DIR . 'js/newtpl.min.js');
+// トークンでのバリデーションを行う
+define('PLUGIN_NEWTPL_USE_TOKEN', false);
 // バリデーション用トークン名
 define('PLUGIN_NEWTPL_TOKEN', 'newtpl_token');
 // テンプレートの親ページ
@@ -106,6 +110,7 @@ function plugin_newtpl_init(): void
         'warn_required'    => '必須項目を記入してください。($1)',
         'warn_size'        => 'ファイルが最大サイズを超えています。($1)',
         'warn_format'      => 'ファイル形式が不正です。($1)',
+        'btn_edit'         => '編集画面に移行',
         'btn_submit'       => 'ページを作成',
         'btn_back'         => '戻る',
         'err_noexist'      => '#newtpl Error: Failed to load the template. ($1)',
@@ -164,10 +169,14 @@ function plugin_newtpl_action(): ?array
 
     session_start();
 
-    if ($vars['_submit']) {
+    if ($vars['_submit'] === 'new') {
         // ページの作成
         $cmd = new NewtplPage;
         if ($cmd->validation()) return $cmd->create_page();
+        else return $cmd->show_form();
+    }elseif ($vars['_submit'] === 'edit') {
+        $cmd = new newtplPage;
+        if ($cmd->validation()) return $cmd->edit_page();
         else return $cmd->show_form();
     } elseif ($vars['tpl']) {
         // フォームの表示
@@ -499,7 +508,8 @@ class NewtplForm
                 $fields
             </div>
             <div class="newtpl-button">
-                <button type="submit" class="newtpl-submit" name="_submit" value="1">{$_newtpl_messages['btn_submit']}</button>
+                <button type="submit" class="newtpl-edit" name="_submit" value="edit">{$_newtpl_messages['btn_edit']}</button>
+                <button type="submit" class="newtpl-submit" name="_submit" value="new">{$_newtpl_messages['btn_submit']}</button>
             </div>
         </form>
         $scripts
@@ -764,12 +774,14 @@ class NewtplPage
         global $vars, $edit_auth, $auth_user;
 
         // トークンの確認
-        if (! isset($_SESSION[PLUGIN_NEWTPL_TOKEN]) || $_SESSION[PLUGIN_NEWTPL_TOKEN] !== $vars[PLUGIN_NEWTPL_TOKEN]) {
-            header('refresh:5');
-            $root = $vars['_root'] !== null ? '&root=' . rawurlencode($vars['_root']) : '';
-            die_message(Newtpl::get_message('err_token', get_base_uri() . '?cmd=newtpl&tpl=' . $this->tplname . $root, false));
-        } else {
-            $_SESSION[PLUGIN_NEWTPL_TOKEN] = null;
+        if (PLUGIN_NEWTPL_USE_TOKEN) {
+            if (! isset($_SESSION[PLUGIN_NEWTPL_TOKEN]) || $_SESSION[PLUGIN_NEWTPL_TOKEN] !== $vars[PLUGIN_NEWTPL_TOKEN]) {
+                header('refresh:5');
+                $root = $vars['_root'] !== null ? '&root=' . rawurlencode($vars['_root']) : '';
+                die_message(Newtpl::get_message('err_token', get_base_uri() . '?cmd=newtpl&tpl=' . $this->tplname . $root, false));
+            } else {
+                $_SESSION[PLUGIN_NEWTPL_TOKEN] = null;
+            }
         }
 
         // 入力内容の確認
@@ -885,11 +897,11 @@ class NewtplPage
     }
 
     /**
-     * ページの作成
+     * テンプレートを入力情報で置き換え
      *
-     * @return never
+     * @return string
      */
-    public function create_page(): never
+    public function replace_template_with_user_inputs(): string
     {
         global $vars;
 
@@ -987,23 +999,25 @@ class NewtplPage
                     case 'checkbox':
                         // チェックボックス
                         if (PLUGIN_NEWTPL_USE_COOKIE && $cfg['cookie'] === 'true') $this->save_default_value($name, $vars[$name], true);
-                        if ($cfg['link'] === 'true') {
-                            // 項目ごとにリンク化
-                            foreach ($vars[$name] as $i => $val) {
-                                if (is_page($val)) $vars[$name][$i] = '[[' . $vars[$name][$i] . ']]';
+                        if (! empty($vars[$name])) {
+                            if ($cfg['link'] === 'true') {
+                                // 項目ごとにリンク化
+                                foreach ($vars[$name] as $i => $val) {
+                                    if (is_page($val)) $vars[$name][$i] = '[[' . $vars[$name][$i] . ']]';
+                                }
                             }
-                        }
-                        if (isset($cfg['filled']) && count($vars[$name]) > 0) {
-                            // 入力内容を装飾
-                            $filled = Newtpl::replace_meta_chars($cfg['filled']);
+                            if (isset($cfg['filled']) && count($vars[$name]) > 0) {
+                                // 入力内容を装飾
+                                $filled = Newtpl::replace_meta_chars($cfg['filled']);
 
-                            foreach ($vars[$name] as $i => $val) {
-                                $vars[$name][$i] = str_replace('%s', $val, $filled);
+                                foreach ($vars[$name] as $i => $val) {
+                                    $vars[$name][$i] = str_replace('%s', $val, $filled);
+                                }
                             }
+                            // 各項目を区切って文字列に変換
+                            $separator = $this->get_separator($cfg, $type);
+                            $vars[$name] = implode($separator, $vars[$name]);
                         }
-                        // 各項目を区切って文字列に変換
-                        $separator = $this->get_separator($cfg, $type);
-                        $vars[$name] = implode($separator, $vars[$name]);
                         $postdata = $this->replace($name, $vars[$name], $postdata);
                         break;
                     default:
@@ -1022,10 +1036,38 @@ class NewtplPage
             $postdata = $this->replace('title:' . $name, $item, $postdata);
         }
 
+        return $postdata;
+    }
+
+    /**
+     * ページの作成
+     *
+     * @return never
+     */
+    public function create_page(): never
+    {
+        $postdata = $this->replace_template_with_user_inputs();
+
         // ページのファイルを作成
         page_write($this->pagename, $postdata);
         header('Location:' . get_page_uri($this->pagename));
         exit;
+    }
+
+    /**
+     * 入力内容を保持して編集画面に移行
+     *
+     * @return array
+     */
+    public function edit_page(): array
+    {
+        global $_title_edit, $_btn_preview;
+
+        $postdata = $this->replace_template_with_user_inputs();
+        $_POST['preview'] = $_btn_preview;
+
+        // 編集画面に移行
+        return ['msg' => $_title_edit, 'body' => edit_form($this->pagename, $postdata, false, false)];
     }
 
     /**

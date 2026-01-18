@@ -178,7 +178,10 @@
   font-size: 1.2em;
   margin: 0 12px;
   padding: 8px 16px;
-  width: 140px;
+  width: 160px;
+}
+.newtpl-button button.newtpl-edit {
+  background-color: #7f7f7f;
 }
 .newtpl-button button:disabled {
   cursor: not-allowed;
