@@ -2,11 +2,12 @@
 /**
 * ページの有無でリンクを制御するプラグイン
 *
-* @version 0.2.0
+* @version 0.2.1
 * @author kanateko
 * @link https://jpngamerswiki.com/?f51cd63681
 * @license https://www.gnu.org/licenses/gpl-3.0.html GPLv3
 * -- Updates --
+* 2026-03-30 v0.2.1 ブラケットを取り除く処理を追加
 * 2026-02-12 v0.2.0 相対パスに対応
 *                   ベースネームで表示するオプションを追加
 * 2026-01-31 v0.1.0 初版作成
@@ -16,7 +17,7 @@ function plugin_npnl_inline(string ...$args): string
 {
     global $vars;
 
-    $text = trim(array_pop($args));
+    $text = strip_bracket(trim(array_pop($args)));
     $options = [];
 
     if (! empty($args)) {
