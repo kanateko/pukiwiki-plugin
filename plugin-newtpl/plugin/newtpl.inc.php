@@ -174,8 +174,8 @@ function plugin_newtpl_action(): ?array
         $cmd = new NewtplPage;
         if ($cmd->validation()) return $cmd->create_page();
         else return $cmd->show_form();
-    }elseif ($vars['_submit'] === 'edit') {
-        $cmd = new newtplPage;
+    } elseif ($vars['_submit'] === 'edit') {
+        $cmd = new NewtplPage;
         if ($cmd->validation()) return $cmd->edit_page();
         else return $cmd->show_form();
     } elseif ($vars['tpl']) {
