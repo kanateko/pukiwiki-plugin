@@ -183,6 +183,11 @@ a.card-overwrap {
   grid-area: lastmod;
   justify-self: flex-end;
   opacity: var(--opacity-details);
+}
+.card-lastmod[data-length=short] {
+  display: none;
+}
+.card-lastmod {
   /*
   &::before {
       font-family: "Font Awesome 5 Free";
@@ -191,9 +196,6 @@ a.card-overwrap {
       content: "\f1da";
   }
   */
-}
-.card-lastmod[data-length=short] {
-  display: none;
 }
 
 .bold {
